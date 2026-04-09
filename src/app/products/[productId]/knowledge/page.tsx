@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Star, Search } from "lucide-react";
+import { Loader2, Star, Search, ArrowLeft } from "lucide-react";
 import type { KnowledgeEntry } from "@/lib/types";
 
 const CATEGORIES = [
@@ -95,6 +95,7 @@ function InsightCard({
 
 export default function KnowledgeBrowserPage() {
   const params = useParams<{ productId: string }>();
+  const router = useRouter();
   const productId = params.productId;
 
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
@@ -194,6 +195,12 @@ export default function KnowledgeBrowserPage() {
       <PhaseHeader
         title="Knowledge Base"
         subtitle={`${entries.length} entries${pinnedCount > 0 ? ` · ${pinnedCount} pinned` : ""}`}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => router.back()} className="text-xs h-8">
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
+            Back
+          </Button>
+        }
       />
 
       {/* Search bar */}

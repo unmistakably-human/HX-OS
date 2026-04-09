@@ -417,7 +417,7 @@ export async function extractFromConcepts(
         entries.push({
           ...base,
           category: "pattern",
-          title: "Must-have element",
+          title: mh.length > 60 ? mh.slice(0, 57) + "..." : mh,
           content: mh,
           tags: ["baseline", "must_have"],
           relevance_score: 1.0,

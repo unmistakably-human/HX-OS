@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { getKnowledge, saveKnowledgeEntries } from "@/lib/knowledge";
+import { getKnowledge, saveKnowledgeEntries, getKnowledgeForContext } from "@/lib/knowledge";
+import { supabase } from "@/lib/supabase";
 
 export async function GET(
   req: NextRequest,
@@ -9,9 +10,21 @@ export async function GET(
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category") || undefined;
   const featureId = searchParams.get("featureId") || undefined;
+  const search = searchParams.get("search") || undefined;
   const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined;
 
   try {
+    // If search query provided, use full-text search
+    if (search) {
+      const { data, error } = await supabase.rpc("search_knowledge", {
+        search_query: search,
+        match_product_id: id,
+        match_count: limit || 50,
+      });
+      if (error) throw error;
+      return Response.json(data || []);
+    }
+
     const entries = await getKnowledge(id, { category, featureId, limit });
     return Response.json(entries);
   } catch {
