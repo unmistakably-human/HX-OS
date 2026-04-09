@@ -15,9 +15,9 @@ import { Loader2, Check, HelpCircle, ExternalLink } from "lucide-react";
 import type { Concept, ChatMessage, Feature } from "@/lib/types";
 
 const trackStyles: Record<string, { bg: string; text: string; label: string }> = {
-  A: { bg: "#ecfdf5", text: "#065f46", label: "Track A" },
-  B: { bg: "#f3e8ff", text: "#6b21a8", label: "Track B" },
-  outside: { bg: "#fffbeb", text: "#92400e", label: "Outside" },
+  A: { bg: "var(--accent-green-light)", text: "var(--accent-green-dark)", label: "Track A" },
+  B: { bg: "var(--accent-purple-10)", text: "var(--accent-purple)", label: "Track B" },
+  outside: { bg: "var(--feedback-warning-bg)", text: "var(--feedback-warning-text)", label: "Outside" },
 };
 
 export default function ConceptsPage() {
@@ -172,7 +172,7 @@ export default function ConceptsPage() {
 
   if (loadingState === "loading") {
     return (
-      <div className="flex items-center justify-center h-full text-[#9ca3af]">
+      <div className="flex items-center justify-center h-full text-content-muted">
         Loading...
       </div>
     );
@@ -189,29 +189,29 @@ export default function ConceptsPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT PANEL (60%) */}
-        <div className="w-[60%] flex flex-col overflow-hidden border-r border-[#e5e7eb]">
+        <div className="w-[60%] flex flex-col overflow-hidden border-r border-divider">
           {concepts.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4">
               {generating ? (
                 <>
-                  <Loader2 className="w-6 h-6 text-[#E8713A] animate-spin" />
-                  <p className="text-[14px] text-[#4b5563]">Generating concept variations...</p>
-                  <p className="text-[12px] text-[#9ca3af]">This takes 30-60 seconds</p>
+                  <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
+                  <p className="text-sm text-content-secondary">Generating concept variations...</p>
+                  <p className="text-xs text-content-muted">This takes 30-60 seconds</p>
                 </>
               ) : (
                 <>
-                  <p className="text-[14px] text-[#4b5563]">Ready to generate concepts</p>
-                  <Button onClick={generateConcepts} className="bg-[#E8713A] hover:bg-[#d4632e] text-white px-6">
+                  <p className="text-sm text-content-secondary">Ready to generate concepts</p>
+                  <Button onClick={generateConcepts} className="px-6">
                     Generate 6 Concepts
                   </Button>
-                  <p className="text-[12px] text-[#9ca3af]">Takes 30-60 seconds</p>
+                  <p className="text-xs text-content-muted">Takes 30-60 seconds</p>
                 </>
               )}
             </div>
           ) : (
             <>
               {/* Tab bar */}
-              <div className="flex flex-wrap gap-1 px-4 pt-3 pb-0 border-b border-[#e5e7eb]">
+              <div className="flex flex-wrap gap-1 px-4 pt-3 pb-0 border-b border-divider">
                 {concepts.map((concept, i) => {
                   const track = trackStyles[concept.track] || trackStyles.A;
                   const isActive = i === activeTab;
@@ -219,8 +219,8 @@ export default function ConceptsPage() {
                     <button
                       key={i}
                       onClick={() => setActiveTab(i)}
-                      className={`flex items-center gap-1.5 px-3 py-2 text-[13px] transition-colors relative ${
-                        isActive ? "font-semibold text-[#18181b]" : "text-[#71717a] hover:text-[#4b5563]"
+                      className={`flex items-center gap-1.5 px-3 py-2 text-body-sm transition-colors relative ${
+                        isActive ? "font-semibold text-content-heading" : "text-content-tertiary hover:text-content-secondary"
                       }`}
                     >
                       {concept.name}
@@ -230,7 +230,7 @@ export default function ConceptsPage() {
                       >
                         {track.label}
                       </span>
-                      {isActive && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#E8713A]" />}
+                      {isActive && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-action-primary-bg" />}
                     </button>
                   );
                 })}
@@ -240,7 +240,7 @@ export default function ConceptsPage() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {currentConcept && (
                   <>
-                    <div className="border border-[#e5e7eb] rounded-lg overflow-hidden">
+                    <div className="border border-divider rounded-lg overflow-hidden">
                       <iframe
                         srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,sans-serif;background:#F5F5F5;color:#333;}</style></head><body>${currentConcept.wireframeHtml}</body></html>`}
                         className="w-full border-0"
@@ -259,50 +259,50 @@ export default function ConceptsPage() {
 
                     <Accordion>
                       <AccordionItem value="details">
-                        <AccordionTrigger className="text-[14px] text-[#374151]">Details</AccordionTrigger>
+                        <AccordionTrigger className="text-sm text-content-secondary">Details</AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-4 pt-2">
                             <div>
-                              <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wide mb-1">Core Idea</p>
-                              <p className="text-[14px] text-[#374151]">{currentConcept.coreIdea}</p>
+                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Core Idea</p>
+                              <p className="text-sm text-content-secondary">{currentConcept.coreIdea}</p>
                             </div>
                             <div>
-                              <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wide mb-1">Design Principles</p>
+                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Design Principles</p>
                               <ul className="space-y-1">
                                 {currentConcept.principles.map((p, i) => (
-                                  <li key={i} className="text-[13px] text-[#4b5563] flex items-start gap-2">
-                                    <span className="text-[#9ca3af] mt-0.5">•</span>{p}
+                                  <li key={i} className="text-body-sm text-content-secondary flex items-start gap-2">
+                                    <span className="text-content-muted mt-0.5">•</span>{p}
                                   </li>
                                 ))}
                               </ul>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <p className="text-[12px] font-semibold text-[#065f46] uppercase tracking-wide mb-1">Pros</p>
+                                <p className="text-xs font-semibold text-hx-green-dark uppercase tracking-wide mb-1">Pros</p>
                                 <ul className="space-y-1">
                                   {currentConcept.pros.map((p, i) => (
-                                    <li key={i} className="text-[13px] text-[#065f46] bg-[#ecfdf5] rounded px-2 py-1">{p}</li>
+                                    <li key={i} className="text-body-sm text-hx-green-dark bg-hx-green-light rounded px-2 py-1">{p}</li>
                                   ))}
                                 </ul>
                               </div>
                               <div>
-                                <p className="text-[12px] font-semibold text-[#991b1b] uppercase tracking-wide mb-1">Cons</p>
+                                <p className="text-xs font-semibold text-feedback-error-text uppercase tracking-wide mb-1">Cons</p>
                                 <ul className="space-y-1">
                                   {currentConcept.cons.map((c, i) => (
-                                    <li key={i} className="text-[13px] text-[#991b1b] bg-[#fef2f2] rounded px-2 py-1">{c}</li>
+                                    <li key={i} className="text-body-sm text-feedback-error-text bg-feedback-error-bg rounded px-2 py-1">{c}</li>
                                   ))}
                                 </ul>
                               </div>
                             </div>
-                            <div className="border-l-2 border-[#E8713A] pl-3">
-                              <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wide mb-1">Delight Moment</p>
-                              <p className="text-[13px] text-[#4b5563] italic">{currentConcept.delightMoment}</p>
+                            <div className="border-l-2 border-action-primary-bg pl-3">
+                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Delight Moment</p>
+                              <p className="text-body-sm text-content-secondary italic">{currentConcept.delightMoment}</p>
                             </div>
                             <div className="flex items-start gap-2">
-                              <HelpCircle className="w-4 h-4 text-[#6b7280] mt-0.5 shrink-0" />
+                              <HelpCircle className="w-4 h-4 text-content-secondary mt-0.5 shrink-0" strokeWidth={1.5} />
                               <div>
-                                <p className="text-[12px] font-semibold text-[#6b7280] uppercase tracking-wide mb-1">Stakeholder Question</p>
-                                <p className="text-[13px] text-[#18181b] font-semibold">{currentConcept.stakeholderQuestion}</p>
+                                <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Stakeholder Question</p>
+                                <p className="text-body-sm text-content-heading font-semibold">{currentConcept.stakeholderQuestion}</p>
                               </div>
                             </div>
                           </div>
@@ -313,25 +313,25 @@ export default function ConceptsPage() {
                     {/* Action buttons */}
                     <div className="pb-4 flex gap-2">
                       {selectedConcept === currentConcept.name ? (
-                        <Button variant="outline" className="flex-1 border-[#E8713A] bg-[#E8713A] text-white hover:bg-[#d4632e]" disabled>
-                          <Check className="w-4 h-4 mr-1.5" />Selected
+                        <Button variant="outline" className="flex-1 border-action-primary-bg bg-action-primary-bg text-action-primary-text" disabled>
+                          <Check className="w-4 h-4 mr-1.5" strokeWidth={1.5} />Selected
                         </Button>
                       ) : (
-                        <Button variant="outline" className="flex-1 border-[#E8713A] text-[#E8713A] hover:bg-[#E8713A]/5" onClick={() => handleSelectConcept(currentConcept.name)}>
+                        <Button variant="outline" className="flex-1 border-divider text-content-primary hover:bg-surface-subtle" onClick={() => handleSelectConcept(currentConcept.name)}>
                           Select this concept
                         </Button>
                       )}
 
-                      {/* Open wireframe preview for Figma capture */}
+                      {/* Copy to Figma — opens preview with Figma capture toolbar */}
                       <a
-                        href={`/preview/${featureId}/${activeTab}`}
+                        href={`/preview/${featureId}/${activeTab}?capture=true`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1"
                       >
                         <Button variant="outline" className="w-full">
-                          <ExternalLink className="w-4 h-4 mr-1.5" />
-                          Open Preview
+                          <ExternalLink className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+                          Copy to Figma
                         </Button>
                       </a>
                     </div>
@@ -343,10 +343,10 @@ export default function ConceptsPage() {
         </div>
 
         {/* RIGHT PANEL (40%) — Chat */}
-        <div className="w-[40%] flex flex-col bg-[#fafafa]">
-          <div className="px-4 py-2.5 border-b border-[#e5e7eb] bg-white">
-            <h2 className="text-[13px] font-semibold text-[#18181b]">Design Chat</h2>
-            <p className="text-[11px] text-[#9ca3af]">Discuss concepts with the AI designer</p>
+        <div className="w-[40%] flex flex-col bg-surface-page-alt">
+          <div className="px-4 py-2.5 border-b border-divider bg-surface-card">
+            <h2 className="text-body-sm font-semibold text-content-heading">Design Chat</h2>
+            <p className="text-overline text-content-muted">Discuss concepts with the AI designer</p>
           </div>
           <div className="flex-1 overflow-hidden">
             <ChatPanel
