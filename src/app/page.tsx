@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, MoreHorizontal, Check, Trash2, Loader2 } from "lucide-react";
+import { useRef } from "react";
+import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { Product, FeatureSummary } from "@/lib/types";
+import type { Product, FeatureSummary, ProductContext } from "@/lib/types";
 import {
   listProducts,
   createProduct,
   deleteProduct,
   createFeature,
+  saveProductContext,
 } from "@/lib/projects";
 
 function relativeTime(dateStr: string): string {
@@ -50,6 +52,8 @@ export default function DashboardPage() {
   const [newProductName, setNewProductName] = useState("");
   const [newProductCompany, setNewProductCompany] = useState("");
   const [creatingProduct, setCreatingProduct] = useState(false);
+  const [briefFile, setBriefFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // New feature modal
   const [showNewFeature, setShowNewFeature] = useState<string | null>(null);
@@ -75,14 +79,70 @@ export default function DashboardPage() {
     loadProducts();
   }, [loadProducts]);
 
+  async function readFileAsText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
   async function handleCreateProduct() {
     if (!newProductName.trim()) return;
     setCreatingProduct(true);
     try {
       const product = await createProduct(newProductName.trim(), newProductCompany.trim() || undefined);
+
+      // If a brief file was uploaded, parse it and save context
+      if (briefFile) {
+        try {
+          const text = await readFileAsText(briefFile);
+          const res = await fetch("/api/parse-brief", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          if (res.ok) {
+            const parsed = await res.json();
+            const emptySeg = { name: "", age: "", gender: "", loc: "", income: "", behaviour: "" };
+            const ctx: ProductContext = {
+              productName: newProductName.trim(),
+              company: newProductCompany.trim(),
+              productType: parsed.productType || "",
+              stage: parsed.stage || "",
+              industries: parsed.industries || [],
+              audience: parsed.audience || "",
+              platform: parsed.platform || "",
+              explain: parsed.explain || "",
+              briefWhy: parsed.briefWhy || "",
+              valueProp: parsed.valueProp || "",
+              notThis: parsed.notThis || "",
+              clientBrief: parsed.clientBrief || "",
+              seg1: parsed.seg1 || emptySeg,
+              seg2: parsed.seg2 || emptySeg,
+              behInsights: parsed.behInsights || "",
+              competitors: parsed.competitors || "",
+              flows: parsed.flows || "",
+              ia: parsed.ia || "",
+              figmaLink: parsed.figmaLink || "",
+              upcoming: parsed.upcoming || "",
+              dsChoice: "",
+              vibe: parsed.vibe || "",
+              colors: parsed.colors || "",
+              fonts: parsed.fonts || "",
+            };
+            await saveProductContext(product.id, ctx);
+          }
+        } catch {
+          // Brief parsing failed — continue without it
+        }
+      }
+
       setShowNewProduct(false);
       setNewProductName("");
       setNewProductCompany("");
+      setBriefFile(null);
       router.push(`/products/${product.id}/context`);
     } catch (err) {
       console.error("Failed to create product:", err);
@@ -305,7 +365,7 @@ export default function DashboardPage() {
 
       {/* New Product Modal */}
       {showNewProduct && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowNewProduct(false)}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setShowNewProduct(false); setBriefFile(null); }}>
           <div className="bg-white rounded-xl p-6 w-[420px] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-[16px] font-bold text-[#18181b] mb-4">New Product</h3>
             <div className="space-y-3">
@@ -317,7 +377,7 @@ export default function DashboardPage() {
                   placeholder="e.g. Perfora Oral Care"
                   className="mt-1"
                   autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateProduct()}
+                  onKeyDown={(e) => e.key === "Enter" && !creatingProduct && handleCreateProduct()}
                 />
               </div>
               <div>
@@ -327,12 +387,48 @@ export default function DashboardPage() {
                   onChange={(e) => setNewProductCompany(e.target.value)}
                   placeholder="e.g. Perfora"
                   className="mt-1"
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateProduct()}
+                  onKeyDown={(e) => e.key === "Enter" && !creatingProduct && handleCreateProduct()}
                 />
+              </div>
+
+              {/* Upload Brief */}
+              <div>
+                <Label className="text-[13px] text-[#374151]">Upload brief (optional)</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.md,.txt,.docx,.doc"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setBriefFile(file);
+                    e.target.value = "";
+                  }}
+                />
+                {briefFile ? (
+                  <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-[#eff6ff] border border-[#93c5fd] rounded-lg">
+                    <FileText className="w-4 h-4 text-[#1d4ed8] shrink-0" />
+                    <span className="text-[13px] text-[#1d4ed8] truncate flex-1">{briefFile.name}</span>
+                    <button onClick={() => setBriefFile(null)} className="text-[#6b7280] hover:text-[#111827]">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-3 border-2 border-dashed border-[#d1d5db] rounded-lg text-[#6b7280] hover:border-[#E8713A] hover:text-[#E8713A] transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span className="text-[13px]">Choose file (PDF, MD, DOCX)</span>
+                  </button>
+                )}
+                <p className="text-[11px] text-[#9ca3af] mt-1">
+                  AI will extract fields from the brief after you click Create.
+                </p>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-5">
-              <Button variant="outline" onClick={() => setShowNewProduct(false)}>
+              <Button variant="outline" onClick={() => { setShowNewProduct(false); setBriefFile(null); }}>
                 Cancel
               </Button>
               <Button
@@ -343,7 +439,7 @@ export default function DashboardPage() {
                 {creatingProduct ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                    Creating...
+                    {briefFile ? "Extracting & Creating..." : "Creating..."}
                   </>
                 ) : (
                   "Create"

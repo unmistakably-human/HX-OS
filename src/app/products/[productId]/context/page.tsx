@@ -203,12 +203,21 @@ export default function ContextPage() {
   const [generating, setGenerating] = useState(false);
   const stream = useStream();
 
-  // Load existing context from API
+  // Load existing context from API, pre-fill name/company from product record
   useEffect(() => {
     fetch(`/api/products/${productId}`)
       .then((r) => r.json())
       .then((p) => {
-        if (p.product_context) setCtx(p.product_context);
+        if (p.product_context) {
+          setCtx(p.product_context);
+        } else {
+          // Pre-fill from product-level name/company
+          setCtx((prev) => ({
+            ...prev,
+            productName: p.name || prev.productName,
+            company: p.company || prev.company,
+          }));
+        }
       })
       .catch(() => {});
   }, [productId]);
@@ -238,7 +247,11 @@ export default function ContextPage() {
   }, []);
 
   const fillDemo = useCallback(() => {
-    setCtx(DEMO_CONTEXT);
+    setCtx((prev) => ({
+      ...DEMO_CONTEXT,
+      productName: prev.productName,
+      company: prev.company,
+    }));
   }, []);
 
   // Save context and trigger enrichment
@@ -310,11 +323,11 @@ export default function ContextPage() {
           <div className="space-y-5">
             <div>
               <FieldLabel required>Product name</FieldLabel>
-              <Input value={ctx.productName} onChange={(e) => set("productName", e.target.value)} placeholder="e.g., Agentic Juice, Zepto, SBI Life Portal" />
+              <Input value={ctx.productName} disabled className="bg-[#f4f4f5] text-[#6b7280] cursor-not-allowed mt-1" />
             </div>
             <div>
               <FieldLabel required>Company / Organization</FieldLabel>
-              <Input value={ctx.company} onChange={(e) => set("company", e.target.value)} placeholder="e.g., Perfora Oral Care, Amazon India" />
+              <Input value={ctx.company} disabled className="bg-[#f4f4f5] text-[#6b7280] cursor-not-allowed mt-1" />
             </div>
             <div>
               <FieldLabel required>What type of product?</FieldLabel>

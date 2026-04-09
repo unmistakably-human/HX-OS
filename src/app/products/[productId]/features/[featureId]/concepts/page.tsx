@@ -234,7 +234,7 @@ export default function ConceptsPage() {
   return (
     <div className="flex flex-col h-full">
       <PhaseHeader
-        title="Concept Variations"
+        title="Visual Variations"
         subtitle={feature?.name || "Concepts"}
       />
 

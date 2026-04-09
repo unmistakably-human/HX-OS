@@ -63,6 +63,44 @@ export interface FeatureSummary {
   updated_at: string;
 }
 
+// ═══ NEW: Insights Flow Types ═══
+
+export interface Insight {
+  id: string;
+  category: "user" | "domain" | "competitor";
+  tag: string;
+  headline: string;
+  body: string;
+}
+
+export interface HMWStatement {
+  id: string;
+  question: string;
+  fromInsightId: string;
+}
+
+export interface DesignConcept {
+  name: string;
+  tagline: string;
+  idea: string;
+  solvesFor: string;
+  onThePage: string[];
+  tradeoffs: string[];
+  fromHMW: string;
+}
+
+export interface Baseline {
+  mustHaves: string[];
+  commonlyMissed: string[];
+}
+
+export interface BeyondScreen {
+  touchpoint: string;
+  why: string;
+}
+
+// ═══ Feature (updated with insights flow fields) ═══
+
 export interface Feature {
   id: string;
   product_id: string;
@@ -75,11 +113,28 @@ export interface Feature {
   not_be: string | null;
   additional_context: string | null;
   feature_discovery: string | null;
+
+  // Insights flow
+  insights: Insight[] | null;
+  selected_insights: string[] | null;
+  hmw_statements: HMWStatement[] | null;
+  selected_hmws: string[] | null;
+  design_concepts: DesignConcept[] | null;
+  selected_concepts: string[] | null;
+  baseline: Baseline | null;
+  beyond_screen: BeyondScreen[] | null;
+
+  // Visual variations (wireframes)
   concepts: Concept[] | null;
   chosen_concept: string | null;
   chat_messages: ChatMessage[];
+
+  // Phases
   phase_brief: "locked" | "active" | "complete";
   phase_discovery: "locked" | "active" | "complete";
+  phase_hmw: "locked" | "active" | "complete";
+  phase_design_concepts: "locked" | "active" | "complete";
+  phase_visual: "locked" | "active" | "complete";
   phase_concepts: "locked" | "active" | "complete";
 }
 
