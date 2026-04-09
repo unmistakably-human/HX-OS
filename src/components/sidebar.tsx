@@ -25,6 +25,13 @@ const PRODUCT_PHASES = [
     subtitle: "Research & insights",
     href: (pid: string) => `/products/${pid}/discovery`,
   },
+  {
+    key: "knowledge",
+    num: "03",
+    label: "Knowledge",
+    subtitle: "Insights & research",
+    href: (pid: string) => `/products/${pid}/knowledge`,
+  },
 ];
 
 function getFeaturePhases(pid: string, fid: string) {
@@ -99,8 +106,11 @@ export function Sidebar({ product, productId }: SidebarProps) {
                 const state =
                   phase.key === "context"
                     ? product.phase_context
-                    : product.phase_discovery;
-                const isComplete = state === "complete";
+                    : phase.key === "knowledge"
+                      ? "active"
+                      : product.phase_discovery;
+                // Also check if discovery_insights exist (covers stale phase field)
+                const isComplete = state === "complete" || (phase.key === "discovery" && !!product.discovery_insights);
 
                 return (
                   <Link key={phase.key} href={phase.href(productId)}>
@@ -182,10 +192,12 @@ export function Sidebar({ product, productId }: SidebarProps) {
             const state =
               phase.key === "context"
                 ? product.phase_context
-                : product.phase_discovery;
+                : phase.key === "knowledge"
+                  ? "active"
+                  : product.phase_discovery;
             const isActive = pathname.includes(phase.href(productId));
             const isLocked = state === "locked";
-            const isComplete = state === "complete";
+            const isComplete = state === "complete" || (phase.key === "discovery" && !!product.discovery_insights);
 
             const content = (
               <div

@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, ArrowRight, ArrowLeft, Search } from "lucide-react";
-import type { Feature, Product, Insight, HMWStatement } from "@/lib/types";
+import { Star } from "lucide-react";
+import type { Feature, Product, Insight, HMWStatement, KnowledgeEntry } from "@/lib/types";
 
 const MAX_INSIGHTS = 5;
 const MAX_HMW = 3;
@@ -37,6 +38,7 @@ export default function FeatureInsightsPage() {
   const [selectedInsights, setSelectedInsights] = useState<string[]>([]);
   const [hmwStatements, setHmwStatements] = useState<HMWStatement[]>([]);
   const [selectedHmws, setSelectedHmws] = useState<string[]>([]);
+  const [relatedEntries, setRelatedEntries] = useState<(KnowledgeEntry & { product_name?: string })[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -76,6 +78,16 @@ export default function FeatureInsightsPage() {
     }
     load();
   }, [productId, featureId, router]);
+
+  // Load cross-product related entries when insights are available
+  useEffect(() => {
+    if (!feature || insights.length === 0) return;
+    const query = `${feature.name} ${feature.problem || ""}`;
+    fetch(`/api/knowledge/search?q=${encodeURIComponent(query)}&excludeProduct=${productId}&limit=6`)
+      .then((r) => r.ok ? r.json() : [])
+      .then(setRelatedEntries)
+      .catch(() => {});
+  }, [insights, feature, productId]);
 
   // ── Generate Insights ──
   const generateInsights = useCallback(async () => {
@@ -292,6 +304,32 @@ export default function FeatureInsightsPage() {
                   );
                 })}
               </div>
+
+              {/* Related from other products */}
+              {relatedEntries.length > 0 && (
+                <div className="px-5 pb-6 pt-4 border-t border-[#e5e7eb] mt-4">
+                  <h3 className="text-[13px] font-bold text-[#111827] uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Star className="w-3.5 h-3.5 text-[#F59E0B]" strokeWidth={1.5} />
+                    Related from other products
+                  </h3>
+                  <div className="space-y-2">
+                    {relatedEntries.map((entry) => (
+                      <div key={entry.id} className="p-3 bg-[#fafafa] border border-[#e5e7eb] rounded-xl">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-medium text-[#6366F1] bg-[#6366F1]/10 px-2 py-0.5 rounded">
+                            {entry.product_name}
+                          </span>
+                          <span className="text-[10px] text-[#9ca3af]">
+                            {entry.category.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        <p className="text-[13px] font-semibold text-[#111827] leading-snug">{entry.title}</p>
+                        <p className="text-[12px] text-[#6b7280] mt-0.5">{entry.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Bottom bar */}
               <div className="border-t border-divider bg-surface-frosted backdrop-blur px-5 py-3 flex items-center justify-between">

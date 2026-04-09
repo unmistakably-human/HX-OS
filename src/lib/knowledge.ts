@@ -5,10 +5,21 @@ import type { KnowledgeEntry, Insight, DesignConcept, Baseline, BeyondScreen } f
 // ═══ CRUD ═══
 
 export async function saveKnowledgeEntries(
-  entries: Omit<KnowledgeEntry, "id" | "created_at">[]
+  entries: {
+    product_id: string;
+    feature_id: string | null;
+    source: string;
+    category: string;
+    title: string;
+    content: string;
+    tags: string[];
+    relevance_score: number;
+  }[]
 ): Promise<void> {
   if (entries.length === 0) return;
-  const { error } = await supabase.from("knowledge").insert(entries);
+  // Add defaults for pin fields
+  const withDefaults = entries.map((e) => ({ ...e, is_pinned: false, pinned_at: null }));
+  const { error } = await supabase.from("knowledge").insert(withDefaults);
   if (error) console.error("Failed to save knowledge entries:", error);
 }
 
@@ -91,6 +102,82 @@ export async function getKnowledgeForContext(
   return sections.join("\n\n");
 }
 
+// ═══ PIN/STAR ═══
+
+export async function togglePin(knowledgeId: string): Promise<boolean> {
+  // Get current state
+  const { data: entry } = await supabase
+    .from("knowledge")
+    .select("is_pinned")
+    .eq("id", knowledgeId)
+    .single();
+
+  const newPinned = !entry?.is_pinned;
+  const { error } = await supabase
+    .from("knowledge")
+    .update({
+      is_pinned: newPinned,
+      pinned_at: newPinned ? new Date().toISOString() : null,
+    })
+    .eq("id", knowledgeId);
+
+  if (error) throw error;
+  return newPinned;
+}
+
+export async function getPinnedKnowledge(productId: string): Promise<KnowledgeEntry[]> {
+  const { data, error } = await supabase
+    .from("knowledge")
+    .select("*")
+    .eq("product_id", productId)
+    .eq("is_pinned", true)
+    .order("pinned_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+// ═══ CROSS-PRODUCT SEARCH ═══
+
+export async function searchCrossProduct(
+  query: string,
+  excludeProductId?: string,
+  limit: number = 10
+): Promise<(KnowledgeEntry & { product_name?: string })[]> {
+  const { data, error } = await supabase.rpc("search_knowledge_global", {
+    search_query: query,
+    exclude_product_id: excludeProductId || null,
+    match_count: limit,
+  });
+
+  if (error || !data?.length) return [];
+
+  // Fetch product names for the results
+  const productIds = [...new Set(data.map((d: { product_id: string }) => d.product_id))];
+  const { data: products } = await supabase
+    .from("products")
+    .select("id, name")
+    .in("id", productIds);
+
+  const nameMap: Record<string, string> = {};
+  for (const p of products || []) {
+    nameMap[p.id] = p.name;
+  }
+
+  return data.map((entry: KnowledgeEntry) => ({
+    ...entry,
+    product_name: nameMap[entry.product_id] || "Unknown",
+  }));
+}
+
+export async function getRelatedFromOtherProducts(
+  productId: string,
+  query: string,
+  limit: number = 8
+): Promise<(KnowledgeEntry & { product_name?: string })[]> {
+  return searchCrossProduct(query, productId, limit);
+}
+
 // ═══ EXTRACTION: Enriched PCD ═══
 
 const PCD_EXTRACT_SYSTEM = `Extract 12-15 key knowledge entries from this enriched product context document. Return ONLY valid JSON array.
@@ -163,7 +250,7 @@ export async function extractFromDiscovery(productId: string, deck: Record<strin
       .eq("product_id", productId)
       .eq("source", "discovery");
 
-    const entries: Omit<KnowledgeEntry, "id" | "created_at">[] = [];
+    const entries: Parameters<typeof saveKnowledgeEntries>[0] = [];
     const base = { product_id: productId, feature_id: null, source: "discovery" as const, relevance_score: 1.0 };
 
     // Category insights → domain
@@ -307,7 +394,7 @@ export async function extractFromConcepts(
       .eq("feature_id", featureId)
       .eq("source", "design_concepts");
 
-    const entries: Omit<KnowledgeEntry, "id" | "created_at">[] = [];
+    const entries: Parameters<typeof saveKnowledgeEntries>[0] = [];
     const base = { product_id: productId, feature_id: featureId, source: "design_concepts" as const };
 
     // Concept tradeoffs → principle

@@ -175,7 +175,11 @@ export interface KnowledgeEntry {
   content: string;
   tags: string[];
   relevance_score: number;
+  is_pinned: boolean;
+  pinned_at: string | null;
   created_at: string;
+  // Joined from products table for cross-product display
+  product_name?: string;
 }
 
 export interface ChatMessage {
