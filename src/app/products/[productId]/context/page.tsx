@@ -92,18 +92,18 @@ function RadioCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full flex items-start gap-3 text-left border rounded-lg px-3 py-[9px] transition-colors ${
-        selected ? "border-[#3b82f6] bg-[#eff6ff]" : "border-[#e5e7eb] bg-white hover:border-[#d1d5db]"
+      className={`w-full flex items-start gap-3 text-left border rounded-md px-3 py-[9px] transition-colors ${
+        selected ? "border-action-primary-bg bg-surface-subtle" : "border-divider bg-surface-card hover:border-divider"
       }`}
     >
       <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-        selected ? "border-[#3b82f6]" : "border-[#d1d5db]"
+        selected ? "border-action-primary-bg" : "border-divider"
       }`}>
-        {selected && <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />}
+        {selected && <span className="w-2 h-2 rounded-full bg-action-primary-bg" />}
       </span>
       <div className="min-w-0">
-        <div className="text-[14px] font-medium text-[#111827]">{title}</div>
-        {desc && <div className="text-[12px] text-[#9ca3af] mt-0.5">{desc}</div>}
+        <div className="text-sm font-medium text-content-heading">{title}</div>
+        {desc && <div className="text-xs text-content-muted mt-0.5">{desc}</div>}
       </div>
     </button>
   );
@@ -118,20 +118,20 @@ function CheckCard({
     <button
       type="button"
       onClick={onToggle}
-      className={`w-full flex items-center gap-3 text-left border rounded-lg px-3 py-[9px] transition-colors ${
-        checked ? "border-[#3b82f6] bg-[#eff6ff]" : "border-[#e5e7eb] bg-white hover:border-[#d1d5db]"
+      className={`w-full flex items-center gap-3 text-left border rounded-md px-3 py-[9px] transition-colors ${
+        checked ? "border-action-primary-bg bg-surface-subtle" : "border-divider bg-surface-card hover:border-divider"
       }`}
     >
       <Checkbox checked={checked} onCheckedChange={onToggle} className="pointer-events-none" />
-      <span className="text-[14px] text-[#111827]">{label}</span>
+      <span className="text-sm text-content-heading">{label}</span>
     </button>
   );
 }
 
 function WhyCallout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-[#eff6ff] border-l-2 border-[#93c5fd] rounded-md px-3.5 py-2.5 mb-4">
-      <p className="text-[12px] text-[#1d4ed8]">
+    <div className="bg-surface-subtle border-l-2 border-feedback-info-border rounded-md px-3.5 py-2.5 mb-4">
+      <p className="text-xs text-feedback-info-text">
         <span className="font-bold">Why this matters: </span>
         {children}
       </p>
@@ -146,20 +146,20 @@ function SegmentCard({
 }) {
   const set = (key: keyof UserSegment, val: string) => onChange({ ...seg, [key]: val });
   return (
-    <div className="border border-[#e5e7eb] rounded-xl p-4 bg-white">
+    <div className="border border-divider rounded-[8px] p-4 bg-surface-card">
       <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-[14px] font-semibold text-[#111827]">{label}</h3>
+        <h3 className="text-sm font-semibold text-content-heading">{label}</h3>
         {required && (
-          <span className="text-[10px] font-bold text-[#3b82f6] bg-[#eff6ff] px-1.5 py-0.5 rounded">REQUIRED</span>
+          <span className="text-[10px] font-bold text-feedback-info-text bg-surface-subtle px-1.5 py-0.5 rounded">REQUIRED</span>
         )}
       </div>
       <div className="space-y-3">
         <div>
-          <Label className="text-[12px] text-[#6b7280]">Segment name</Label>
+          <Label className="text-xs text-content-secondary">Segment name</Label>
           <Input value={seg.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g., Working mothers, 28-40" className="mt-1" />
         </div>
         <div>
-          <Label className="text-[12px] text-[#6b7280]">Demographics</Label>
+          <Label className="text-xs text-content-secondary">Demographics</Label>
           <div className="grid grid-cols-2 gap-2 mt-1">
             <Input value={seg.age} onChange={(e) => set("age", e.target.value)} placeholder="Age range" />
             <Input value={seg.gender} onChange={(e) => set("gender", e.target.value)} placeholder="Gender" />
@@ -168,7 +168,7 @@ function SegmentCard({
           </div>
         </div>
         <div>
-          <Label className="text-[12px] text-[#6b7280]">Behaviour</Label>
+          <Label className="text-xs text-content-secondary">Behaviour</Label>
           <Textarea value={seg.behaviour} onChange={(e) => set("behaviour", e.target.value)} rows={3} className="mt-1" />
         </div>
       </div>
@@ -178,7 +178,7 @@ function SegmentCard({
 
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <Label className="text-[13px] font-medium text-[#374151] mb-1.5 block">
+    <Label className="text-body-sm font-medium text-content-label mb-1.5 block">
       {children}{required && <span className="text-red-400 ml-0.5">*</span>}
     </Label>
   );
@@ -186,17 +186,17 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
 
 function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
   return (
-    <div className="border border-[#e5e7eb] rounded-xl p-4 bg-white space-y-4 mt-3">
+    <div className="border border-divider rounded-[8px] p-4 bg-surface-card space-y-4 mt-3">
       {/* Brand Colors */}
       {tokens.brandColors.length > 0 && (
         <div>
-          <div className="text-[12px] font-semibold text-[#374151] mb-2">Brand Colors</div>
+          <div className="text-xs font-semibold text-content-label mb-2">Brand Colors</div>
           <div className="flex gap-3">
             {tokens.brandColors.map((c) => (
               <div key={c.hex} className="text-center">
-                <div className="w-12 h-12 rounded-lg border border-[#e5e7eb] shadow-sm" style={{ backgroundColor: c.hex }} />
-                <div className="text-[10px] text-[#6b7280] mt-1.5">{c.name}</div>
-                <div className="text-[10px] font-mono text-[#9ca3af]">{c.hex}</div>
+                <div className="w-12 h-12 rounded-md border border-divider shadow-sm" style={{ backgroundColor: c.hex }} />
+                <div className="text-[10px] text-content-secondary mt-1.5">{c.name}</div>
+                <div className="text-[10px] font-mono text-content-muted">{c.hex}</div>
               </div>
             ))}
           </div>
@@ -205,19 +205,19 @@ function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
       {/* Gradient */}
       {tokens.gradient && (
         <div>
-          <div className="text-[12px] font-semibold text-[#374151] mb-2">Gradient</div>
-          <div className="h-8 rounded-lg border border-[#e5e7eb]" style={{ background: tokens.gradient }} />
+          <div className="text-xs font-semibold text-content-label mb-2">Gradient</div>
+          <div className="h-8 rounded-md border border-divider" style={{ background: tokens.gradient }} />
         </div>
       )}
       {/* Neutrals */}
       {tokens.neutrals.length > 0 && (
         <div>
-          <div className="text-[12px] font-semibold text-[#374151] mb-2">Neutrals</div>
+          <div className="text-xs font-semibold text-content-label mb-2">Neutrals</div>
           <div className="flex gap-2">
             {tokens.neutrals.map((c) => (
               <div key={c.hex} className="text-center">
-                <div className="w-10 h-10 rounded-lg border border-[#e5e7eb]" style={{ backgroundColor: c.hex }} />
-                <div className="text-[10px] font-mono text-[#9ca3af] mt-1">{c.hex}</div>
+                <div className="w-10 h-10 rounded-md border border-divider" style={{ backgroundColor: c.hex }} />
+                <div className="text-[10px] font-mono text-content-muted mt-1">{c.hex}</div>
               </div>
             ))}
           </div>
@@ -226,12 +226,12 @@ function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
       {/* Typography */}
       {tokens.typography.length > 0 && (
         <div>
-          <div className="text-[12px] font-semibold text-[#374151] mb-2">Typography</div>
+          <div className="text-xs font-semibold text-content-label mb-2">Typography</div>
           <div className="space-y-1.5">
             {tokens.typography.map((t) => (
-              <div key={t.level} className="flex items-baseline gap-3 text-[12px]">
-                <span className="font-semibold text-[#111827] w-14 shrink-0">{t.level}</span>
-                <span className="text-[#6b7280]">{t.font} {t.weight}{t.size ? ` / ${t.size}` : ""}</span>
+              <div key={t.level} className="flex items-baseline gap-3 text-xs">
+                <span className="font-semibold text-content-heading w-14 shrink-0">{t.level}</span>
+                <span className="text-content-secondary">{t.font} {t.weight}{t.size ? ` / ${t.size}` : ""}</span>
               </div>
             ))}
           </div>
@@ -244,9 +244,9 @@ function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
 function SectionHeader({ title, optional }: { title: string; optional?: boolean }) {
   return (
     <div className="flex items-center gap-2 mt-2">
-      <h3 className="text-[14px] font-semibold text-[#111827]">{title}</h3>
+      <h3 className="text-sm font-semibold text-content-heading">{title}</h3>
       {optional && (
-        <span className="text-[10px] font-medium text-[#9ca3af] bg-[#f4f4f5] px-1.5 py-0.5 rounded">OPTIONAL</span>
+        <span className="text-[10px] font-medium text-content-muted bg-surface-page-alt px-1.5 py-0.5 rounded">OPTIONAL</span>
       )}
     </div>
   );
@@ -475,23 +475,23 @@ export default function ContextPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 text-[#3b82f6] animate-spin" />
-          <h2 className="text-[18px] font-bold text-[#111827]">
+          <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
+          <h2 className="text-h2 font-bold text-content-heading">
             Generating your Product Context Document...
           </h2>
         </div>
-        <p className="text-[13px] text-[#9ca3af]">
+        <p className="text-body-sm text-content-muted">
           Researching your product, competitors, and market with web search
         </p>
         {stream.text && (
-          <div className="w-full max-w-2xl mt-4 max-h-64 overflow-y-auto rounded-lg border border-[#e5e7eb] bg-[#fafafa] p-4">
-            <pre className="text-[12px] text-[#6b7280] whitespace-pre-wrap font-mono leading-relaxed opacity-60">
+          <div className="w-full max-w-2xl mt-4 max-h-64 overflow-y-auto rounded-[8px] border border-divider bg-surface-subtle p-4">
+            <pre className="text-xs text-content-secondary whitespace-pre-wrap font-mono leading-relaxed opacity-60">
               {stream.text.slice(-2000)}
             </pre>
           </div>
         )}
         {stream.error && (
-          <div className="text-[13px] text-red-500 mt-2">
+          <div className="text-body-sm text-red-500 mt-2">
             Error: {stream.error}
             <Button variant="outline" size="sm" className="ml-3" onClick={() => { setGenerating(false); stream.reset(); }}>
               Try again
@@ -509,11 +509,11 @@ export default function ContextPage() {
           <div className="space-y-5">
             <div>
               <FieldLabel required>Product name</FieldLabel>
-              <Input value={ctx.productName} disabled className="bg-[#f4f4f5] text-[#6b7280] cursor-not-allowed mt-1" />
+              <Input value={ctx.productName} disabled className="bg-surface-page-alt text-content-secondary cursor-not-allowed mt-1" />
             </div>
             <div>
               <FieldLabel required>Company / Organization</FieldLabel>
-              <Input value={ctx.company} disabled className="bg-[#f4f4f5] text-[#6b7280] cursor-not-allowed mt-1" />
+              <Input value={ctx.company} disabled className="bg-surface-page-alt text-content-secondary cursor-not-allowed mt-1" />
             </div>
             <div>
               <FieldLabel required>What type of product?</FieldLabel>
@@ -651,9 +651,9 @@ export default function ContextPage() {
               <div className="space-y-3">
                 {figmaConnected ? (
                   <>
-                    <div className="flex items-center gap-2 text-[13px]">
-                      <span className="flex items-center gap-1.5 text-[#065f46] bg-[#ecfdf5] px-2.5 py-1 rounded-md font-medium text-[12px]">
-                        <Check className="w-3.5 h-3.5" /> Figma connected
+                    <div className="flex items-center gap-2 text-body-sm">
+                      <span className="flex items-center gap-1.5 text-hx-green-dark bg-hx-green-light px-2.5 py-1 rounded-md font-medium text-xs">
+                        <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> Figma connected
                       </span>
                     </div>
                     <div>
@@ -668,27 +668,27 @@ export default function ContextPage() {
                         <Button
                           onClick={handleExtractFigma}
                           disabled={!figmaFileUrl || extracting}
-                          className="bg-[#111827] hover:bg-[#1f2937] text-white text-[12px] shrink-0"
+                          className="text-xs shrink-0"
                         >
-                          {extracting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Extracting...</> : "Extract Variables"}
+                          {extracting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" strokeWidth={1.5} /> Extracting...</> : "Extract Variables"}
                         </Button>
                       </div>
                     </div>
                   </>
                 ) : (
-                  <div className="border-2 border-dashed border-[#e5e7eb] rounded-xl p-6 text-center">
-                    <ExternalLink className="w-8 h-8 text-[#9ca3af] mx-auto mb-3" />
-                    <p className="text-[14px] font-medium text-[#111827] mb-1">Connect your Figma account</p>
-                    <p className="text-[12px] text-[#9ca3af] mb-4">We&apos;ll extract design tokens and variables from your file</p>
+                  <div className="border-2 border-dashed border-divider rounded-[8px] p-6 text-center">
+                    <ExternalLink className="w-8 h-8 text-content-muted mx-auto mb-3" strokeWidth={1.5} />
+                    <p className="text-sm font-medium text-content-heading mb-1">Connect your Figma account</p>
+                    <p className="text-xs text-content-muted mb-4">We&apos;ll extract design tokens and variables from your file</p>
                     <Button
                       onClick={() => window.location.href = `/api/auth/figma?productId=${productId}`}
-                      className="bg-[#111827] hover:bg-[#1f2937] text-white text-[13px] gap-1.5"
+                      className="text-body-sm gap-1.5"
                     >
-                      <ExternalLink className="w-4 h-4" /> Connect Figma
+                      <ExternalLink className="w-4 h-4" strokeWidth={1.5} /> Connect Figma
                     </Button>
                   </div>
                 )}
-                {extractError && <p className="text-[13px] text-red-500">{extractError}</p>}
+                {extractError && <p className="text-body-sm text-red-500">{extractError}</p>}
                 {ctx.designTokens?.source === "figma" && <DesignTokensPreview tokens={ctx.designTokens} />}
               </div>
             )}
@@ -718,32 +718,32 @@ export default function ContextPage() {
                     const file = e.dataTransfer.files?.[0];
                     if (file) handleDsFileUpload(file);
                   }}
-                  className={`w-full border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-                    dragOver ? "border-[#3b82f6] bg-[#eff6ff]" : "border-[#e5e7eb] hover:border-[#d1d5db]"
+                  className={`w-full border-2 border-dashed rounded-[8px] p-8 text-center transition-colors ${
+                    dragOver ? "border-action-primary-bg bg-surface-subtle" : "border-divider hover:border-divider"
                   }`}
                 >
                   {extracting ? (
                     <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="w-6 h-6 text-[#E8713A] animate-spin" />
-                      <p className="text-[13px] text-[#6b7280]">Extracting design tokens from {dsFile?.name}...</p>
+                      <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
+                      <p className="text-body-sm text-content-secondary">Extracting design tokens from {dsFile?.name}...</p>
                     </div>
                   ) : (
                     <>
                       <div className="flex items-center justify-center gap-3 mb-3">
-                        <Upload className="w-6 h-6 text-[#9ca3af]" />
-                        <ImageIcon className="w-6 h-6 text-[#9ca3af]" />
+                        <Upload className="w-6 h-6 text-content-muted" strokeWidth={1.5} />
+                        <ImageIcon className="w-6 h-6 text-content-muted" strokeWidth={1.5} />
                       </div>
-                      <p className="text-[14px] font-medium text-[#111827] mb-1">
+                      <p className="text-sm font-medium text-content-heading mb-1">
                         {dsFile ? dsFile.name : "Drop file or click to upload"}
                       </p>
-                      <p className="text-[12px] text-[#9ca3af]">
+                      <p className="text-xs text-content-muted">
                         JSON tokens, style guide, PDF, or screenshots (PNG, JPG)
                       </p>
-                      <p className="text-[11px] text-[#d1d5db] mt-1">AI will extract colors and fonts automatically</p>
+                      <p className="text-overline text-divider mt-1">AI will extract colors and fonts automatically</p>
                     </>
                   )}
                 </button>
-                {extractError && <p className="text-[13px] text-red-500">{extractError}</p>}
+                {extractError && <p className="text-body-sm text-red-500">{extractError}</p>}
                 {ctx.designTokens?.source === "upload" && <DesignTokensPreview tokens={ctx.designTokens} />}
               </div>
             )}
@@ -766,18 +766,18 @@ export default function ContextPage() {
             {ctx.dsChoice === "propose" && (
               <div className="space-y-3">
                 {!ctx.designTokens || ctx.designTokens.source !== "ai-proposed" ? (
-                  <div className="border-2 border-dashed border-[#e5e7eb] rounded-xl p-6 text-center">
-                    <Wand2 className="w-8 h-8 text-[#E8713A] mx-auto mb-3" />
-                    <p className="text-[14px] font-medium text-[#111827] mb-1">Generate a style guide</p>
-                    <p className="text-[12px] text-[#9ca3af] mb-4">
+                  <div className="border-2 border-dashed border-divider rounded-[8px] p-6 text-center">
+                    <Wand2 className="w-8 h-8 text-action-primary-bg mx-auto mb-3" strokeWidth={1.5} />
+                    <p className="text-sm font-medium text-content-heading mb-1">Generate a style guide</p>
+                    <p className="text-xs text-content-muted mb-4">
                       AI will create a color palette (2 brand, 1 gradient, 5 neutrals) and 5-level typography system
                     </p>
                     <Button
                       onClick={handleProposeStyle}
                       disabled={proposing}
-                      className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[13px] gap-1.5"
+                      className="text-body-sm gap-1.5"
                     >
-                      {proposing ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Generating...</> : <><Wand2 className="w-4 h-4" /> Generate Style Guide</>}
+                      {proposing ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" strokeWidth={1.5} /> Generating...</> : <><Wand2 className="w-4 h-4" strokeWidth={1.5} /> Generate Style Guide</>}
                     </Button>
                   </div>
                 ) : (
@@ -788,14 +788,14 @@ export default function ContextPage() {
                         onClick={handleProposeStyle}
                         disabled={proposing}
                         variant="outline"
-                        className="text-[12px] gap-1.5"
+                        className="text-xs gap-1.5"
                       >
-                        {proposing ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Regenerating...</> : <><Wand2 className="w-3.5 h-3.5" /> Regenerate</>}
+                        {proposing ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" strokeWidth={1.5} /> Regenerating...</> : <><Wand2 className="w-3.5 h-3.5" strokeWidth={1.5} /> Regenerate</>}
                       </Button>
                     </div>
                   </>
                 )}
-                {extractError && <p className="text-[13px] text-red-500">{extractError}</p>}
+                {extractError && <p className="text-body-sm text-red-500">{extractError}</p>}
               </div>
             )}
           </div>
@@ -811,12 +811,12 @@ export default function ContextPage() {
         title="Product Context"
         step={{ current: step + 1, total: 5 }}
         actions={
-          <Button variant="outline" size="sm" className="text-[12px] text-[#6b7280]" onClick={fillDemo}>
+          <Button variant="outline" size="sm" className="text-xs text-content-secondary" onClick={fillDemo}>
             Fill demo data
           </Button>
         }
       />
-      <div className="flex items-center gap-1 px-5 py-2 border-b border-[#e5e7eb] bg-white">
+      <div className="flex items-center gap-1 px-5 py-2 border-b border-divider bg-surface-card">
         {STEP_LABELS.map((label, i) => {
           const isPast = i < step;
           const isCurrent = i === step;
@@ -826,12 +826,12 @@ export default function ContextPage() {
               key={label}
               onClick={() => { if (isPast || isCurrent) setStep(i); }}
               disabled={isFuture}
-              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-body-sm font-medium transition-colors ${
                 isCurrent
-                  ? "bg-[#eff6ff] text-[#1d4ed8]"
+                  ? "bg-surface-subtle text-feedback-info-text"
                   : isPast
-                  ? "text-[#6b7280] hover:bg-[#f4f4f5] cursor-pointer"
-                  : "text-[#d1d5db] cursor-not-allowed"
+                  ? "text-content-secondary hover:bg-surface-page-alt cursor-pointer"
+                  : "text-divider cursor-not-allowed"
               }`}
             >
               {label}
@@ -844,22 +844,22 @@ export default function ContextPage() {
           {renderStep()}
         </div>
       </div>
-      <div className="flex items-center justify-between px-5 py-3 border-t border-[#e5e7eb] bg-white">
+      <div className="flex items-center justify-between px-5 py-3 border-t border-divider bg-surface-card">
         <div>
           {step > 0 && (
-            <button onClick={() => setStep(step - 1)} className="flex items-center gap-1.5 text-[13px] text-[#6b7280] hover:text-[#111827] transition-colors">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back
+            <button onClick={() => setStep(step - 1)} className="flex items-center gap-1.5 text-body-sm text-content-secondary hover:text-content-heading transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} /> Back
             </button>
           )}
         </div>
         <div>
           {step < 4 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={!isStepValid(step)} className="bg-[#111827] hover:bg-[#1f2937] text-white text-[13px] gap-1.5">
-              Continue <ArrowRight className="w-3.5 h-3.5" />
+            <Button onClick={() => setStep(step + 1)} disabled={!isStepValid(step)} className="text-body-sm gap-1.5">
+              Continue <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           ) : (
-            <Button onClick={generatePcd} className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[13px] gap-1.5">
-              Generate PCD <Check className="w-3.5 h-3.5" />
+            <Button onClick={generatePcd} className="text-body-sm gap-1.5">
+              Generate PCD <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           )}
         </div>

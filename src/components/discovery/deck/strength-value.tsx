@@ -14,7 +14,7 @@ export function StrengthValue({ value }: StrengthValueProps) {
           ? "text-red-700 font-medium"
           : good
             ? "text-emerald-700 font-medium"
-            : "text-[#111827]"
+            : "text-content-primary"
       }
     >
       {value}

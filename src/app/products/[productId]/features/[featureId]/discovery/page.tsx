@@ -11,9 +11,9 @@ const MAX_INSIGHTS = 5;
 const MAX_HMW = 3;
 
 const CATEGORY_CONFIG = [
-  { key: "user" as const, label: "User Behaviour", icon: "U", color: "#10B981", dimColor: "rgba(16,185,129,0.08)" },
-  { key: "domain" as const, label: "Domain / Category", icon: "D", color: "#F59E0B", dimColor: "rgba(245,158,11,0.08)" },
-  { key: "competitor" as const, label: "Benchmarks", icon: "B", color: "#3B82F6", dimColor: "rgba(59,130,246,0.08)" },
+  { key: "user" as const, label: "User Behaviour", icon: "U", color: "var(--accent-green)", dimColor: "var(--accent-green-light)" },
+  { key: "domain" as const, label: "Domain / Category", icon: "D", color: "var(--accent-amber)", dimColor: "var(--raw-warning-light)" },
+  { key: "competitor" as const, label: "Benchmarks", icon: "B", color: "var(--accent-blue)", dimColor: "var(--accent-blue-light)" },
 ];
 
 export default function FeatureInsightsPage() {
@@ -154,11 +154,11 @@ export default function FeatureInsightsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full text-[#9ca3af]"><Loader2 className="w-5 h-5 animate-spin mr-2" />Loading...</div>;
+    return <div className="flex items-center justify-center h-full text-content-muted"><Loader2 className="w-5 h-5 animate-spin mr-2" strokeWidth={1.5} />Loading...</div>;
   }
 
   if (!product || !feature) {
-    return <div className="flex items-center justify-center h-full text-[#9ca3af]">Feature not found</div>;
+    return <div className="flex items-center justify-center h-full text-content-muted">Feature not found</div>;
   }
 
   if (!product.enriched_pcd) {
@@ -167,7 +167,7 @@ export default function FeatureInsightsPage() {
         <PhaseHeader title="Feature Insights" subtitle={feature.name} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
-            <p className="text-[14px] text-[#6b7280] mb-4">Complete product context first.</p>
+            <p className="text-sm text-content-secondary mb-4">Complete product context first.</p>
             <Button onClick={() => router.push(`/products/${productId}/context`)} variant="outline">Go to Product Context</Button>
           </div>
         </div>
@@ -191,17 +191,17 @@ export default function FeatureInsightsPage() {
       {step === 0 && !generating && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
-            <div className="w-14 h-14 rounded-full bg-[#eff6ff] flex items-center justify-center mx-auto mb-4">
-              <Search className="w-6 h-6 text-[#3b82f6]" />
+            <div className="w-14 h-14 rounded-full bg-feedback-info-bg flex items-center justify-center mx-auto mb-4">
+              <Search className="w-6 h-6 text-feedback-info-text" strokeWidth={1.5} />
             </div>
-            <h2 className="text-[18px] font-bold text-[#111827] mb-2">Generate Insights</h2>
-            <p className="text-[14px] text-[#6b7280] mb-6">
+            <h2 className="text-h2 font-bold text-content-heading mb-2">Generate Insights</h2>
+            <p className="text-sm text-content-secondary mb-6">
               AI will research and generate insights across 3 categories for &ldquo;{feature.name}&rdquo;.
             </p>
-            <Button onClick={generateInsights} className="bg-[#E8713A] hover:bg-[#d4652f] text-white gap-1.5">
-              <Search className="w-4 h-4" /> Generate Insights
+            <Button onClick={generateInsights} className="gap-1.5">
+              <Search className="w-4 h-4" strokeWidth={1.5} /> Generate Insights
             </Button>
-            {error && <p className="text-[13px] text-red-500 mt-3">{error}</p>}
+            {error && <p className="text-body-sm text-feedback-error-text mt-3">{error}</p>}
           </div>
         </div>
       )}
@@ -209,13 +209,13 @@ export default function FeatureInsightsPage() {
       {/* Generating state */}
       {generating && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <Loader2 className="w-6 h-6 text-[#E8713A] animate-spin" />
-          <p className="text-[14px] text-[#4b5563]">
+          <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
+          <p className="text-sm text-content-secondary">
             {step === 0 ? "Generating insights..." : "Generating HMW statements..."}
           </p>
-          <p className="text-[12px] text-[#9ca3af]">This takes 15-30 seconds</p>
+          <p className="text-xs text-content-muted">This takes 15-30 seconds</p>
           {error && (
-            <div className="text-[13px] text-red-500 mt-2">
+            <div className="text-body-sm text-feedback-error-text mt-2">
               Error: {error}
               <Button variant="outline" size="sm" className="ml-3" onClick={() => setGenerating(false)}>Dismiss</Button>
             </div>
@@ -227,20 +227,20 @@ export default function FeatureInsightsPage() {
       {step >= 1 && !generating && (
         <>
           {/* Stepper */}
-          <div className="flex gap-0 px-5 py-3 border-b border-[#e5e7eb] bg-white">
+          <div className="flex gap-0 px-5 py-3 border-b border-divider bg-white">
             {stepLabels.map((s, i) => {
               const active = step === s.n;
               const done = step > s.n;
               return (
-                <div key={i} className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ background: active ? "#f4f4f5" : "transparent" }}>
-                  <div className={`w-7 h-7 rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${done ? "bg-[#065f46] text-white" : active ? "bg-[#18181b] text-white" : "bg-[#f4f4f5] text-[#9ca3af]"}`}>
-                    {done ? <Check className="w-3.5 h-3.5" /> : s.n}
+                <div key={i} className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ background: active ? "var(--surface-page-alt)" : "transparent" }}>
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center text-overline font-bold shrink-0 ${done ? "bg-hx-green-dark text-content-on-dark" : active ? "bg-action-primary-bg text-content-on-dark" : "bg-surface-subtle text-content-muted"}`}>
+                    {done ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> : s.n}
                   </div>
                   <div>
-                    <div className={`text-[12px] font-semibold ${active ? "text-[#18181b]" : "text-[#9ca3af]"}`}>{s.label}</div>
-                    <div className="text-[10px] text-[#9ca3af]">{s.sub}</div>
+                    <div className={`text-xs font-semibold ${active ? "text-content-heading" : "text-content-muted"}`}>{s.label}</div>
+                    <div className="text-overline text-content-muted">{s.sub}</div>
                   </div>
-                  {i < stepLabels.length - 1 && <span className="ml-auto text-[#d1d5db]">&rsaquo;</span>}
+                  {i < stepLabels.length - 1 && <span className="ml-auto text-content-muted">&rsaquo;</span>}
                 </div>
               );
             })}
@@ -250,18 +250,18 @@ export default function FeatureInsightsPage() {
           {step === 1 && (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Category tabs */}
-              <div className="flex gap-2 px-5 py-3 border-b border-[#e5e7eb]">
+              <div className="flex gap-2 px-5 py-3 border-b border-divider">
                 {CATEGORY_CONFIG.map((c, i) => {
                   const active = catPage === i;
                   const count = selectedInsights.filter((id) => insights.filter((ins) => ins.category === c.key).some((ins) => ins.id === id)).length;
                   return (
                     <button key={i} onClick={() => setCatPage(i)}
-                      className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${active ? "border-current" : "border-transparent bg-[#f4f4f5]"}`}
+                      className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-all ${active ? "border-current" : "border-transparent bg-surface-subtle"}`}
                       style={active ? { background: c.dimColor, borderColor: c.color + "40", color: c.color } : {}}
                     >
-                      <span className="text-[12px] font-semibold" style={active ? { color: c.color } : { color: "#6b7280" }}>{c.label}</span>
+                      <span className="text-xs font-semibold" style={active ? { color: c.color } : { color: "var(--content-secondary)" }}>{c.label}</span>
                       {count > 0 && (
-                        <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: c.color }}>{count}</span>
+                        <span className="text-overline font-bold text-content-on-dark px-2 py-0.5 rounded-full" style={{ background: c.color }}>{count}</span>
                       )}
                     </button>
                   );
@@ -275,32 +275,32 @@ export default function FeatureInsightsPage() {
                   const disabled = !selected && selectedInsights.length >= MAX_INSIGHTS;
                   return (
                     <button key={ins.id} onClick={() => !disabled && toggleInsight(ins.id)}
-                      className={`w-full text-left p-5 rounded-2xl border-2 transition-all relative ${selected ? "border-current shadow-sm" : disabled ? "border-[#e5e7eb] opacity-40 cursor-not-allowed" : "border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+                      className={`w-full text-left p-5 rounded-2xl border-2 transition-all relative ${selected ? "border-current shadow-sm" : disabled ? "border-divider opacity-40 cursor-not-allowed" : "border-divider hover:border-divider"}`}
                       style={selected ? { borderColor: cat.color, background: cat.dimColor } : {}}
                     >
-                      <div className={`absolute top-4 right-4 w-6 h-6 rounded-md flex items-center justify-center text-[12px] font-bold transition-all ${selected ? "text-white" : "border-2 border-[#e5e7eb]"}`}
+                      <div className={`absolute top-4 right-4 w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold transition-all ${selected ? "text-content-on-dark" : "border-2 border-divider"}`}
                         style={selected ? { background: cat.color } : {}}>
                         {selected && "✓"}
                       </div>
-                      <span className="inline-block text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md mb-3"
+                      <span className="inline-block text-overline font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md mb-3"
                         style={{ color: cat.color, background: cat.dimColor }}>
                         {ins.tag}
                       </span>
-                      <div className="text-[15px] font-bold text-[#111827] leading-snug mb-2 pr-8">{ins.headline}</div>
-                      <div className="text-[13px] text-[#6b7280] leading-relaxed">{ins.body}</div>
+                      <div className="text-h3 font-bold text-content-heading leading-snug mb-2 pr-8">{ins.headline}</div>
+                      <div className="text-body-sm text-content-secondary leading-relaxed">{ins.body}</div>
                     </button>
                   );
                 })}
               </div>
 
               {/* Bottom bar */}
-              <div className="border-t border-[#e5e7eb] bg-white/90 backdrop-blur px-5 py-3 flex items-center justify-between">
+              <div className="border-t border-divider bg-surface-frosted backdrop-blur px-5 py-3 flex items-center justify-between">
                 <div>
-                  <span className="text-[20px] font-bold text-[#18181b]">{selectedInsights.length}</span>
-                  <span className="text-[13px] text-[#9ca3af] ml-1.5">/ {MAX_INSIGHTS} insights</span>
+                  <span className="text-h2 font-bold text-content-heading">{selectedInsights.length}</span>
+                  <span className="text-body-sm text-content-muted ml-1.5">/ {MAX_INSIGHTS} insights</span>
                 </div>
-                <Button onClick={generateHmws} disabled={selectedInsights.length === 0} className="bg-[#18181b] hover:bg-[#333] text-white">
-                  Generate HMWs <ArrowRight className="w-4 h-4 ml-1" />
+                <Button onClick={generateHmws} disabled={selectedInsights.length === 0} className="bg-action-primary-bg hover:bg-action-primary-hover text-content-on-dark">
+                  Generate HMWs <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
                 </Button>
               </div>
             </div>
@@ -310,8 +310,8 @@ export default function FeatureInsightsPage() {
           {step === 2 && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="px-5 pt-5 pb-3">
-                <h2 className="text-[20px] font-bold text-[#111827]">How Might We...</h2>
-                <p className="text-[13px] text-[#6b7280] mt-1">
+                <h2 className="text-h1 font-bold text-content-heading">How Might We...</h2>
+                <p className="text-body-sm text-content-secondary mt-1">
                   {hmwStatements.length} questions generated. Select up to {MAX_HMW} to generate concepts.
                 </p>
               </div>
@@ -324,31 +324,31 @@ export default function FeatureInsightsPage() {
                   const parentCat = parentInsight ? CATEGORY_CONFIG.find((c) => c.key === parentInsight.category) : null;
                   return (
                     <button key={hmw.id} onClick={() => !disabled && toggleHmw(hmw.id)}
-                      className={`w-full text-left p-5 rounded-2xl border-2 transition-all relative ${selected ? "border-[#8B5CF6] bg-[rgba(139,92,246,0.06)] shadow-sm" : disabled ? "border-[#e5e7eb] opacity-40 cursor-not-allowed" : "border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+                      className={`w-full text-left p-5 rounded-2xl border-2 transition-all relative ${selected ? "border-hx-purple bg-hx-purple/5 shadow-sm" : disabled ? "border-divider opacity-40 cursor-not-allowed" : "border-divider hover:border-divider"}`}
                     >
-                      <div className={`absolute top-4 right-4 w-6 h-6 rounded-md flex items-center justify-center text-[12px] font-bold ${selected ? "bg-[#8B5CF6] text-white" : "border-2 border-[#e5e7eb]"}`}>
+                      <div className={`absolute top-4 right-4 w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${selected ? "bg-hx-purple text-content-on-dark" : "border-2 border-divider"}`}>
                         {selected && "✓"}
                       </div>
                       {parentCat && (
-                        <span className="inline-block text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md mb-3"
+                        <span className="inline-block text-overline font-semibold tracking-wider uppercase px-2.5 py-1 rounded-md mb-3"
                           style={{ color: parentCat.color, background: parentCat.dimColor }}>
                           {parentInsight?.tag}
                         </span>
                       )}
-                      <div className="text-[14px] font-semibold text-[#111827] leading-snug pr-8">{hmw.question}</div>
+                      <div className="text-sm font-semibold text-content-heading leading-snug pr-8">{hmw.question}</div>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="border-t border-[#e5e7eb] bg-white/90 backdrop-blur px-5 py-3 flex items-center justify-between">
+              <div className="border-t border-divider bg-surface-frosted backdrop-blur px-5 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={() => setStep(1)}><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back</Button>
-                  <span className="text-[20px] font-bold text-[#8B5CF6]">{selectedHmws.length}</span>
-                  <span className="text-[13px] text-[#9ca3af]">/ {MAX_HMW} HMWs</span>
+                  <Button variant="outline" size="sm" onClick={() => setStep(1)}><ArrowLeft className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Back</Button>
+                  <span className="text-h2 font-bold text-hx-purple">{selectedHmws.length}</span>
+                  <span className="text-body-sm text-content-muted">/ {MAX_HMW} HMWs</span>
                 </div>
-                <Button onClick={handleContinueToConcepts} disabled={selectedHmws.length === 0} className="bg-[#8B5CF6] hover:bg-[#7c3aed] text-white">
-                  Continue to Concepts <ArrowRight className="w-4 h-4 ml-1" />
+                <Button onClick={handleContinueToConcepts} disabled={selectedHmws.length === 0} className="bg-hx-purple hover:bg-hx-purple/90 text-content-on-dark">
+                  Continue to Concepts <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
                 </Button>
               </div>
             </div>

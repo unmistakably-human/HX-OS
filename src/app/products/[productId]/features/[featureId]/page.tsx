@@ -85,7 +85,7 @@ export default function FeatureBriefPage() {
 
   if (!loaded) {
     return (
-      <div className="flex items-center justify-center h-full text-[#9ca3af]">
+      <div className="flex items-center justify-center h-full text-content-muted">
         Loading...
       </div>
     );
@@ -97,8 +97,8 @@ export default function FeatureBriefPage() {
         title="Feature Brief"
         subtitle="Define what screen or flow to design"
         actions={
-          <Button variant="outline" size="sm" className="text-[12px] text-[#6b7280]" onClick={fillDemo}>
-            <Sparkles className="w-3.5 h-3.5 mr-1" />
+          <Button variant="outline" size="sm" className="text-xs text-content-secondary" onClick={fillDemo}>
+            <Sparkles className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
             Fill demo data
           </Button>
         }
@@ -106,11 +106,11 @@ export default function FeatureBriefPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-[600px] mx-auto space-y-5">
           <div>
-            <Label className="text-[13px] font-medium text-[#374151]">Feature name *</Label>
+            <Label className="text-[13px] font-medium text-content-label">Feature name *</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Product Detail Page" className="mt-1" />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-[#374151] mb-2 block">Type</Label>
+            <Label className="text-[13px] font-medium text-content-label mb-2 block">Type</Label>
             <RadioGroup value={type} onValueChange={(v) => setType(v as "screen" | "flow")}>
               <div className="flex gap-6">
                 <div className="flex items-center gap-2">
@@ -125,29 +125,29 @@ export default function FeatureBriefPage() {
             </RadioGroup>
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-[#374151]">Problem statement *</Label>
+            <Label className="text-[13px] font-medium text-content-label">Problem statement *</Label>
             <Textarea value={problem} onChange={(e) => setProblem(e.target.value)} rows={4} placeholder="What problem does this feature solve?" className="mt-1" />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-[#374151]">Must-have elements *</Label>
+            <Label className="text-[13px] font-medium text-content-label">Must-have elements *</Label>
             <Textarea value={mustHave} onChange={(e) => setMustHave(e.target.value)} rows={4} placeholder="What elements must appear?" className="mt-1" />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-[#374151]">Should NOT be</Label>
+            <Label className="text-[13px] font-medium text-content-label">Should NOT be</Label>
             <Textarea value={notBe} onChange={(e) => setNotBe(e.target.value)} rows={3} placeholder="What should this feature avoid?" className="mt-1" />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-[#374151]">Additional context</Label>
+            <Label className="text-[13px] font-medium text-content-label">Additional context</Label>
             <Textarea value={context} onChange={(e) => setContext(e.target.value)} rows={3} placeholder="Any other relevant context..." className="mt-1" />
           </div>
           <div className="pt-3">
             <Button
               onClick={handleSubmit}
               disabled={!name || !problem || !mustHave || saving}
-              className="bg-[#E8713A] hover:bg-[#d4652f] text-white gap-1.5"
+              className="gap-1.5"
             >
               {saving ? "Saving..." : "Save & Continue"}
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           </div>
         </div>

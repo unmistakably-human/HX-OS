@@ -9,7 +9,7 @@ import { Pill } from "./pill";
 import { DeckLabel, DeckHeading, DeckSubheading } from "./deck-typography";
 
 function B({ children }: { children: ReactNode }) {
-  return <span className="font-medium text-[#111827]">{children}</span>;
+  return <span className="font-medium text-content-heading">{children}</span>;
 }
 
 export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
@@ -24,21 +24,21 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
   pages.push(
     <div key="cover">
       <DeckLabel t="Cover" />
-      <div className="text-[19px] font-medium text-[#111827] mb-2.5 leading-snug">
+      <div className="text-h1 font-medium text-content-heading mb-2.5 leading-snug">
         {d.title || "Insights Deck"}
       </div>
-      <div className="text-[14px] text-[#6b7280] mb-4 leading-relaxed">
+      <div className="text-sm text-content-secondary mb-4 leading-relaxed">
         {d.subtitle}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
         {(d.metrics || []).map((m, i) => (
-          <div key={i} className="bg-[#f4f4f5] rounded-lg px-3 py-2.5">
-            <div className="text-[10px] text-[#9ca3af]">{m.label}</div>
-            <div className="text-[18px] font-medium text-[#111827]">{m.value}</div>
+          <div key={i} className="bg-surface-subtle rounded-lg px-3 py-2.5">
+            <div className="text-overline text-content-muted">{m.label}</div>
+            <div className="text-h3 font-medium text-content-heading">{m.value}</div>
           </div>
         ))}
       </div>
-      <p className="text-[12px] text-[#9ca3af]">Tap cards to expand. Use arrows to navigate.</p>
+      <p className="text-xs text-content-muted">Tap cards to expand. Use arrows to navigate.</p>
     </div>
   );
 
@@ -79,11 +79,11 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
         <DeckLabel t="UX benchmarking" />
         <DeckHeading t={x.attribute} />
         <Chips label="Dominant" items={x.dominant?.players || []} />
-        <p className="text-[12px] text-[#6b7280] leading-relaxed mb-2.5">
+        <p className="text-xs text-content-secondary leading-relaxed mb-2.5">
           {x.dominant?.description}
         </p>
         <Chips label="Contrarian" items={x.contrarian?.players || []} />
-        <p className="text-[12px] text-[#6b7280] leading-relaxed mb-2.5">
+        <p className="text-xs text-content-secondary leading-relaxed mb-2.5">
           {x.contrarian?.description}
         </p>
         {x.cross_category && (
@@ -178,14 +178,14 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
       {(d.opportunities || []).map((x, i) => (
         <Surface key={i}>
           <div className="flex gap-2.5">
-            <div className="text-[24px] font-medium text-[#e5e7eb] leading-none shrink-0">
+            <div className="text-[24px] font-medium text-content-muted leading-none shrink-0">
               {x.rank}
             </div>
             <div>
-              <div className="text-[14px] font-medium text-[#111827] mb-1">
+              <div className="text-sm font-medium text-content-heading mb-1">
                 {x.title}
               </div>
-              <div className="text-[12px] text-[#6b7280] leading-relaxed mb-1.5">
+              <div className="text-xs text-content-secondary leading-relaxed mb-1.5">
                 {x.description}{" "}
                 <B>Proof:</B> {x.proof}{" "}
                 <B>Risk:</B> {x.risk}

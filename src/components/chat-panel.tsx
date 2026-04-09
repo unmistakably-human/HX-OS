@@ -69,22 +69,22 @@ export function ChatPanel({
               key={i}
               className={`${
                 msg.role === "user"
-                  ? "bg-white rounded-lg p-4"
-                  : "border-l-2 border-[#E8713A44] pl-4 py-2"
+                  ? "bg-surface-card rounded-[8px] p-4"
+                  : "border-l-2 border-divider pl-4 py-2"
               }`}
             >
               <div
-                className={`text-[10px] font-medium mb-1.5 ${
-                  msg.role === "user" ? "text-[#71717a]" : "text-[#E8713A]"
+                className={`text-overline font-medium mb-1.5 ${
+                  msg.role === "user" ? "text-content-tertiary" : "text-content-primary"
                 }`}
               >
                 {msg.role === "user" ? "You" : "HumanX AI"}
               </div>
-              <div className="text-[13px] leading-relaxed">
+              <div className="text-body-sm leading-relaxed">
                 {msg.role === "assistant" ? (
                   <MarkdownRenderer content={msg.content} />
                 ) : (
-                  <p className="text-[#18181b] whitespace-pre-wrap">
+                  <p className="text-content-primary whitespace-pre-wrap">
                     {msg.content}
                   </p>
                 )}
@@ -94,11 +94,11 @@ export function ChatPanel({
 
           {/* Streaming text */}
           {streamingText && (
-            <div className="border-l-2 border-[#E8713A44] pl-4 py-2">
-              <div className="text-[10px] font-medium mb-1.5 text-[#E8713A]">
+            <div className="border-l-2 border-divider pl-4 py-2">
+              <div className="text-overline font-medium mb-1.5 text-content-primary">
                 HumanX AI
               </div>
-              <div className="text-[13px] leading-relaxed">
+              <div className="text-body-sm leading-relaxed">
                 <MarkdownRenderer content={streamingText} />
               </div>
             </div>
@@ -106,11 +106,11 @@ export function ChatPanel({
 
           {/* Thinking indicator */}
           {loading && !streamingText && (
-            <div className="border-l-2 border-[#E8713A44] pl-4 py-2">
-              <div className="text-[10px] font-medium mb-1.5 text-[#E8713A]">
+            <div className="border-l-2 border-divider pl-4 py-2">
+              <div className="text-overline font-medium mb-1.5 text-content-primary">
                 HumanX AI
               </div>
-              <div className="flex items-center gap-1 text-[13px] text-[#9ca3af]">
+              <div className="flex items-center gap-1 text-body-sm text-content-muted">
                 Thinking
                 <span className="animate-pulse">.</span>
                 <span className="animate-pulse" style={{ animationDelay: "0.2s" }}>.</span>
@@ -122,7 +122,7 @@ export function ChatPanel({
       </ScrollArea>
 
       {/* Input area */}
-      <div className="border-t border-[#e5e7eb] bg-[#f4f4f5] p-3">
+      <div className="border-t border-divider bg-surface-page-alt p-3">
         {actions && <div className="mb-2 flex gap-2">{actions}</div>}
         <div className="flex gap-2">
           <Textarea
@@ -130,16 +130,16 @@ export function ChatPanel({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="min-h-[40px] max-h-[120px] resize-none bg-white text-[13px]"
+            className="min-h-[40px] max-h-[120px] resize-none bg-surface-card text-body-sm"
             rows={1}
           />
           <Button
             size="sm"
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="bg-[#E8713A] hover:bg-[#d4632e] text-white px-3 shrink-0"
+            className="px-3 shrink-0"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4" strokeWidth={1.5} />
           </Button>
         </div>
       </div>

@@ -42,29 +42,29 @@ export function DiscoveryLoading({ progress = 0 }: DiscoveryLoadingProps) {
   return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center max-w-[400px]">
-        <Loader2 className="w-10 h-10 text-[#E8713A] animate-spin mx-auto mb-6" />
-        <div className="text-[16px] font-medium text-[#111827] mb-2">
+        <Loader2 className="w-10 h-10 text-action-primary-bg animate-spin mx-auto mb-6" strokeWidth={1.5} />
+        <div className="text-[16px] font-medium text-content-heading mb-2">
           Building your insights deck
         </div>
-        <div className="text-[13px] text-[#6b7280] animate-pulse mb-3">
+        <div className="text-[13px] text-content-secondary animate-pulse mb-3">
           {STATUS_MESSAGES[msgIdx]}
         </div>
 
         {hasProgress && (
           <div className="mb-3">
-            <div className="w-64 h-1.5 bg-[#e5e7eb] rounded-full mx-auto overflow-hidden">
+            <div className="w-64 h-1.5 bg-divider rounded-full mx-auto overflow-hidden">
               <div
-                className="h-full bg-[#E8713A] rounded-full transition-all duration-500"
+                className="h-full bg-action-primary-bg rounded-full transition-all duration-500"
                 style={{ width: `${Math.min((progress / 12000) * 100, 95)}%` }}
               />
             </div>
-            <div className="text-[11px] text-[#9ca3af] mt-1.5">
+            <div className="text-[11px] text-content-muted mt-1.5">
               {Math.round(progress / 1000)}k chars generated
             </div>
           </div>
         )}
 
-        <p className="text-[11px] text-[#9ca3af]">
+        <p className="text-[11px] text-content-muted">
           {elapsed}s elapsed — typically takes 30–90 seconds
         </p>
       </div>

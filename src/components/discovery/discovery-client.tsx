@@ -101,19 +101,19 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
         <PhaseHeader title="Discovery" subtitle="Research & insights" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-[400px]">
-            <div className="w-12 h-12 rounded-xl bg-[#f4f4f5] flex items-center justify-center mx-auto mb-4">
-              <Search className="w-6 h-6 text-[#a1a1aa]" />
+            <div className="w-12 h-12 rounded-[8px] bg-surface-page-alt flex items-center justify-center mx-auto mb-4">
+              <Search className="w-6 h-6 text-content-muted" strokeWidth={1.5} />
             </div>
-            <h2 className="text-[18px] font-bold text-[#111827] mb-2">
+            <h2 className="text-[18px] font-bold text-content-heading mb-2">
               Complete Product Context First
             </h2>
-            <p className="text-[14px] text-[#71717a] mb-5">
+            <p className="text-[14px] text-content-tertiary mb-5">
               The discovery phase requires an enriched Product Context Document.
               Go back and complete the context phase.
             </p>
             <Button
               onClick={() => router.push(`/products/${product.id}/context`)}
-              className="bg-[#18181b] text-white"
+              className="bg-action-primary-bg text-action-primary-text"
             >
               Go to Product Context
             </Button>
@@ -142,40 +142,40 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           subtitle="Insights deck complete"
           actions={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => downloadDeckHtml(deck)} className="text-[12px] h-8">
-                <Download className="w-3.5 h-3.5 mr-1.5" />
+              <Button variant="outline" size="sm" onClick={() => downloadDeckHtml(deck)} className="text-[12px] h-8 rounded-md">
+                <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 Download
               </Button>
-              <Button variant="outline" size="sm" onClick={handleRerun} className="text-[12px] h-8">
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+              <Button variant="outline" size="sm" onClick={handleRerun} className="text-[12px] h-8 rounded-md">
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 Re-run
               </Button>
               <Button
                 size="sm"
                 onClick={() => router.push(`/`)}
-                className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[12px] h-8"
+                className="bg-action-primary-bg hover:bg-action-primary-hover text-action-primary-text text-[12px] h-8 rounded-md"
               >
                 Back to Dashboard
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" strokeWidth={1.5} />
               </Button>
             </div>
           }
         />
         <div className="flex-1 overflow-y-auto px-5 py-6">
-          <div className="max-w-[900px] mx-auto bg-white border border-[#e5e7eb] rounded-xl p-5">
+          <div className="max-w-[900px] mx-auto bg-white border border-divider rounded-[8px] p-5">
             <DeckNavigator data={deck} />
           </div>
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#e5e7eb] max-w-[900px] mx-auto">
-            <Button variant="outline" onClick={handleRerun} className="text-[13px]">
-              <RotateCcw className="w-4 h-4 mr-2" />
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-divider max-w-[900px] mx-auto">
+            <Button variant="outline" onClick={handleRerun} className="text-[13px] rounded-md">
+              <RotateCcw className="w-4 h-4 mr-2" strokeWidth={1.5} />
               Re-run Discovery
             </Button>
             <Button
               onClick={() => router.push(`/`)}
-              className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[14px] px-6"
+              className="bg-action-primary-bg hover:bg-action-primary-hover text-action-primary-text text-[14px] px-6 rounded-md"
             >
               Back to Dashboard
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
             </Button>
           </div>
         </div>

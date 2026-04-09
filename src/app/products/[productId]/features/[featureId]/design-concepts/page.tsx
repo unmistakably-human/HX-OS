@@ -109,11 +109,11 @@ export default function DesignConceptsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full text-[#9ca3af]"><Loader2 className="w-5 h-5 animate-spin mr-2" />Loading...</div>;
+    return <div className="flex items-center justify-center h-full text-content-muted"><Loader2 className="w-5 h-5 animate-spin mr-2" strokeWidth={1.5} />Loading...</div>;
   }
 
   if (!product || !feature) {
-    return <div className="flex items-center justify-center h-full text-[#9ca3af]">Feature not found</div>;
+    return <div className="flex items-center justify-center h-full text-content-muted">Feature not found</div>;
   }
 
   return (
@@ -124,17 +124,17 @@ export default function DesignConceptsPage() {
       {needsGeneration && !generating && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center max-w-md">
-            <div className="w-14 h-14 rounded-full bg-[#fef3c7] flex items-center justify-center mx-auto mb-4">
-              <Lightbulb className="w-6 h-6 text-[#E8713A]" />
+            <div className="w-14 h-14 rounded-full bg-feedback-warning-bg flex items-center justify-center mx-auto mb-4">
+              <Lightbulb className="w-6 h-6 text-content-heading" strokeWidth={1.5} />
             </div>
-            <h2 className="text-[18px] font-bold text-[#111827] mb-2">Generate Design Concepts</h2>
-            <p className="text-[14px] text-[#6b7280] mb-6">
+            <h2 className="text-h2 font-bold text-content-heading mb-2">Generate Design Concepts</h2>
+            <p className="text-sm text-content-secondary mb-6">
               AI will generate design concepts based on your selected HMW statements for &ldquo;{feature.name}&rdquo;.
             </p>
-            <Button onClick={generateConcepts} className="bg-[#E8713A] hover:bg-[#d4652f] text-white gap-1.5">
-              <Lightbulb className="w-4 h-4" /> Generate Concepts
+            <Button onClick={generateConcepts} className="text-white gap-1.5">
+              <Lightbulb className="w-4 h-4" strokeWidth={1.5} /> Generate Concepts
             </Button>
-            {error && <p className="text-[13px] text-red-500 mt-3">{error}</p>}
+            {error && <p className="text-body-sm text-feedback-error-text mt-3">{error}</p>}
           </div>
         </div>
       )}
@@ -142,11 +142,11 @@ export default function DesignConceptsPage() {
       {/* Generating state */}
       {generating && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <Loader2 className="w-6 h-6 text-[#E8713A] animate-spin" />
-          <p className="text-[14px] text-[#4b5563]">Generating design concepts...</p>
-          <p className="text-[12px] text-[#9ca3af]">This takes 15-30 seconds</p>
+          <Loader2 className="w-6 h-6 text-content-heading animate-spin" strokeWidth={1.5} />
+          <p className="text-sm text-content-secondary">Generating design concepts...</p>
+          <p className="text-xs text-content-muted">This takes 15-30 seconds</p>
           {error && (
-            <div className="text-[13px] text-red-500 mt-2">
+            <div className="text-body-sm text-feedback-error-text mt-2">
               Error: {error}
               <Button variant="outline" size="sm" className="ml-3" onClick={() => setGenerating(false)}>Dismiss</Button>
             </div>
@@ -158,8 +158,8 @@ export default function DesignConceptsPage() {
       {designConcepts.length > 0 && !generating && (
         <>
           <div className="px-5 pt-5 pb-3">
-            <h2 className="text-[20px] font-bold text-[#111827]">Design Concepts</h2>
-            <p className="text-[13px] text-[#6b7280] mt-1">
+            <h2 className="text-h1 font-bold text-content-heading">Design Concepts</h2>
+            <p className="text-body-sm text-content-secondary mt-1">
               {designConcepts.length} concepts generated. Select up to 3 for visual variations.
             </p>
           </div>
@@ -170,33 +170,33 @@ export default function DesignConceptsPage() {
               const selected = selectedConcepts.includes(concept.name);
               return (
                 <button key={concept.name} onClick={() => toggleConcept(concept.name)}
-                  className={`w-full text-left p-6 rounded-2xl border-2 transition-all ${selected ? "border-[#E8713A] bg-[rgba(232,113,58,0.04)] shadow-sm" : "border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+                  className={`w-full text-left p-6 rounded-2xl border-2 transition-all ${selected ? "border-action-primary-bg bg-surface-subtle shadow-sm" : "border-divider hover:border-divider-card-hover"}`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="text-[16px] font-bold text-[#111827]">{concept.name}</h3>
-                      <p className="text-[13px] text-[#E8713A] italic">{concept.tagline}</p>
+                      <h3 className="text-h3 font-bold text-content-heading">{concept.name}</h3>
+                      <p className="text-body-sm text-content-heading italic">{concept.tagline}</p>
                     </div>
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[12px] font-bold shrink-0 ${selected ? "bg-[#E8713A] text-white" : "border-2 border-[#e5e7eb]"}`}>
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${selected ? "bg-action-primary-bg text-white" : "border-2 border-divider"}`}>
                       {selected && "\u2713"}
                     </div>
                   </div>
-                  <p className="text-[13px] text-[#4b5563] leading-relaxed mb-3">{concept.idea}</p>
-                  <div className="text-[12px] text-[#6b7280] mb-2">
-                    <span className="font-semibold text-[#374151]">Solves for:</span> {concept.solvesFor}
+                  <p className="text-body-sm text-content-secondary leading-relaxed mb-3">{concept.idea}</p>
+                  <div className="text-xs text-content-secondary mb-2">
+                    <span className="font-semibold text-content-secondary">Solves for:</span> {concept.solvesFor}
                   </div>
                   {concept.onThePage?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {concept.onThePage.map((item, i) => (
-                        <span key={i} className="text-[11px] px-2 py-1 rounded-md bg-[#f4f4f5] text-[#4b5563]">{item}</span>
+                        <span key={i} className="text-overline px-2 py-1 rounded-md bg-surface-subtle text-content-secondary">{item}</span>
                       ))}
                     </div>
                   )}
                   {concept.tradeoffs?.length > 0 && (
-                    <div className="border-t border-[#e5e7eb] pt-2 mt-2">
-                      <p className="text-[11px] font-semibold text-[#991b1b] uppercase tracking-wide mb-1">Tradeoffs</p>
+                    <div className="border-t border-divider pt-2 mt-2">
+                      <p className="text-overline font-semibold text-feedback-error-text uppercase tracking-wide mb-1">Tradeoffs</p>
                       {concept.tradeoffs.map((t, i) => (
-                        <p key={i} className="text-[12px] text-[#991b1b]/70">{t}</p>
+                        <p key={i} className="text-xs text-feedback-error-text/70">{t}</p>
                       ))}
                     </div>
                   )}
@@ -206,22 +206,22 @@ export default function DesignConceptsPage() {
 
             {/* Baseline */}
             {baseline && (
-              <div className="p-6 rounded-2xl border border-[#e5e7eb] bg-[#fafafa]">
-                <h3 className="text-[14px] font-bold text-[#111827] uppercase tracking-wide mb-3">The Baseline</h3>
-                <p className="text-[12px] font-semibold text-[#374151] mb-2">Must-have elements</p>
+              <div className="p-6 rounded-2xl border border-divider bg-surface-page-alt">
+                <h3 className="text-sm font-bold text-content-heading uppercase tracking-wide mb-3">The Baseline</h3>
+                <p className="text-xs font-semibold text-content-secondary mb-2">Must-have elements</p>
                 <ul className="space-y-1 mb-4">
                   {baseline.mustHaves.map((m, i) => (
-                    <li key={i} className="text-[13px] text-[#4b5563] flex items-start gap-2">
-                      <span className="text-[#9ca3af] mt-0.5">&bull;</span>{m}
+                    <li key={i} className="text-body-sm text-content-secondary flex items-start gap-2">
+                      <span className="text-content-muted mt-0.5">&bull;</span>{m}
                     </li>
                   ))}
                 </ul>
                 {baseline.commonlyMissed?.length > 0 && (
                   <>
-                    <p className="text-[12px] font-semibold text-[#991b1b] mb-2">Commonly missed</p>
+                    <p className="text-xs font-semibold text-feedback-error-text mb-2">Commonly missed</p>
                     <ul className="space-y-1">
                       {baseline.commonlyMissed.map((m, i) => (
-                        <li key={i} className="text-[13px] text-[#991b1b]/70 flex items-start gap-2">
+                        <li key={i} className="text-body-sm text-feedback-error-text/70 flex items-start gap-2">
                           <span className="mt-0.5">!</span>{m}
                         </li>
                       ))}
@@ -233,13 +233,13 @@ export default function DesignConceptsPage() {
 
             {/* Beyond the Screen */}
             {beyondScreen.length > 0 && (
-              <div className="p-6 rounded-2xl border border-[#e5e7eb] bg-[#fafafa]">
-                <h3 className="text-[14px] font-bold text-[#111827] uppercase tracking-wide mb-3">Beyond This Screen</h3>
+              <div className="p-6 rounded-2xl border border-divider bg-surface-page-alt">
+                <h3 className="text-sm font-bold text-content-heading uppercase tracking-wide mb-3">Beyond This Screen</h3>
                 <div className="space-y-3">
                   {beyondScreen.map((b, i) => (
                     <div key={i}>
-                      <p className="text-[13px] font-semibold text-[#111827]">{b.touchpoint}</p>
-                      <p className="text-[12px] text-[#6b7280] mt-0.5">{b.why}</p>
+                      <p className="text-body-sm font-semibold text-content-heading">{b.touchpoint}</p>
+                      <p className="text-xs text-content-secondary mt-0.5">{b.why}</p>
                     </div>
                   ))}
                 </div>
@@ -248,13 +248,13 @@ export default function DesignConceptsPage() {
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-[#e5e7eb] bg-white/90 backdrop-blur px-5 py-3 flex items-center justify-between">
+          <div className="border-t border-divider bg-surface-frosted backdrop-blur px-5 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-[20px] font-bold text-[#E8713A]">{selectedConcepts.length}</span>
-              <span className="text-[13px] text-[#9ca3af]">/ 3 concepts</span>
+              <span className="text-h2 font-bold text-content-heading">{selectedConcepts.length}</span>
+              <span className="text-body-sm text-content-muted">/ 3 concepts</span>
             </div>
-            <Button onClick={handleContinueToVisual} disabled={selectedConcepts.length === 0} className="bg-[#E8713A] hover:bg-[#d4652f] text-white">
-              Continue to Visual Variations <ArrowRight className="w-4 h-4 ml-1" />
+            <Button onClick={handleContinueToVisual} disabled={selectedConcepts.length === 0} className="text-white">
+              Continue to Visual Variations <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
             </Button>
           </div>
         </>

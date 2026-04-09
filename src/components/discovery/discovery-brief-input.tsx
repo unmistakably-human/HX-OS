@@ -36,39 +36,39 @@ export function DiscoveryBriefInput({
       <div className="max-w-[700px] mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-xl bg-[#E8713A]/10 flex items-center justify-center mx-auto mb-3">
-            <Search className="w-6 h-6 text-[#E8713A]" />
+          <div className="w-12 h-12 rounded-[8px] bg-action-primary-bg/10 flex items-center justify-center mx-auto mb-3">
+            <Search className="w-6 h-6 text-action-primary-bg" strokeWidth={1.5} />
           </div>
-          <h2 className="text-[20px] font-bold text-[#111827] mb-1.5">
+          <h2 className="text-[20px] font-bold text-content-heading mb-1.5">
             Brief to Insights Deck
           </h2>
-          <p className="text-[14px] text-[#6b7280] max-w-md mx-auto leading-relaxed">
+          <p className="text-[14px] text-content-secondary max-w-md mx-auto leading-relaxed">
             Review the enriched PCD below, then generate a structured insights
             deck with global benchmarking.
           </p>
         </div>
 
         {/* Brief card */}
-        <div className="bg-white border border-[#e5e7eb] rounded-xl p-5 mb-4">
-          <label className="block text-[12px] font-medium text-[#6b7280] mb-2">
+        <div className="bg-white border border-divider rounded-[8px] p-5 mb-4">
+          <label className="block text-[12px] font-medium text-content-secondary mb-2">
             Product context (editable)
           </label>
           <Textarea
             value={brief}
             onChange={(e) => setBrief(e.target.value)}
-            className="min-h-[140px] bg-[#f9fafb] text-[14px] leading-relaxed resize-y"
+            className="min-h-[140px] bg-surface-subtle text-[14px] leading-relaxed resize-y"
           />
           <div className="flex justify-between items-center mt-3">
-            <span className="text-[11px] text-[#9ca3af]">
+            <span className="text-[11px] text-content-muted">
               {wordCount > 0 ? `${wordCount} words` : "Paste or edit your brief"}
             </span>
             <Button
               onClick={() => onGenerate(brief.trim())}
               disabled={!ready}
-              className="bg-[#E8713A] hover:bg-[#d4652f] text-white px-6"
+              className="bg-action-primary-bg hover:bg-action-primary-hover text-action-primary-text px-6 rounded-md"
             >
               Generate insights deck
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -82,14 +82,14 @@ export function DiscoveryBriefInput({
 
         {/* Deliverables preview */}
         <div className="mt-6">
-          <div className="text-[12px] font-medium text-[#6b7280] mb-2.5">
+          <div className="text-[12px] font-medium text-content-secondary mb-2.5">
             What you will get
           </div>
           <div className="grid grid-cols-2 gap-2">
             {DELIVERABLES.map((x, i) => (
               <div
                 key={i}
-                className="bg-[#f4f4f5] rounded-lg px-3 py-2 text-[12px] text-[#6b7280]"
+                className="bg-surface-page-alt rounded-lg px-3 py-2 text-[12px] text-content-secondary"
               >
                 {x}
               </div>

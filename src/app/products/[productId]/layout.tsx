@@ -30,7 +30,7 @@ export default async function ProductLayout({
     }));
   } catch {
     return (
-      <div className="flex items-center justify-center h-screen text-[#9ca3af]">
+      <div className="flex items-center justify-center h-screen text-content-muted">
         Product not found
       </div>
     );

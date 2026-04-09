@@ -78,20 +78,21 @@ export function Sidebar({ product, productId }: SidebarProps) {
     : null;
 
   return (
-    <aside className="w-[200px] min-h-screen bg-[#18181b] flex flex-col border-r border-[#27272a]">
-      <div className="px-4 py-5 border-b border-[#27272a]">
-        <div className="text-[15px] font-bold text-white">HumanX Studio</div>
-        <div className="text-[10px] text-[#52525b] mt-0.5">
-          AI Design Workflow
+    <aside className="w-[200px] min-h-screen bg-surface-sidebar flex flex-col border-r border-divider">
+      <Link href="/" className="flex items-center gap-2.5 px-4 py-4 border-b border-divider hover:bg-surface-subtle transition-colors duration-fast">
+        <img src="/humanx-logo.svg" alt="" className="h-6 w-auto shrink-0" />
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-content-heading leading-tight">HumanX Studio</div>
+          <div className="text-overline text-content-section-label">AI Design Workflow</div>
         </div>
-      </div>
+      </Link>
 
       <nav className="flex-1 py-2 overflow-y-auto">
         {isFeatureRoute ? (
           <>
             {/* Product-level phases (collapsed) */}
             <div className="px-3 mb-2">
-              <div className="text-[10px] font-medium text-[#52525b] uppercase tracking-wider px-2 mb-1">
+              <div className="text-overline font-medium text-content-section-label uppercase tracking-wider px-2 mb-1">
                 Product
               </div>
               {PRODUCT_PHASES.map((phase) => {
@@ -103,11 +104,11 @@ export function Sidebar({ product, productId }: SidebarProps) {
 
                 return (
                   <Link key={phase.key} href={phase.href(productId)}>
-                    <div className="flex items-center gap-2 px-2 py-1.5 rounded text-[11px] text-[#71717a] hover:text-white/80 transition-colors">
+                    <div className="flex items-center gap-2 px-2 py-1.5 rounded text-overline text-nav-item-text-default hover:text-nav-item-text-active transition-colors duration-fast">
                       {isComplete ? (
-                        <Check className="w-3 h-3 text-[#065f46]" />
+                        <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
                       ) : (
-                        <span className="w-3 h-3 rounded-full border border-[#52525b] inline-block" />
+                        <span className="w-3 h-3 rounded-full border border-content-muted inline-block" />
                       )}
                       {phase.label}
                     </div>
@@ -116,14 +117,14 @@ export function Sidebar({ product, productId }: SidebarProps) {
               })}
             </div>
 
-            <div className="mx-3 border-t border-[#27272a] mb-2" />
+            <div className="mx-3 border-t border-divider mb-2" />
 
             {/* Feature name */}
             <div className="px-3 mb-1">
-              <div className="text-[10px] font-medium text-[#52525b] uppercase tracking-wider px-2 mb-1">
+              <div className="text-overline font-medium text-content-section-label uppercase tracking-wider px-2 mb-1">
                 Feature
               </div>
-              <div className="text-[12px] text-[#E8713A] font-medium px-2 truncate">
+              <div className="text-xs text-content-heading font-medium px-2 truncate">
                 {featureName}
               </div>
             </div>
@@ -140,26 +141,26 @@ export function Sidebar({ product, productId }: SidebarProps) {
 
               const content = (
                 <div
-                  className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg transition-colors ${
-                    isActive ? "bg-[#27272a]" : ""
-                  } ${isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-[#27272a]/50 cursor-pointer"}`}
+                  className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-md transition-colors duration-fast ${
+                    isActive ? "bg-nav-item-active-bg" : ""
+                  } ${isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-nav-item-hover-bg cursor-pointer"}`}
                 >
                   <div
-                    className={`w-[26px] h-[26px] rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                    className={`w-[26px] h-[26px] rounded-md flex items-center justify-center text-overline font-bold shrink-0 ${
                       isComplete
-                        ? "bg-[#065f46] text-white"
+                        ? "bg-hx-green-dark text-content-on-dark"
                         : isActive
-                          ? "bg-[#E8713A] text-white"
-                          : "bg-[#3f3f46] text-[#71717a]"
+                          ? "bg-action-primary-bg text-action-primary-text"
+                          : "bg-surface-subtle text-content-muted"
                     }`}
                   >
-                    {isComplete ? <Check className="w-3.5 h-3.5" /> : phase.num}
+                    {isComplete ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> : phase.num}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[12px] font-medium text-white truncate">
+                    <div className="text-xs font-medium text-content-primary truncate">
                       {phase.label}
                     </div>
-                    <div className="text-[10px] text-[#71717a] truncate">
+                    <div className="text-overline text-content-tertiary truncate">
                       {phase.subtitle}
                     </div>
                   </div>
@@ -188,26 +189,26 @@ export function Sidebar({ product, productId }: SidebarProps) {
 
             const content = (
               <div
-                className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg transition-colors ${
-                  isActive ? "bg-[#27272a]" : ""
-                } ${isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-[#27272a]/50 cursor-pointer"}`}
+                className={`flex items-center gap-3 px-3 py-2.5 mx-2 rounded-md transition-colors duration-fast ${
+                  isActive ? "bg-nav-item-active-bg" : ""
+                } ${isLocked ? "opacity-30 cursor-not-allowed" : "hover:bg-nav-item-hover-bg cursor-pointer"}`}
               >
                 <div
-                  className={`w-[26px] h-[26px] rounded-md flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                  className={`w-[26px] h-[26px] rounded-md flex items-center justify-center text-overline font-bold shrink-0 ${
                     isComplete
-                      ? "bg-[#065f46] text-white"
+                      ? "bg-hx-green-dark text-content-on-dark"
                       : isActive
-                        ? "bg-[#E8713A] text-white"
-                        : "bg-[#3f3f46] text-[#71717a]"
+                        ? "bg-action-primary-bg text-action-primary-text"
+                        : "bg-surface-subtle text-content-muted"
                   }`}
                 >
-                  {isComplete ? <Check className="w-3.5 h-3.5" /> : phase.num}
+                  {isComplete ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> : phase.num}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[12px] font-medium text-white truncate">
+                  <div className="text-xs font-medium text-content-primary truncate">
                     {phase.label}
                   </div>
-                  <div className="text-[10px] text-[#71717a] truncate">
+                  <div className="text-overline text-content-tertiary truncate">
                     {phase.subtitle}
                   </div>
                 </div>
@@ -225,12 +226,12 @@ export function Sidebar({ product, productId }: SidebarProps) {
         )}
       </nav>
 
-      <div className="px-4 py-3 border-t border-[#27272a]">
+      <div className="px-4 py-3 border-t border-divider">
         <Link
           href="/"
-          className="flex items-center gap-1.5 text-[11px] text-[#52525b] hover:text-[#9ca3af] transition-colors"
+          className="flex items-center gap-1.5 text-overline text-content-tertiary hover:text-content-secondary transition-colors duration-fast"
         >
-          <ArrowLeft className="w-3 h-3" />
+          <ArrowLeft className="w-3 h-3" strokeWidth={1.5} />
           Back to Dashboard
         </Link>
       </div>

@@ -5,117 +5,580 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* ── SHADCN COMPATIBILITY (used by shadcn/ui components) ── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* ── HXOS SURFACES ── */
+  --color-surface-page: var(--bg-page);
+  --color-surface-page-alt: var(--bg-page-secondary);
+  --color-surface-sidebar: var(--bg-sidebar);
+  --color-surface-card: var(--bg-card-val);
+  --color-surface-card-hover: var(--bg-card-hover);
+  --color-surface-input: var(--bg-input-val);
+  --color-surface-modal: var(--bg-modal);
+  --color-surface-overlay: var(--bg-overlay);
+  --color-surface-tooltip: var(--bg-tooltip);
+  --color-surface-subtle: var(--bg-subtle);
+  --color-surface-code: var(--bg-code);
+  --color-surface-panel: var(--bg-panel);
+  --color-surface-frosted: var(--bg-frosted);
+
+  /* ── HXOS TEXT ── */
+  --color-content-primary: var(--text-primary);
+  --color-content-secondary: var(--text-secondary);
+  --color-content-tertiary: var(--text-tertiary);
+  --color-content-muted: var(--text-muted);
+  --color-content-on-dark: var(--text-on-dark);
+  --color-content-on-primary: var(--text-on-primary);
+  --color-content-link: var(--text-link);
+  --color-content-link-hover: var(--text-link-hover);
+  --color-content-label: var(--text-label);
+  --color-content-placeholder: var(--text-placeholder);
+  --color-content-heading: var(--text-heading);
+  --color-content-section-label: var(--text-section-label);
+
+  /* ── HXOS BORDERS ── */
+  --color-divider: var(--border-default);
+  --color-divider-light: var(--border-light);
+  --color-divider-input: var(--border-input-val);
+  --color-divider-input-focus: var(--border-input-focus);
+  --color-divider-input-error: var(--border-input-error);
+  --color-divider-panel: var(--border-panel);
+  --color-divider-dashed: var(--border-dashed);
+  --color-divider-card-hover: var(--border-card-hover);
+  --color-divider-modal: var(--border-modal);
+
+  /* ── HXOS BUTTONS ── */
+  --color-action-primary-bg: var(--btn-primary-bg);
+  --color-action-primary-hover: var(--btn-primary-bg-hover);
+  --color-action-primary-active: var(--btn-primary-bg-active);
+  --color-action-primary-text: var(--btn-primary-text);
+  --color-action-secondary-bg: var(--btn-secondary-bg);
+  --color-action-secondary-hover: var(--btn-secondary-bg-hover);
+  --color-action-secondary-border: var(--btn-secondary-border);
+  --color-action-secondary-text: var(--btn-secondary-text);
+  --color-action-ghost-hover: var(--btn-ghost-bg-hover);
+  --color-action-ghost-text: var(--btn-ghost-text);
+  --color-action-danger-bg: var(--btn-danger-bg);
+  --color-action-danger-text: var(--btn-danger-text);
+  --color-action-disabled-bg: var(--btn-disabled-bg);
+  --color-action-disabled-text: var(--btn-disabled-text);
+
+  /* ── HXOS TABS ── */
+  --color-nav-tab-active-bg: var(--tab-active-bg);
+  --color-nav-tab-active-text: var(--tab-active-text);
+  --color-nav-tab-inactive: var(--tab-inactive-text);
+  --color-nav-tab-inactive-hover: var(--tab-inactive-hover-bg);
+  --color-nav-tab-underline-active: var(--tab-underline-active);
+  --color-nav-tab-underline-inactive: var(--tab-underline-inactive);
+
+  /* ── HXOS NAV ITEMS ── */
+  --color-nav-item-active-bg: var(--nav-item-bg-active);
+  --color-nav-item-hover-bg: var(--nav-item-bg-hover);
+  --color-nav-item-icon-default: var(--nav-item-icon-default);
+  --color-nav-item-icon-active: var(--nav-item-icon-active);
+  --color-nav-item-text-default: var(--nav-item-text-default);
+  --color-nav-item-text-active: var(--nav-item-text-active);
+
+  /* ── HXOS PILLS / BADGES ── */
+  --color-pill-bg: var(--pill-bg);
+  --color-pill-bg-hover: var(--pill-bg-hover);
+  --color-pill-border: var(--pill-border);
+  --color-pill-text: var(--pill-text);
+  --color-pill-icon: var(--pill-icon);
+  --color-badge-bg: var(--badge-bg);
+  --color-badge-text: var(--badge-text);
+
+  /* ── HXOS INTERACTIVE ── */
+  --color-slider-track: var(--slider-track);
+  --color-slider-fill: var(--slider-fill);
+  --color-slider-thumb: var(--slider-thumb);
+  --color-toggle-off: var(--toggle-off);
+  --color-toggle-on: var(--toggle-on);
+  --color-toggle-thumb: var(--toggle-thumb);
+
+  /* ── HXOS TABLE / LIST ROWS ── */
+  --color-row: var(--row-bg);
+  --color-row-hover: var(--row-bg-hover);
+  --color-row-selected: var(--row-bg-selected);
+  --color-row-border: var(--row-border);
+  --color-row-action: var(--row-action-text);
+  --color-row-action-hover: var(--row-action-hover);
+
+  /* ── HXOS FEEDBACK ── */
+  --color-feedback-success-bg: var(--success-bg);
+  --color-feedback-success-text: var(--success-text);
+  --color-feedback-success-border: var(--success-border);
+  --color-feedback-warning-bg: var(--warning-bg);
+  --color-feedback-warning-text: var(--warning-text);
+  --color-feedback-warning-border: var(--warning-border);
+  --color-feedback-error-bg: var(--error-bg);
+  --color-feedback-error-text: var(--error-text);
+  --color-feedback-error-border: var(--error-border);
+  --color-feedback-info-bg: var(--info-bg);
+  --color-feedback-info-text: var(--info-text);
+  --color-feedback-info-border: var(--info-border);
+
+  /* ── HXOS ACCENTS (status/badges/highlights only) ── */
+  --color-hx-amber: var(--accent-amber);
+  --color-hx-green: var(--accent-green);
+  --color-hx-green-light: var(--accent-green-light);
+  --color-hx-green-dark: var(--accent-green-dark);
+  --color-hx-blue: var(--accent-blue);
+  --color-hx-blue-light: var(--accent-blue-light);
+  --color-hx-purple: var(--accent-purple);
+  --color-hx-pink: var(--accent-pink);
+  --color-hx-pink-light: var(--accent-pink-light);
+  --color-hx-red: var(--accent-red);
+  --color-hx-red-light: var(--accent-red-light);
+
+  /* ── FONTS ── */
+  --font-sans: var(--font-sans-family);
+  --font-mono: var(--font-mono-family);
+  --font-heading: var(--font-sans-family);
+
+  /* font sizes defined in @layer utilities below */
+
+  /* ── RADII ── */
+  --radius: 8px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 9999px;
+  --radius-4xl: 9999px;
+
+  /* ── SHADOWS ── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --shadow-input-focus: 0 0 0 2px rgba(0, 0, 0, 0.08);
+
+  /* ── TRANSITIONS ── */
+  --transition-timing-function-default: cubic-bezier(0.2, 0, 0, 1);
+  --transition-duration-fast: 100ms;
+  --transition-duration-normal: 150ms;
+  --transition-duration-moderate: 200ms;
+  --transition-duration-slow: 300ms;
 }
+
+/* ═══════════════════════════════════════════════════
+   LIGHT MODE — HXOS Design System Tokens
+   ═══════════════════════════════════════════════════ */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* ── GREY SCALE (primitives — never use directly in components) ── */
+  --grey-0: #FFFFFF;
+  --grey-50: #FAFAFA;
+  --grey-100: #F5F5F5;
+  --grey-150: #EFEFEF;
+  --grey-200: #E5E5E5;
+  --grey-250: #E0E0E0;
+  --grey-300: #D4D4D4;
+  --grey-400: #A3A3A3;
+  --grey-500: #737373;
+  --grey-600: #525252;
+  --grey-700: #404040;
+  --grey-800: #262626;
+  --grey-900: #171717;
+  --grey-950: #0A0A0A;
+  --grey-1000: #000000;
+
+  /* ── ACCENT (status, badges, highlights only) ── */
+  --accent-amber: #F59E0B;
+  --accent-green: #10B981;
+  --accent-green-light: #D1FAE5;
+  --accent-green-dark: #065F46;
+  --accent-blue: #3B82F6;
+  --accent-blue-light: #DBEAFE;
+  --accent-purple: #8B5CF6;
+  --accent-pink: #EC4899;
+  --accent-pink-light: #FCE7F3;
+  --accent-red: #EF4444;
+  --accent-red-light: #FEE2E2;
+
+  /* ── FEEDBACK RAW ── */
+  --raw-success: #10B981;
+  --raw-success-light: #D1FAE5;
+  --raw-warning: #F59E0B;
+  --raw-warning-light: #FEF3C7;
+  --raw-error: #EF4444;
+  --raw-error-light: #FEE2E2;
+  --raw-info: #3B82F6;
+  --raw-info-light: #DBEAFE;
+
+  /* ── SURFACES ── */
+  --bg-page: var(--grey-0);
+  --bg-page-secondary: var(--grey-50);
+  --bg-sidebar: var(--grey-0);
+  --bg-card-val: var(--grey-0);
+  --bg-card-hover: var(--grey-50);
+  --bg-input-val: var(--grey-0);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-modal: var(--grey-0);
+  --bg-tooltip: var(--grey-900);
+  --bg-subtle: var(--grey-50);
+  --bg-code: var(--grey-100);
+  --bg-frosted: rgba(255, 255, 255, 0.85);
+  --bg-panel: var(--grey-0);
+
+  /* ── TEXT ── */
+  --text-primary: var(--grey-900);
+  --text-secondary: var(--grey-600);
+  --text-tertiary: var(--grey-500);
+  --text-muted: var(--grey-400);
+  --text-on-dark: var(--grey-0);
+  --text-on-primary: var(--grey-0);
+  --text-link: var(--grey-900);
+  --text-link-hover: var(--grey-700);
+  --text-label: var(--grey-700);
+  --text-placeholder: var(--grey-400);
+  --text-heading: var(--grey-900);
+  --text-section-label: var(--grey-400);
+
+  /* ── BORDERS ── */
+  --border-default: var(--grey-200);
+  --border-light: var(--grey-150);
+  --border-input-val: var(--grey-250);
+  --border-input-focus: var(--grey-900);
+  --border-input-error: var(--raw-error);
+  --border-panel: var(--grey-200);
+  --border-modal: var(--grey-200);
+  --border-dashed: var(--grey-300);
+  --border-card-hover: var(--grey-400);
+
+  /* ── BUTTONS ── */
+  --btn-primary-bg: var(--grey-900);
+  --btn-primary-bg-hover: var(--grey-800);
+  --btn-primary-bg-active: var(--grey-950);
+  --btn-primary-text: var(--grey-0);
+  --btn-secondary-bg: var(--grey-0);
+  --btn-secondary-bg-hover: var(--grey-50);
+  --btn-secondary-border: var(--grey-300);
+  --btn-secondary-text: var(--grey-900);
+  --btn-ghost-bg: transparent;
+  --btn-ghost-bg-hover: var(--grey-100);
+  --btn-ghost-text: var(--grey-600);
+  --btn-danger-bg: var(--raw-error);
+  --btn-danger-text: var(--grey-0);
+  --btn-disabled-bg: var(--grey-100);
+  --btn-disabled-text: var(--grey-400);
+
+  /* ── TABS ── */
+  --tab-active-bg: var(--grey-900);
+  --tab-active-text: var(--grey-0);
+  --tab-inactive-text: var(--grey-600);
+  --tab-inactive-hover-bg: var(--grey-100);
+  --tab-underline-active: var(--grey-900);
+  --tab-underline-inactive: var(--grey-500);
+
+  /* ── PILLS / CHIPS / BADGES ── */
+  --pill-bg: var(--grey-0);
+  --pill-bg-hover: var(--grey-50);
+  --pill-border: var(--grey-250);
+  --pill-text: var(--grey-700);
+  --pill-icon: var(--grey-500);
+  --badge-bg: var(--grey-100);
+  --badge-text: var(--grey-700);
+
+  /* ── SIDEBAR NAV ── */
+  --nav-item-bg-active: var(--grey-100);
+  --nav-item-bg-hover: var(--grey-50);
+  --nav-item-icon-default: var(--grey-500);
+  --nav-item-icon-active: var(--grey-900);
+  --nav-item-text-default: var(--grey-600);
+  --nav-item-text-active: var(--grey-900);
+
+  /* ── SLIDERS / RANGE INPUTS ── */
+  --slider-track: var(--grey-200);
+  --slider-fill: var(--grey-900);
+  --slider-thumb: var(--grey-0);
+  --slider-thumb-border: var(--grey-300);
+
+  /* ── TOGGLES ── */
+  --toggle-off: var(--grey-200);
+  --toggle-on: var(--grey-900);
+  --toggle-thumb: var(--grey-0);
+
+  /* ── TABLE / LIST ROWS ── */
+  --row-bg: var(--grey-0);
+  --row-bg-hover: var(--grey-50);
+  --row-bg-selected: var(--grey-100);
+  --row-border: var(--grey-150);
+  --row-action-text: var(--grey-500);
+  --row-action-hover: var(--grey-900);
+
+  /* ── FEEDBACK ── */
+  --success-bg: var(--raw-success-light);
+  --success-text: var(--accent-green-dark);
+  --success-border: var(--raw-success);
+  --warning-bg: var(--raw-warning-light);
+  --warning-text: #92400E;
+  --warning-border: var(--raw-warning);
+  --error-bg: var(--raw-error-light);
+  --error-text: #991B1B;
+  --error-border: var(--raw-error);
+  --info-bg: var(--raw-info-light);
+  --info-text: #1E40AF;
+  --info-border: var(--raw-info);
+
+  /* ── FONT FAMILIES ── */
+  --font-sans-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono-family: var(--font-jetbrains-mono), "SF Mono", "Fira Code", monospace;
+
+  /* ── FOCUS RING ── */
+  --focus-ring-color: var(--grey-900);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+
+  /* ── TYPOGRAPHY ──
+     H1: 32px  H2: 24px  H3: 20px
+     Body: 16px  Body Sm: 14px  Caption: 12-13px
+  */
+  --text-display-size: 2.25rem;       /* 36px — hero / display headings */
+  --text-display-weight: 700;
+  --text-display-lh: 1.2;
+  --text-display-tracking: -0.02em;
+
+  --text-h1-size: 2rem;               /* 32px — main page titles */
+  --text-h1-weight: 700;
+  --text-h1-lh: 1.25;
+  --text-h1-tracking: -0.02em;
+
+  --text-h2-size: 1.5rem;             /* 24px — section titles */
+  --text-h2-weight: 600;
+  --text-h2-lh: 1.3;
+  --text-h2-tracking: -0.01em;
+
+  --text-h3-size: 1.25rem;            /* 20px — sub-section titles */
+  --text-h3-weight: 600;
+  --text-h3-lh: 1.35;
+
+  --text-body-lg-size: 1.125rem;      /* 18px — lead paragraphs */
+  --text-body-lg-weight: 400;
+  --text-body-lg-lh: 1.6;
+
+  --text-body-size: 1rem;             /* 16px — main body, paragraphs, cards */
+  --text-body-weight: 400;
+  --text-body-lh: 1.5;
+
+  --text-body-sm-size: 0.875rem;      /* 14px — forms, tables, secondary text */
+  --text-body-sm-weight: 400;
+  --text-body-sm-lh: 1.5;
+
+  --text-caption-size: 0.8125rem;     /* 13px — captions, helper text */
+  --text-caption-weight: 400;
+  --text-caption-lh: 1.4;
+
+  --text-label-size: 0.875rem;        /* 14px — form labels */
+  --text-label-weight: 500;
+  --text-label-lh: 1.4;
+
+  --text-overline-size: 0.75rem;      /* 12px — overlines, badges, metadata */
+  --text-overline-weight: 500;
+  --text-overline-lh: 1.3;
+  --text-overline-tracking: 0.04em;
+
+  --text-btn-size: 0.875rem;          /* 14px — button text */
+  --text-btn-weight: 500;
+  --text-pill-size: 0.8125rem;        /* 13px — pill/chip text */
+  --text-pill-weight: 400;
+  --text-badge-size: 0.75rem;         /* 12px — badge text */
+  --text-badge-weight: 500;
+
+  /* ── SPACING ── */
+  --space-0: 0px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ── MOTION ── */
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-moderate: 200ms;
+  --duration-slow: 300ms;
+  --ease-default: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Z-INDEX ── */
+  --z-base: 0;
+  --z-raised: 1;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-sidebar: 30;
+  --z-panel: 35;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
+
+  /* ── SHADCN COMPATIBILITY LAYER ── */
+  --background: var(--bg-page);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card-val);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-modal);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--btn-primary-bg);
+  --primary-foreground: var(--btn-primary-text);
+  --secondary: var(--bg-subtle);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-subtle);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-subtle);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--raw-error);
+  --border: var(--border-default);
+  --input: var(--border-input-val);
+  --ring: var(--focus-ring-color);
+  --radius: 8px;
+  --chart-1: var(--grey-200);
+  --chart-2: var(--grey-400);
+  --chart-3: var(--grey-500);
+  --chart-4: var(--grey-600);
+  --chart-5: var(--grey-800);
+  --sidebar: var(--bg-sidebar);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--btn-primary-bg);
+  --sidebar-primary-foreground: var(--btn-primary-text);
+  --sidebar-accent: var(--nav-item-bg-active);
+  --sidebar-accent-foreground: var(--nav-item-text-active);
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--focus-ring-color);
 }
 
+/* ═══════════════════════════════════════════════════
+   DARK MODE — HXOS Design System Overrides
+   ═══════════════════════════════════════════════════ */
+
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* ── SURFACES ── */
+  --bg-page: var(--grey-950);
+  --bg-page-secondary: var(--grey-900);
+  --bg-sidebar: var(--grey-950);
+  --bg-card-val: var(--grey-900);
+  --bg-card-hover: var(--grey-800);
+  --bg-input-val: var(--grey-800);
+  --bg-modal: var(--grey-900);
+  --bg-tooltip: var(--grey-100);
+  --bg-subtle: var(--grey-800);
+  --bg-panel: var(--grey-900);
+
+  /* ── TEXT ── */
+  --text-primary: var(--grey-50);
+  --text-secondary: var(--grey-400);
+  --text-tertiary: var(--grey-500);
+  --text-muted: var(--grey-600);
+  --text-on-dark: var(--grey-900);
+  --text-label: var(--grey-300);
+  --text-placeholder: var(--grey-600);
+  --text-heading: var(--grey-50);
+  --text-section-label: var(--grey-600);
+
+  /* ── BORDERS ── */
+  --border-default: var(--grey-800);
+  --border-light: var(--grey-800);
+  --border-input-val: var(--grey-700);
+  --border-input-focus: var(--grey-300);
+  --border-panel: var(--grey-800);
+
+  /* ── BUTTONS ── */
+  --btn-primary-bg: var(--grey-100);
+  --btn-primary-bg-hover: var(--grey-200);
+  --btn-primary-text: var(--grey-900);
+  --btn-secondary-bg: var(--grey-800);
+  --btn-secondary-border: var(--grey-700);
+  --btn-secondary-text: var(--grey-100);
+  --btn-ghost-bg-hover: var(--grey-800);
+  --btn-ghost-text: var(--grey-400);
+
+  /* ── TABS ── */
+  --tab-active-bg: var(--grey-100);
+  --tab-active-text: var(--grey-900);
+  --tab-inactive-text: var(--grey-400);
+
+  /* ── PILLS ── */
+  --pill-bg: var(--grey-800);
+  --pill-border: var(--grey-700);
+  --pill-text: var(--grey-300);
+
+  /* ── NAV ── */
+  --nav-item-bg-active: var(--grey-800);
+  --nav-item-bg-hover: var(--grey-800);
+  --nav-item-icon-active: var(--grey-50);
+  --nav-item-text-active: var(--grey-50);
+  --nav-item-text-default: var(--grey-400);
+
+  /* ── INTERACTIVE ── */
+  --slider-track: var(--grey-700);
+  --slider-fill: var(--grey-300);
+  --toggle-off: var(--grey-700);
+  --toggle-on: var(--grey-100);
+  --toggle-thumb: var(--grey-900);
+
+  /* ── ROWS ── */
+  --row-bg: var(--grey-950);
+  --row-bg-hover: var(--grey-900);
+  --row-bg-selected: var(--grey-800);
+  --row-border: var(--grey-800);
+
+  /* ── FOCUS ── */
+  --focus-ring-color: var(--grey-300);
+  --focus-ring-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
+
+/* ═══════════════════════════════════════════════════
+   BASE LAYER
+   ═══════════════════════════════════════════════════ */
 
 @layer base {
   * {
@@ -123,8 +586,53 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: var(--text-body-size);
+    line-height: var(--text-body-lh);
   }
   html {
     @apply font-sans;
   }
+}
+
+/* ═══════════════════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+   ═══════════════════════════════════════════════════ */
+
+@utility text-display {
+  font-size: var(--text-display-size);
+  line-height: var(--text-display-lh);
+  letter-spacing: var(--text-display-tracking);
+}
+
+@utility text-h1 {
+  font-size: var(--text-h1-size);
+  line-height: var(--text-h1-lh);
+  letter-spacing: var(--text-h1-tracking);
+}
+
+@utility text-h2 {
+  font-size: var(--text-h2-size);
+  line-height: var(--text-h2-lh);
+  letter-spacing: var(--text-h2-tracking, 0);
+}
+
+@utility text-h3 {
+  font-size: var(--text-h3-size);
+  line-height: var(--text-h3-lh);
+}
+
+@utility text-body-lg {
+  font-size: var(--text-body-lg-size);
+  line-height: var(--text-body-lg-lh);
+}
+
+@utility text-body-sm {
+  font-size: var(--text-body-sm-size);
+  line-height: var(--text-body-sm-lh);
+}
+
+@utility text-overline {
+  font-size: var(--text-overline-size);
+  line-height: var(--text-overline-lh);
+  letter-spacing: var(--text-overline-tracking);
 }

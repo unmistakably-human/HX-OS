@@ -9,22 +9,22 @@ interface PhaseHeaderProps {
 
 export function PhaseHeader({ title, subtitle, step, actions }: PhaseHeaderProps) {
   return (
-    <div className="flex items-center justify-between border-b border-[#e5e7eb] bg-white px-5 py-2.5">
+    <div className="flex items-center justify-between border-b border-divider bg-surface-card px-5 py-2.5">
       <div className="flex items-center gap-4">
         <div>
-          <h1 className="text-[16px] font-bold text-[#111827]">{title}</h1>
+          <h1 className="text-h2 font-semibold text-content-heading">{title}</h1>
           {subtitle && (
-            <p className="text-[12px] text-[#9ca3af] mt-0.5">{subtitle}</p>
+            <p className="text-xs text-content-muted mt-0.5">{subtitle}</p>
           )}
         </div>
         {step && (
           <div className="flex items-center gap-2 ml-4">
-            <span className="text-[12px] font-medium text-[#6b7280]">
+            <span className="text-xs font-medium text-content-secondary">
               {step.current}/{step.total}
             </span>
-            <div className="w-24 h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden">
+            <div className="w-24 h-1.5 bg-surface-subtle rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#3b82f6] rounded-full transition-all duration-300"
+                className="h-full bg-action-primary-bg rounded-full transition-all duration-slow"
                 style={{
                   width: `${(step.current / step.total) * 100}%`,
                 }}

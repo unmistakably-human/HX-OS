@@ -32,11 +32,11 @@ function relativeTime(dateStr: string): string {
 
 function PhaseCheck({ done, label }: { done: boolean; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[12px]">
+    <span className="inline-flex items-center gap-1 text-xs">
       {done ? (
-        <span className="text-[#065f46] font-medium">{label} ✓</span>
+        <span className="text-hx-green-dark font-medium">{label} ✓</span>
       ) : (
-        <span className="text-[#9ca3af]">{label} ○</span>
+        <span className="text-content-muted">{label} ○</span>
       )}
     </span>
   );
@@ -182,27 +182,29 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen text-[#9ca3af]">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+      <div className="flex items-center justify-center h-screen text-content-muted">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" strokeWidth={1.5} />
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f4f5]">
+    <div className="min-h-screen bg-surface-page-alt">
       {/* Header */}
-      <div className="bg-white border-b border-[#e5e7eb]">
+      <div className="bg-surface-card border-b border-divider">
         <div className="max-w-[1100px] mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-[20px] font-bold text-[#18181b]">HumanX Studio</h1>
-            <p className="text-[12px] text-[#71717a]">AI Design Workflow</p>
-          </div>
+          <a href="/" className="flex items-center gap-3">
+            <img src="/humanx-logo.svg" alt="" className="h-8 w-auto shrink-0" />
+            <div>
+              <h1 className="text-h3 font-bold text-content-heading leading-tight">HumanX Studio</h1>
+              <p className="text-xs text-content-tertiary">AI Design Workflow</p>
+            </div>
+          </a>
           <Button
             onClick={() => setShowNewProduct(true)}
-            className="bg-[#E8713A] hover:bg-[#d4652f] text-white"
           >
-            <Plus className="w-4 h-4 mr-1.5" />
+            <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
             New Product
           </Button>
         </div>
@@ -212,18 +214,17 @@ export default function DashboardPage() {
       <div className="max-w-[1100px] mx-auto px-6 py-6 space-y-4">
         {products.length === 0 && (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4 border border-[#e5e7eb]">
-              <Plus className="w-7 h-7 text-[#9ca3af]" />
+            <div className="w-16 h-16 rounded-full bg-surface-card flex items-center justify-center mx-auto mb-4 border border-divider">
+              <Plus className="w-7 h-7 text-content-muted" strokeWidth={1.5} />
             </div>
-            <h2 className="text-[18px] font-bold text-[#111827] mb-2">No products yet</h2>
-            <p className="text-[14px] text-[#6b7280] mb-6 max-w-sm mx-auto">
+            <h2 className="text-h2 font-bold text-content-heading mb-2">No products yet</h2>
+            <p className="text-sm text-content-secondary mb-6 max-w-sm mx-auto">
               Create your first product to start the design workflow.
             </p>
             <Button
               onClick={() => setShowNewProduct(true)}
-              className="bg-[#E8713A] hover:bg-[#d4652f] text-white"
             >
-              <Plus className="w-4 h-4 mr-1.5" />
+              <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
               New Product
             </Button>
           </div>
@@ -234,7 +235,7 @@ export default function DashboardPage() {
           return (
             <div
               key={product.id}
-              className="bg-white border border-[#e5e7eb] rounded-xl p-5"
+              className="bg-surface-card border border-divider rounded-[8px] p-5"
             >
               {/* Product header */}
               <div className="flex items-start justify-between mb-3">
@@ -243,11 +244,11 @@ export default function DashboardPage() {
                   className="text-left hover:opacity-80 transition-opacity"
                 >
                   <div className="flex items-center gap-2">
-                    <h2 className="text-[18px] font-bold text-[#18181b]">
+                    <h2 className="text-h2 font-bold text-content-heading">
                       {product.name}
                     </h2>
                     {product.company && (
-                      <span className="text-[14px] text-[#71717a]">
+                      <span className="text-sm text-content-tertiary">
                         {product.company}
                       </span>
                     )}
@@ -255,7 +256,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3 mt-1">
                     <PhaseCheck done={product.phase_context === "complete"} label="Context" />
                     <PhaseCheck done={product.phase_discovery === "complete"} label="Discovery" />
-                    <span className="text-[11px] text-[#9ca3af]">
+                    <span className="text-overline text-content-muted">
                       Updated {relativeTime(product.updated_at)}
                     </span>
                   </div>
@@ -268,21 +269,21 @@ export default function DashboardPage() {
                       e.stopPropagation();
                       setOpenMenu(openMenu === product.id ? null : product.id);
                     }}
-                    className="p-1.5 rounded-md hover:bg-[#f4f4f5] transition-colors"
+                    className="p-1.5 rounded-md hover:bg-surface-page-alt transition-colors"
                   >
-                    <MoreHorizontal className="w-4 h-4 text-[#71717a]" />
+                    <MoreHorizontal className="w-4 h-4 text-content-tertiary" strokeWidth={1.5} />
                   </button>
                   {openMenu === product.id && (
-                    <div className="absolute right-0 top-8 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-10 py-1 min-w-[140px]">
+                    <div className="absolute right-0 top-8 bg-surface-card border border-divider rounded-[8px] shadow-md z-10 py-1 min-w-[140px]">
                       <button
                         onClick={() => handleDeleteProduct(product.id)}
                         disabled={deleting === product.id}
-                        className="w-full text-left px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-body-sm text-feedback-error-text hover:bg-feedback-error-bg flex items-center gap-2"
                       >
                         {deleting === product.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
                         ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                         )}
                         Delete
                       </button>
@@ -293,7 +294,7 @@ export default function DashboardPage() {
 
               {/* Feature cards */}
               {features.length === 0 && (
-                <div className="text-[13px] text-[#9ca3af] mt-2">
+                <div className="text-body-sm text-content-muted mt-2">
                   No features yet
                 </div>
               )}
@@ -303,45 +304,45 @@ export default function DashboardPage() {
                   <button
                     key={f.id}
                     onClick={() => router.push(`/products/${product.id}/features/${f.id}`)}
-                    className="w-[200px] bg-white border border-[#e5e7eb] rounded-lg p-3 text-left hover:border-[#d1d5db] transition-colors"
+                    className="w-[200px] bg-surface-card border border-divider rounded-[8px] p-3 text-left hover:border-divider transition-colors"
                   >
-                    <div className="text-[14px] font-semibold text-[#111827] truncate">
+                    <div className="text-sm font-semibold text-content-heading truncate">
                       {f.name || "Untitled"}
                     </div>
                     <div className="mt-2 space-y-0.5">
-                      <div className="flex items-center gap-1 text-[11px]">
+                      <div className="flex items-center gap-1 text-overline">
                         {f.phase_brief === "complete" ? (
-                          <Check className="w-3 h-3 text-[#065f46]" />
+                          <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
                         ) : (
-                          <span className="w-3 h-3 rounded-full border border-[#d1d5db] inline-block" />
+                          <span className="w-3 h-3 rounded-full border border-divider inline-block" />
                         )}
-                        <span className={f.phase_brief === "complete" ? "text-[#065f46]" : "text-[#9ca3af]"}>
+                        <span className={f.phase_brief === "complete" ? "text-hx-green-dark" : "text-content-muted"}>
                           Brief
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px]">
+                      <div className="flex items-center gap-1 text-overline">
                         {f.phase_discovery === "complete" ? (
-                          <Check className="w-3 h-3 text-[#065f46]" />
+                          <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
                         ) : (
-                          <span className="w-3 h-3 rounded-full border border-[#d1d5db] inline-block" />
+                          <span className="w-3 h-3 rounded-full border border-divider inline-block" />
                         )}
-                        <span className={f.phase_discovery === "complete" ? "text-[#065f46]" : "text-[#9ca3af]"}>
+                        <span className={f.phase_discovery === "complete" ? "text-hx-green-dark" : "text-content-muted"}>
                           Discovery
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px]">
+                      <div className="flex items-center gap-1 text-overline">
                         {f.phase_concepts === "complete" ? (
-                          <Check className="w-3 h-3 text-[#065f46]" />
+                          <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
                         ) : (
-                          <span className="w-3 h-3 rounded-full border border-[#d1d5db] inline-block" />
+                          <span className="w-3 h-3 rounded-full border border-divider inline-block" />
                         )}
-                        <span className={f.phase_concepts === "complete" ? "text-[#065f46]" : "text-[#9ca3af]"}>
+                        <span className={f.phase_concepts === "complete" ? "text-hx-green-dark" : "text-content-muted"}>
                           Concepts
                         </span>
                       </div>
                     </div>
                     {f.chosen_concept && (
-                      <div className="mt-2 text-[11px] text-[#E8713A] font-medium truncate">
+                      <div className="mt-2 text-overline text-content-heading font-medium truncate">
                         {f.chosen_concept}
                       </div>
                     )}
@@ -355,10 +356,10 @@ export default function DashboardPage() {
                     setNewFeatureName("");
                     setNewFeatureType("screen");
                   }}
-                  className="w-[200px] border-2 border-dashed border-[#d1d5db] rounded-lg p-3 text-center hover:border-[#E8713A] hover:text-[#E8713A] transition-colors text-[#9ca3af]"
+                  className="w-[200px] border-2 border-dashed border-divider-dashed rounded-[8px] p-3 text-center hover:border-divider-card-hover hover:text-content-heading transition-colors text-content-muted"
                 >
-                  <Plus className="w-5 h-5 mx-auto mb-1" />
-                  <div className="text-[13px] font-medium">New Feature</div>
+                  <Plus className="w-5 h-5 mx-auto mb-1" strokeWidth={1.5} />
+                  <div className="text-body-sm font-medium">New Feature</div>
                 </button>
               </div>
             </div>
@@ -368,12 +369,12 @@ export default function DashboardPage() {
 
       {/* New Product Modal */}
       {showNewProduct && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => { setShowNewProduct(false); setBriefFile(null); }}>
-          <div className="bg-white rounded-xl p-6 w-[420px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[16px] font-bold text-[#18181b] mb-4">New Product</h3>
+        <div className="fixed inset-0 bg-surface-overlay flex items-center justify-center z-50" onClick={() => { setShowNewProduct(false); setBriefFile(null); }}>
+          <div className="bg-surface-card rounded-xl p-6 w-[420px] shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-h3 font-bold text-content-heading mb-4">New Product</h3>
             <div className="space-y-3">
               <div>
-                <Label className="text-[13px] text-[#374151]">Product name *</Label>
+                <Label className="text-body-sm text-content-secondary">Product name *</Label>
                 <Input
                   value={newProductName}
                   onChange={(e) => setNewProductName(e.target.value)}
@@ -384,7 +385,7 @@ export default function DashboardPage() {
                 />
               </div>
               <div>
-                <Label className="text-[13px] text-[#374151]">Company (optional)</Label>
+                <Label className="text-body-sm text-content-secondary">Company (optional)</Label>
                 <Input
                   value={newProductCompany}
                   onChange={(e) => setNewProductCompany(e.target.value)}
@@ -396,7 +397,7 @@ export default function DashboardPage() {
 
               {/* Upload Brief */}
               <div>
-                <Label className="text-[13px] text-[#374151]">Upload brief (optional)</Label>
+                <Label className="text-body-sm text-content-secondary">Upload brief (optional)</Label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -409,23 +410,23 @@ export default function DashboardPage() {
                   }}
                 />
                 {briefFile ? (
-                  <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-[#eff6ff] border border-[#93c5fd] rounded-lg">
-                    <FileText className="w-4 h-4 text-[#1d4ed8] shrink-0" />
-                    <span className="text-[13px] text-[#1d4ed8] truncate flex-1">{briefFile.name}</span>
-                    <button onClick={() => setBriefFile(null)} className="text-[#6b7280] hover:text-[#111827]">
-                      <X className="w-3.5 h-3.5" />
+                  <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-feedback-info-bg border border-feedback-info-border rounded-[8px]">
+                    <FileText className="w-4 h-4 text-feedback-info-text shrink-0" strokeWidth={1.5} />
+                    <span className="text-body-sm text-feedback-info-text truncate flex-1">{briefFile.name}</span>
+                    <button onClick={() => setBriefFile(null)} className="text-content-secondary hover:text-content-heading">
+                      <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-3 border-2 border-dashed border-[#d1d5db] rounded-lg text-[#6b7280] hover:border-[#E8713A] hover:text-[#E8713A] transition-colors"
+                    className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-3 border-2 border-dashed border-divider-dashed rounded-[8px] text-content-secondary hover:border-divider-card-hover hover:text-content-heading transition-colors"
                   >
-                    <Upload className="w-4 h-4" />
-                    <span className="text-[13px]">Choose file (PDF, MD, DOCX)</span>
+                    <Upload className="w-4 h-4" strokeWidth={1.5} />
+                    <span className="text-body-sm">Choose file (PDF, MD, DOCX)</span>
                   </button>
                 )}
-                <p className="text-[11px] text-[#9ca3af] mt-1">
+                <p className="text-overline text-content-muted mt-1">
                   AI will extract fields from the brief after you click Create.
                 </p>
               </div>
@@ -437,11 +438,10 @@ export default function DashboardPage() {
               <Button
                 onClick={handleCreateProduct}
                 disabled={!newProductName.trim() || creatingProduct}
-                className="bg-[#E8713A] hover:bg-[#d4652f] text-white"
               >
                 {creatingProduct ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" strokeWidth={1.5} />
                     {briefFile ? "Extracting & Creating..." : "Creating..."}
                   </>
                 ) : (
@@ -455,12 +455,12 @@ export default function DashboardPage() {
 
       {/* New Feature Modal */}
       {showNewFeature && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowNewFeature(null)}>
-          <div className="bg-white rounded-xl p-6 w-[420px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-[16px] font-bold text-[#18181b] mb-4">New Feature</h3>
+        <div className="fixed inset-0 bg-surface-overlay flex items-center justify-center z-50" onClick={() => setShowNewFeature(null)}>
+          <div className="bg-surface-card rounded-xl p-6 w-[420px] shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-h3 font-bold text-content-heading mb-4">New Feature</h3>
             <div className="space-y-3">
               <div>
-                <Label className="text-[13px] text-[#374151]">Feature name *</Label>
+                <Label className="text-body-sm text-content-secondary">Feature name *</Label>
                 <Input
                   value={newFeatureName}
                   onChange={(e) => setNewFeatureName(e.target.value)}
@@ -470,16 +470,16 @@ export default function DashboardPage() {
                 />
               </div>
               <div>
-                <Label className="text-[13px] text-[#374151] mb-2 block">Type</Label>
+                <Label className="text-body-sm text-content-secondary mb-2 block">Type</Label>
                 <RadioGroup value={newFeatureType} onValueChange={(v) => setNewFeatureType(v as "screen" | "flow")}>
                   <div className="flex gap-4">
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="screen" id="type-screen" />
-                      <Label htmlFor="type-screen" className="text-[13px]">Screen</Label>
+                      <Label htmlFor="type-screen" className="text-body-sm">Screen</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="flow" id="type-flow" />
-                      <Label htmlFor="type-flow" className="text-[13px]">Flow</Label>
+                      <Label htmlFor="type-flow" className="text-body-sm">Flow</Label>
                     </div>
                   </div>
                 </RadioGroup>
@@ -492,11 +492,10 @@ export default function DashboardPage() {
               <Button
                 onClick={() => handleCreateFeature(showNewFeature)}
                 disabled={!newFeatureName.trim() || creatingFeature}
-                className="bg-[#E8713A] hover:bg-[#d4652f] text-white"
               >
                 {creatingFeature ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" strokeWidth={1.5} />
                     Creating...
                   </>
                 ) : (

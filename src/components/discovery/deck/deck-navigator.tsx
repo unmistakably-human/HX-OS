@@ -42,15 +42,15 @@ export function DeckNavigator({ data }: DeckNavigatorProps) {
   return (
     <div>
       {/* Navigation bar */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#f3f4f6]">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-divider-light">
         <Button
           variant="outline"
           size="sm"
           onClick={() => go(idx - 1)}
           disabled={idx === 0}
-          className="text-[12px] h-8 px-3"
+          className="text-[12px] h-8 px-3 rounded-md"
         >
-          <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+          <ChevronLeft className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
           Prev
         </Button>
 
@@ -62,10 +62,10 @@ export function DeckNavigator({ data }: DeckNavigatorProps) {
               onClick={() => go(i)}
               className={`cursor-pointer rounded-full transition-all duration-200 ${
                 i === idx
-                  ? "w-5 h-[7px] bg-[#E8713A] rounded-[3px]"
+                  ? "w-5 h-[7px] bg-content-heading rounded-[3px]"
                   : seen.has(i)
-                    ? "w-[7px] h-[7px] bg-[#111827]/25"
-                    : "w-[7px] h-[7px] bg-[#111827]/10"
+                    ? "w-[7px] h-[7px] bg-content-heading/25"
+                    : "w-[7px] h-[7px] bg-content-heading/10"
               }`}
             />
           ))}
@@ -76,15 +76,15 @@ export function DeckNavigator({ data }: DeckNavigatorProps) {
           size="sm"
           onClick={() => go(idx + 1)}
           disabled={idx === total - 1}
-          className="text-[12px] h-8 px-3"
+          className="text-[12px] h-8 px-3 rounded-md"
         >
           Next
-          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+          <ChevronRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} />
         </Button>
       </div>
 
       {/* Page counter */}
-      <div className="text-[11px] text-[#9ca3af] text-right mb-3">
+      <div className="text-[11px] text-content-muted text-right mb-3">
         {idx + 1} / {total}
       </div>
 

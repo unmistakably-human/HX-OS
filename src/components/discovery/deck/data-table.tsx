@@ -14,7 +14,7 @@ export function DataTable({ heads, rows }: DataTableProps) {
             {heads.map((h, i) => (
               <th
                 key={i}
-                className="text-left px-1.5 py-1.5 border-b border-[#e5e7eb] text-[#6b7280] font-medium"
+                className="text-left px-1.5 py-1.5 border-b border-divider text-content-secondary font-medium"
               >
                 {h}
               </th>
@@ -27,7 +27,7 @@ export function DataTable({ heads, rows }: DataTableProps) {
               {r.map((c, j) => (
                 <td
                   key={j}
-                  className="px-1.5 py-1.5 border-b border-[#f3f4f6] text-[#111827] align-top"
+                  className="px-1.5 py-1.5 border-b border-divider-light text-content-primary align-top"
                 >
                   {c}
                 </td>

@@ -7,13 +7,13 @@ interface SurfaceProps {
 
 export function Surface({ children, title }: SurfaceProps) {
   return (
-    <div className="bg-[#f4f4f5] rounded-xl p-4 mb-2">
+    <div className="bg-surface-subtle rounded-[8px] p-4 mb-2">
       {title && (
-        <div className="text-[13px] font-medium text-[#E8713A] mb-1">
+        <div className="text-[13px] font-medium text-content-heading mb-1">
           {title}
         </div>
       )}
-      <div className="text-[12px] text-[#6b7280] leading-relaxed">
+      <div className="text-[12px] text-content-secondary leading-relaxed">
         {children}
       </div>
     </div>
