@@ -2,52 +2,49 @@ import { NextRequest } from "next/server";
 import { getProject, getFeature, saveConcepts } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 
-const CONCEPT_SYSTEM = `You are a senior product designer at HumanX Design Agency generating concept variations.
+const CONCEPT_SYSTEM = `You are a senior product designer generating concept variations.
 
-You have: the Enriched PCD, Discovery insights, and a Feature Brief.
+Return a JSON array of exactly 6 concept objects. ONLY valid JSON — no markdown, no backticks, no explanation.
 
-## Output: Return a JSON array of exactly 6 concept objects.
+DIVERGENCE RULE: Each concept must use a DIFFERENT conceptual metaphor or interaction paradigm.
 
-### THE DIVERGENCE RULE
-Concepts must explore different conceptual metaphors and interaction paradigms — NOT different data arrangements on the same screen type. A savings jar, a Spotify Wrapped story, a receipt trail, and a social leaderboard are FOUR different metaphors. The same screen with different chart types is ONE metaphor repeated.
+Tracks: A (2 concepts, grounded), B (3 concepts, wild rethinks using games/stories/metaphors), outside (1 concept, non-screen solution).
 
-### Track A: The Direct Answer (2 concepts)
-Fully informed by the brief. Responsible, grounded, likely to ship.
+JSON schema per concept:
+{"name":"3-5 word name","track":"A"|"B"|"outside","coreIdea":"One sentence metaphor","wireframeHtml":"<div style='font-family:sans-serif;padding:20px;background:#F5F5F5;min-height:300px'>SIMPLE greyscale HTML wireframe. Use divs with inline styles. Colors: bg #F5F5F5, cards #FFF, text #333, secondary #888, borders #E0E0E0. Keep under 500 chars. Use real brand names from the brief. For outside track, describe the solution in text instead.</div>","principles":["Principle 1","Principle 2"],"pros":["Pro 1","Pro 2"],"cons":["Con 1"],"delightMoment":"What the user feels and where","stakeholderQuestion":"Uncomfortable decision question"}
 
-### Track B: The Wild Rethink (2-3 concepts)
-Uses ONLY the core pain point. Deliberately ignores specific requirements. Explores: games, stories, animations, rituals, social experiences, physical metaphors made digital. Track B should feel like it came from a different designer.
-
-### Outside the Brief (1 concept)
-No screen at all. A push notification, tooltip, copy change, email, behavioral nudge, or non-design solution.
-
-### JSON schema for EACH concept:
-{
-  "name": "Evocative concept name (3-5 words)",
-  "track": "A" | "B" | "outside",
-  "coreIdea": "One sentence describing the conceptual metaphor",
-  "wireframeHtml": "Self-contained HTML with inline CSS. GREYSCALE ONLY: bg #F5F5F5, surfaces #FFFFFF, text #333333, secondary #888888, borders #E0E0E0, placeholders #CCCCCC. No images — grey rectangles with text labels describing what would be there. Use REAL content from the PCD (real brand name, real metrics, real persona details). The wireframe must EMBODY the metaphor — a jar concept should look like a jar, a receipt should look like a receipt. For the 'outside' concept, wireframeHtml should contain a styled text description of the non-screen solution instead of a wireframe.",
-  "principles": ["Principle → where it manifests in the wireframe", "..."],
-  "pros": ["Pro 1 (from the persona's perspective)", "Pro 2"],
-  "cons": ["Con 1", "Con 2"],
-  "delightMoment": "The specific emotional beat — WHERE it happens and WHAT the user feels. Not a micro-animation note — a felt experience.",
-  "stakeholderQuestion": "An uncomfortable question that forces a real product decision"
-}
-
-Return ONLY the JSON array. No markdown, no explanation, no backticks. Just valid JSON.
-Use real content from the PCD throughout — real brand name, real data, real persona context.`;
+CRITICAL: wireframeHtml must be SHORT (under 500 chars each). Use simple nested divs, not complex layouts. Escape all quotes inside HTML attributes with &quot; since this is inside JSON strings.`;
 
 function extractJSON(text: string): string {
   // Try to parse directly first
   const trimmed = text.trim();
-  if (trimmed.startsWith("[")) return trimmed;
+  if (trimmed.startsWith("[")) {
+    // Find the matching closing bracket
+    let depth = 0;
+    for (let i = 0; i < trimmed.length; i++) {
+      if (trimmed[i] === "[") depth++;
+      if (trimmed[i] === "]") depth--;
+      if (depth === 0) return trimmed.slice(0, i + 1);
+    }
+    return trimmed;
+  }
 
   // Try to extract from markdown code blocks
   const codeBlockMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) return codeBlockMatch[1].trim();
 
   // Try to find array brackets
-  const arrayMatch = trimmed.match(/\[[\s\S]*\]/);
-  if (arrayMatch) return arrayMatch[0];
+  const start = trimmed.indexOf("[");
+  if (start >= 0) {
+    let depth = 0;
+    for (let i = start; i < trimmed.length; i++) {
+      if (trimmed[i] === "[") depth++;
+      if (trimmed[i] === "]") depth--;
+      if (depth === 0) return trimmed.slice(start, i + 1);
+    }
+    // If unbalanced, try adding closing brackets
+    return trimmed.slice(start) + "]";
+  }
 
   return trimmed;
 }
@@ -86,12 +83,15 @@ export async function POST(
     const project = await getProject(id);
     const feature = await getFeature(id, fid);
 
-    // Build the user message with all context
-    const userMessage = `## Enriched PCD
-${project.enrichedPcd || "No PCD available."}
+    // Build the user message — aggressively truncate context so output token budget goes to concepts
+    const pcdSummary = (project.enrichedPcd || "No PCD available.").slice(0, 3000);
+    const discoverySummary = (project.discoveryInsights || "No discovery insights available.").slice(0, 3000);
 
-## Discovery Insights
-${project.discoveryInsights || "No discovery insights available."}
+    const userMessage = `## Enriched PCD (summary)
+${pcdSummary}
+
+## Discovery Insights (summary)
+${discoverySummary}
 
 ## Feature Brief
 - **Feature:** ${feature.name}
@@ -101,12 +101,12 @@ ${project.discoveryInsights || "No discovery insights available."}
 - **Should NOT be:** ${feature.notBe || "No constraints specified."}
 - **Additional context:** ${feature.context || "None."}
 
-Generate 6 concept variations now.`;
+Generate 6 concept variations now. Keep each wireframeHtml under 800 characters — focus on conveying the metaphor clearly, not pixel-perfect layouts.`;
 
     let responseText = await callClaude({
       system: CONCEPT_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
-      maxTokens: 16000,
+      maxTokens: 8000,
     });
 
     // Parse the JSON response
@@ -129,7 +129,7 @@ Generate 6 concept variations now.`;
               "That was not valid JSON. Please return ONLY the JSON array, with no other text.",
           },
         ],
-        maxTokens: 16000,
+        maxTokens: 8000,
       });
 
       const jsonStr = extractJSON(responseText);
