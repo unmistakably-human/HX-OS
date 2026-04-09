@@ -54,12 +54,12 @@ export async function POST(
   try {
     const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
-    // Use knowledge base for context instead of full documents
-    const knowledge = await getKnowledgeForContext(
-      id,
-      ["user_behaviour", "domain", "competitor", "pattern", "principle", "persona", "market", "opportunity"],
-      15
-    );
+    // Use knowledge base with semantic search based on feature context
+    const searchQuery = `${feature.name} ${feature.problem || ""} ${feature.must_have || ""}`;
+    const knowledge = await getKnowledgeForContext(id, {
+      query: searchQuery,
+      limit: 15,
+    });
 
     const userMessage = `## Product: ${product.name}${product.company ? ` (${product.company})` : ""}
 

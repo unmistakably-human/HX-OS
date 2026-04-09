@@ -29,12 +29,12 @@ export async function POST(
     // Concepts are stored in the feature JSONB
     const concepts: Concept[] = Array.isArray(feature.concepts) ? feature.concepts : [];
 
-    // Use knowledge base for context instead of full documents
-    const knowledge = await getKnowledgeForContext(
-      id,
-      ["user_behaviour", "domain", "competitor", "pattern", "principle", "opportunity", "persona", "market"],
-      20
-    );
+    // Use knowledge base with semantic search based on user's message
+    const lastMsg = messages[messages.length - 1];
+    const knowledge = await getKnowledgeForContext(id, {
+      query: lastMsg?.content || feature.name,
+      limit: 20,
+    });
 
     const contextParts = [
       CHAT_SYSTEM,

@@ -1,5 +1,5 @@
 import { getProduct, getFeature, updateFeature } from "@/lib/projects";
-import { extractFromInsights } from "@/lib/knowledge";
+import { extractFromInsights, getKnowledgeForContext } from "@/lib/knowledge";
 import { callClaude } from "@/lib/claude";
 
 const INSIGHTS_SYSTEM = `You are a senior product strategist running focused research for a specific feature. Generate structured insights across exactly 3 categories.
@@ -74,18 +74,16 @@ export async function POST(
       return Response.json({ error: "Complete product context first." }, { status: 400 });
     }
 
-    const pcdSummary = product.enriched_pcd.slice(0, 4000);
-    const discoverySummary = product.discovery_insights
-      ? (typeof product.discovery_insights === "string"
-          ? product.discovery_insights
-          : JSON.stringify(product.discovery_insights)
-        ).slice(0, 3000)
-      : "";
+    // Use knowledge base with semantic search for relevant context
+    const searchQuery = `${feature.name} ${feature.problem || ""} ${feature.must_have || ""}`;
+    const knowledge = await getKnowledgeForContext(id, {
+      query: searchQuery,
+      limit: 20,
+    });
 
-    const userMessage = `## Product Context
-${pcdSummary}
+    const userMessage = `## Product: ${product.name}${product.company ? ` (${product.company})` : ""}
 
-${discoverySummary ? `## Product Discovery\n${discoverySummary}` : ""}
+${knowledge ? `## Knowledge Base (key insights & research)\n${knowledge}` : `## Product Context\n${product.enriched_pcd.slice(0, 4000)}`}
 
 ## Feature Brief
 - Feature: ${feature.name}

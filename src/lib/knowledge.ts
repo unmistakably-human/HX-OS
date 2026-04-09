@@ -34,19 +34,45 @@ export async function getKnowledge(
 
 export async function getKnowledgeForContext(
   productId: string,
-  categories: string[],
-  limit: number = 15
+  options: {
+    query?: string;
+    categories?: string[];
+    limit?: number;
+  } = {}
 ): Promise<string> {
-  const { data, error } = await supabase
-    .from("knowledge")
-    .select("category, title, content")
-    .eq("product_id", productId)
-    .in("category", categories)
-    .order("relevance_score", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { query, categories, limit = 15 } = options;
 
-  if (error || !data?.length) return "";
+  let data: { category: string; title: string; content: string }[] | null = null;
+
+  // If a query is provided, use full-text search
+  if (query) {
+    const { data: searchResults, error } = await supabase.rpc("search_knowledge", {
+      search_query: query,
+      match_product_id: productId,
+      match_count: limit,
+    });
+
+    if (!error && searchResults?.length) {
+      data = searchResults;
+    }
+  }
+
+  // Fallback: category-based retrieval (Phase 1 behaviour)
+  if (!data || data.length === 0) {
+    let q = supabase
+      .from("knowledge")
+      .select("category, title, content")
+      .eq("product_id", productId)
+      .order("relevance_score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (categories?.length) q = q.in("category", categories);
+
+    const { data: catData, error } = await q;
+    if (error || !catData?.length) return "";
+    data = catData;
+  }
 
   // Group by category for clean formatting
   const grouped: Record<string, { title: string; content: string }[]> = {};
