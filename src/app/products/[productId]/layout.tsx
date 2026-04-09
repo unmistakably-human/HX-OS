@@ -23,6 +23,7 @@ export default async function ProductLayout({
       feature_type: f.feature_type,
       phase_brief: f.phase_brief,
       phase_discovery: f.phase_discovery,
+      phase_design_concepts: f.phase_design_concepts,
       phase_concepts: f.phase_concepts,
       chosen_concept: f.chosen_concept,
       updated_at: f.updated_at,

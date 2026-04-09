@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, ArrowRight, ArrowLeft, Search } from "lucide-react";
-import type { Feature, Product, Insight, HMWStatement, DesignConcept, Baseline, BeyondScreen } from "@/lib/types";
+import type { Feature, Product, Insight, HMWStatement } from "@/lib/types";
 
 const MAX_INSIGHTS = 5;
 const MAX_HMW = 3;
@@ -26,7 +26,7 @@ export default function FeatureInsightsPage() {
   const [feature, setFeature] = useState<Feature | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Step: 0 = generate insights, 1 = select insights, 2 = select HMWs, 3 = view concepts
+  // Step: 0 = generate insights, 1 = select insights, 2 = select HMWs
   const [step, setStep] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +37,6 @@ export default function FeatureInsightsPage() {
   const [selectedInsights, setSelectedInsights] = useState<string[]>([]);
   const [hmwStatements, setHmwStatements] = useState<HMWStatement[]>([]);
   const [selectedHmws, setSelectedHmws] = useState<string[]>([]);
-  const [designConcepts, setDesignConcepts] = useState<DesignConcept[]>([]);
-  const [baseline, setBaseline] = useState<Baseline | null>(null);
-  const [beyondScreen, setBeyondScreen] = useState<BeyondScreen[]>([]);
-  const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -56,15 +52,10 @@ export default function FeatureInsightsPage() {
           // Restore state from saved data
           if (feat.insights?.length) {
             setInsights(feat.insights);
-            if (feat.design_concepts?.length) {
-              setSelectedInsights(feat.selected_insights || []);
-              setHmwStatements(feat.hmw_statements || []);
-              setSelectedHmws(feat.selected_hmws || []);
-              setDesignConcepts(feat.design_concepts);
-              setBaseline(feat.baseline || null);
-              setBeyondScreen(feat.beyond_screen || []);
-              setSelectedConcepts(feat.selected_concepts || []);
-              setStep(3);
+            if (feat.hmw_statements?.length && feat.selected_hmws?.length) {
+              // HMWs already selected — discovery is done, redirect to concepts
+              router.replace(`/products/${productId}/features/${featureId}/design-concepts`);
+              return;
             } else if (feat.hmw_statements?.length) {
               setSelectedInsights(feat.selected_insights || []);
               setHmwStatements(feat.hmw_statements);
@@ -84,7 +75,7 @@ export default function FeatureInsightsPage() {
       setLoading(false);
     }
     load();
-  }, [productId, featureId]);
+  }, [productId, featureId, router]);
 
   // ── Generate Insights ──
   const generateInsights = useCallback(async () => {
@@ -128,49 +119,23 @@ export default function FeatureInsightsPage() {
     setGenerating(false);
   }, [productId, featureId, selectedInsights]);
 
-  // ── Generate Concepts ──
-  const generateConcepts = useCallback(async () => {
-    setGenerating(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/products/${productId}/features/${featureId}/design-concepts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedHmwIds: selectedHmws }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `API error ${res.status}`);
-      }
-      const data = await res.json();
-      setDesignConcepts(data.concepts);
-      setBaseline(data.baseline);
-      setBeyondScreen(data.beyondScreen || []);
-      setStep(3);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate concepts");
-    }
-    setGenerating(false);
-  }, [productId, featureId, selectedHmws]);
-
-  // ── Save selected concepts and proceed ──
-  const handleContinueToVisual = useCallback(async () => {
+  // ── Save selected HMWs and proceed to Concepts ──
+  const handleContinueToConcepts = useCallback(async () => {
     try {
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          selected_concepts: selectedConcepts,
-          phase_design_concepts: "complete",
-          phase_visual: "active",
-          phase_concepts: "active",
+          selected_hmws: selectedHmws,
+          phase_discovery: "complete",
+          phase_design_concepts: "active",
         }),
       });
-      router.push(`/products/${productId}/features/${featureId}/concepts`);
+      router.push(`/products/${productId}/features/${featureId}/design-concepts`);
     } catch {
       // ignore
     }
-  }, [productId, featureId, selectedConcepts, router]);
+  }, [productId, featureId, selectedHmws, router]);
 
   const toggleInsight = (id: string) => {
     setSelectedInsights((prev) => {
@@ -185,14 +150,6 @@ export default function FeatureInsightsPage() {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= MAX_HMW) return prev;
       return [...prev, id];
-    });
-  };
-
-  const toggleConcept = (name: string) => {
-    setSelectedConcepts((prev) => {
-      if (prev.includes(name)) return prev.filter((x) => x !== name);
-      if (prev.length >= 3) return prev;
-      return [...prev, name];
     });
   };
 
@@ -221,7 +178,6 @@ export default function FeatureInsightsPage() {
   const stepLabels = [
     { n: 1, label: "Select Insights", sub: `Max ${MAX_INSIGHTS}` },
     { n: 2, label: "How Might We", sub: `Select ${MAX_HMW}` },
-    { n: 3, label: "Concepts", sub: "Select up to 3" },
   ];
 
   const cat = CATEGORY_CONFIG[catPage];
@@ -255,7 +211,7 @@ export default function FeatureInsightsPage() {
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <Loader2 className="w-6 h-6 text-[#E8713A] animate-spin" />
           <p className="text-[14px] text-[#4b5563]">
-            {step === 0 ? "Generating insights..." : step === 1 ? "Generating HMW statements..." : "Generating concepts..."}
+            {step === 0 ? "Generating insights..." : "Generating HMW statements..."}
           </p>
           <p className="text-[12px] text-[#9ca3af]">This takes 15-30 seconds</p>
           {error && (
@@ -267,7 +223,7 @@ export default function FeatureInsightsPage() {
         </div>
       )}
 
-      {/* Steps 1-3 */}
+      {/* Steps 1-2 */}
       {step >= 1 && !generating && (
         <>
           {/* Stepper */}
@@ -284,7 +240,7 @@ export default function FeatureInsightsPage() {
                     <div className={`text-[12px] font-semibold ${active ? "text-[#18181b]" : "text-[#9ca3af]"}`}>{s.label}</div>
                     <div className="text-[10px] text-[#9ca3af]">{s.sub}</div>
                   </div>
-                  {i < 2 && <span className="ml-auto text-[#d1d5db]">&rsaquo;</span>}
+                  {i < stepLabels.length - 1 && <span className="ml-auto text-[#d1d5db]">&rsaquo;</span>}
                 </div>
               );
             })}
@@ -391,119 +347,13 @@ export default function FeatureInsightsPage() {
                   <span className="text-[20px] font-bold text-[#8B5CF6]">{selectedHmws.length}</span>
                   <span className="text-[13px] text-[#9ca3af]">/ {MAX_HMW} HMWs</span>
                 </div>
-                <Button onClick={generateConcepts} disabled={selectedHmws.length === 0} className="bg-[#8B5CF6] hover:bg-[#7c3aed] text-white">
-                  Generate Concepts <ArrowRight className="w-4 h-4 ml-1" />
+                <Button onClick={handleContinueToConcepts} disabled={selectedHmws.length === 0} className="bg-[#8B5CF6] hover:bg-[#7c3aed] text-white">
+                  Continue to Concepts <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
             </div>
           )}
 
-          {/* ── STEP 3: Concepts + Baseline + Beyond ── */}
-          {step === 3 && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="px-5 pt-5 pb-3">
-                <h2 className="text-[20px] font-bold text-[#111827]">Design Concepts</h2>
-                <p className="text-[13px] text-[#6b7280] mt-1">
-                  {designConcepts.length} concepts generated. Select up to 3 for visual variations.
-                </p>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-5 space-y-4 pb-24">
-                {/* Concept cards */}
-                {designConcepts.map((concept) => {
-                  const selected = selectedConcepts.includes(concept.name);
-                  return (
-                    <button key={concept.name} onClick={() => toggleConcept(concept.name)}
-                      className={`w-full text-left p-6 rounded-2xl border-2 transition-all ${selected ? "border-[#E8713A] bg-[rgba(232,113,58,0.04)] shadow-sm" : "border-[#e5e7eb] hover:border-[#d1d5db]"}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="text-[16px] font-bold text-[#111827]">{concept.name}</h3>
-                          <p className="text-[13px] text-[#E8713A] italic">{concept.tagline}</p>
-                        </div>
-                        <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[12px] font-bold shrink-0 ${selected ? "bg-[#E8713A] text-white" : "border-2 border-[#e5e7eb]"}`}>
-                          {selected && "✓"}
-                        </div>
-                      </div>
-                      <p className="text-[13px] text-[#4b5563] leading-relaxed mb-3">{concept.idea}</p>
-                      <div className="text-[12px] text-[#6b7280] mb-2">
-                        <span className="font-semibold text-[#374151]">Solves for:</span> {concept.solvesFor}
-                      </div>
-                      {concept.onThePage?.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {concept.onThePage.map((item, i) => (
-                            <span key={i} className="text-[11px] px-2 py-1 rounded-md bg-[#f4f4f5] text-[#4b5563]">{item}</span>
-                          ))}
-                        </div>
-                      )}
-                      {concept.tradeoffs?.length > 0 && (
-                        <div className="border-t border-[#e5e7eb] pt-2 mt-2">
-                          <p className="text-[11px] font-semibold text-[#991b1b] uppercase tracking-wide mb-1">Tradeoffs</p>
-                          {concept.tradeoffs.map((t, i) => (
-                            <p key={i} className="text-[12px] text-[#991b1b]/70">{t}</p>
-                          ))}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-
-                {/* Baseline */}
-                {baseline && (
-                  <div className="p-6 rounded-2xl border border-[#e5e7eb] bg-[#fafafa]">
-                    <h3 className="text-[14px] font-bold text-[#111827] uppercase tracking-wide mb-3">The Baseline</h3>
-                    <p className="text-[12px] font-semibold text-[#374151] mb-2">Must-have elements</p>
-                    <ul className="space-y-1 mb-4">
-                      {baseline.mustHaves.map((m, i) => (
-                        <li key={i} className="text-[13px] text-[#4b5563] flex items-start gap-2">
-                          <span className="text-[#9ca3af] mt-0.5">•</span>{m}
-                        </li>
-                      ))}
-                    </ul>
-                    {baseline.commonlyMissed?.length > 0 && (
-                      <>
-                        <p className="text-[12px] font-semibold text-[#991b1b] mb-2">Commonly missed</p>
-                        <ul className="space-y-1">
-                          {baseline.commonlyMissed.map((m, i) => (
-                            <li key={i} className="text-[13px] text-[#991b1b]/70 flex items-start gap-2">
-                              <span className="mt-0.5">!</span>{m}
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Beyond the Screen */}
-                {beyondScreen.length > 0 && (
-                  <div className="p-6 rounded-2xl border border-[#e5e7eb] bg-[#fafafa]">
-                    <h3 className="text-[14px] font-bold text-[#111827] uppercase tracking-wide mb-3">Beyond This Screen</h3>
-                    <div className="space-y-3">
-                      {beyondScreen.map((b, i) => (
-                        <div key={i}>
-                          <p className="text-[13px] font-semibold text-[#111827]">{b.touchpoint}</p>
-                          <p className="text-[12px] text-[#6b7280] mt-0.5">{b.why}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom bar */}
-              <div className="border-t border-[#e5e7eb] bg-white/90 backdrop-blur px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={() => setStep(2)}><ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back</Button>
-                  <span className="text-[20px] font-bold text-[#E8713A]">{selectedConcepts.length}</span>
-                  <span className="text-[13px] text-[#9ca3af]">/ 3 concepts</span>
-                </div>
-                <Button onClick={handleContinueToVisual} disabled={selectedConcepts.length === 0} className="bg-[#E8713A] hover:bg-[#d4652f] text-white">
-                  Continue to Visual Variations <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

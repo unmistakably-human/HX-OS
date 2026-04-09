@@ -50,6 +50,7 @@ export const DEMO_CONTEXT: ProductContext = {
   vibe: "Clean like Glossier, scientific like The Ordinary, but warmer and more Indian. White space with mint green and coral pops.",
   colors: "Primary: #2EC4B6 (mint/teal). Secondary: #FF6B6B (coral). Dark: #1A1A2E",
   fonts: "Headings: DM Sans Bold. Body: DM Sans Regular. Science: JetBrains Mono",
+  designTokens: null,
 };
 
 export const DEMO_FEATURE = {

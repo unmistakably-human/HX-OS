@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const productId = searchParams.get("productId");
-  const state = JSON.stringify({ productId });
+  const featureId = searchParams.get("featureId");
+  const state = JSON.stringify({ productId, featureId });
 
   const authUrl = new URL("https://www.figma.com/oauth");
   authUrl.searchParams.set("client_id", process.env.FIGMA_CLIENT_ID!);

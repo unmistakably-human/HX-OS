@@ -11,9 +11,11 @@ export async function GET(req: Request) {
   }
 
   let productId: string;
+  let featureId: string | null = null;
   try {
     const state = JSON.parse(Buffer.from(stateB64, "base64").toString());
     productId = state.productId;
+    featureId = state.featureId || null;
   } catch {
     return NextResponse.redirect(new URL("/?error=figma_auth_failed", req.url));
   }
@@ -45,7 +47,9 @@ export async function GET(req: Request) {
     ).toISOString(),
   });
 
-  return NextResponse.redirect(
-    new URL(`/products/${productId}/context?figma=connected`, req.url)
-  );
+  const redirectPath = featureId
+    ? `/products/${productId}/features/${featureId}/concepts?figma=connected`
+    : `/products/${productId}/context?figma=connected`;
+
+  return NextResponse.redirect(new URL(redirectPath, req.url));
 }

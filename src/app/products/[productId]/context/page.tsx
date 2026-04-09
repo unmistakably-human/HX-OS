@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useStream } from "@/hooks/use-stream";
 import { DEMO_CONTEXT } from "@/lib/demo-data";
-import type { ProductContext, UserSegment } from "@/lib/types";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import type { ProductContext, UserSegment, DesignTokens } from "@/lib/types";
+import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon } from "lucide-react";
 
 const STEP_LABELS = ["Overview", "Product", "User Segments", "Structure", "Visual"] as const;
 
@@ -61,9 +61,10 @@ const PLATFORMS = [
 ];
 
 const DS_OPTIONS = [
-  { value: "upload", title: "Yes — I'll upload it alongside", desc: "JSON tokens, style guide.md, or PDF" },
-  { value: "describe", title: "No — I'll describe the visual identity below", desc: "" },
-  { value: "propose", title: "No — HXOS can propose a visual direction", desc: "HXOS will research your industry and competitors to suggest one" },
+  { value: "figma", title: "Connect Figma", desc: "Extract design tokens and variables from your Figma file" },
+  { value: "upload", title: "Upload style guide or screenshots", desc: "JSON tokens, style guide, PDF, or screenshots — AI extracts colors" },
+  { value: "describe", title: "Describe the visual identity", desc: "Specify colors and fonts manually below" },
+  { value: "propose", title: "HXOS can propose", desc: "AI generates a color palette + typography system for your product" },
 ];
 
 function emptySegment(): UserSegment {
@@ -78,6 +79,7 @@ function emptyContext(): ProductContext {
     seg1: emptySegment(), seg2: emptySegment(),
     behInsights: "", competitors: "", flows: "", ia: "", figmaLink: "",
     upcoming: "", dsChoice: "", vibe: "", colors: "", fonts: "",
+    designTokens: null,
   };
 }
 
@@ -182,6 +184,63 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
   );
 }
 
+function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
+  return (
+    <div className="border border-[#e5e7eb] rounded-xl p-4 bg-white space-y-4 mt-3">
+      {/* Brand Colors */}
+      {tokens.brandColors.length > 0 && (
+        <div>
+          <div className="text-[12px] font-semibold text-[#374151] mb-2">Brand Colors</div>
+          <div className="flex gap-3">
+            {tokens.brandColors.map((c) => (
+              <div key={c.hex} className="text-center">
+                <div className="w-12 h-12 rounded-lg border border-[#e5e7eb] shadow-sm" style={{ backgroundColor: c.hex }} />
+                <div className="text-[10px] text-[#6b7280] mt-1.5">{c.name}</div>
+                <div className="text-[10px] font-mono text-[#9ca3af]">{c.hex}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Gradient */}
+      {tokens.gradient && (
+        <div>
+          <div className="text-[12px] font-semibold text-[#374151] mb-2">Gradient</div>
+          <div className="h-8 rounded-lg border border-[#e5e7eb]" style={{ background: tokens.gradient }} />
+        </div>
+      )}
+      {/* Neutrals */}
+      {tokens.neutrals.length > 0 && (
+        <div>
+          <div className="text-[12px] font-semibold text-[#374151] mb-2">Neutrals</div>
+          <div className="flex gap-2">
+            {tokens.neutrals.map((c) => (
+              <div key={c.hex} className="text-center">
+                <div className="w-10 h-10 rounded-lg border border-[#e5e7eb]" style={{ backgroundColor: c.hex }} />
+                <div className="text-[10px] font-mono text-[#9ca3af] mt-1">{c.hex}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Typography */}
+      {tokens.typography.length > 0 && (
+        <div>
+          <div className="text-[12px] font-semibold text-[#374151] mb-2">Typography</div>
+          <div className="space-y-1.5">
+            {tokens.typography.map((t) => (
+              <div key={t.level} className="flex items-baseline gap-3 text-[12px]">
+                <span className="font-semibold text-[#111827] w-14 shrink-0">{t.level}</span>
+                <span className="text-[#6b7280]">{t.font} {t.weight}{t.size ? ` / ${t.size}` : ""}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionHeader({ title, optional }: { title: string; optional?: boolean }) {
   return (
     <div className="flex items-center gap-2 mt-2">
@@ -196,6 +255,7 @@ function SectionHeader({ title, optional }: { title: string; optional?: boolean 
 export default function ContextPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const productId = params.productId as string;
 
   const [step, setStep] = useState(0);
@@ -203,13 +263,23 @@ export default function ContextPage() {
   const [generating, setGenerating] = useState(false);
   const stream = useStream();
 
+  // Visual tab state
+  const [figmaConnected, setFigmaConnected] = useState(false);
+  const [figmaFileUrl, setFigmaFileUrl] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  const dsFileInputRef = useRef<HTMLInputElement>(null);
+  const [dsFile, setDsFile] = useState<File | null>(null);
+  const [proposing, setProposing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
   // Load existing context from API, pre-fill name/company from product record
   useEffect(() => {
     fetch(`/api/products/${productId}`)
       .then((r) => r.json())
       .then((p) => {
         if (p.product_context) {
-          setCtx(p.product_context);
+          setCtx({ ...emptyContext(), ...p.product_context, industries: p.product_context.industries || [] });
         } else {
           // Pre-fill from product-level name/company
           setCtx((prev) => ({
@@ -218,9 +288,20 @@ export default function ContextPage() {
             company: p.company || prev.company,
           }));
         }
+        // Track Figma connection status
+        setFigmaConnected(!!p.figma_access_token);
+        if (p.figma_file_url) setFigmaFileUrl(p.figma_file_url);
       })
       .catch(() => {});
   }, [productId]);
+
+  // Handle Figma OAuth redirect
+  useEffect(() => {
+    if (searchParams.get("figma") === "connected") {
+      setFigmaConnected(true);
+      setStep(4); // Jump to Visual tab
+    }
+  }, [searchParams]);
 
   // Auto-navigate after enrichment completes
   useEffect(() => {
@@ -253,6 +334,111 @@ export default function ContextPage() {
       company: prev.company,
     }));
   }, []);
+
+  // Helper: apply extracted tokens to context strings for downstream compat
+  const applyTokens = useCallback((tokens: DesignTokens) => {
+    set("designTokens", tokens);
+    const colorStr = [
+      ...tokens.brandColors.map((c) => `${c.name}: ${c.hex}`),
+      ...tokens.neutrals.map((c) => `${c.name}: ${c.hex}`),
+    ].join(". ");
+    set("colors", colorStr);
+    const fontStr = tokens.typography
+      .map((t) => `${t.level}: ${t.font} ${t.weight}${t.size ? ` ${t.size}` : ""}`)
+      .join(". ");
+    if (fontStr) set("fonts", fontStr);
+  }, [set]);
+
+  // Extract design tokens from Figma
+  const handleExtractFigma = useCallback(async () => {
+    setExtracting(true);
+    setExtractError(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/extract-design-tokens`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "figma", figmaFileUrl }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `API error ${res.status}`);
+      }
+      const tokens: DesignTokens = await res.json();
+      applyTokens(tokens);
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "Extraction failed");
+    }
+    setExtracting(false);
+  }, [productId, figmaFileUrl, applyTokens]);
+
+  // Handle file upload for design tokens
+  const handleDsFileUpload = useCallback(async (file: File) => {
+    setDsFile(file);
+    setExtracting(true);
+    setExtractError(null);
+    try {
+      const isImage = file.type.startsWith("image/");
+      let body: Record<string, string>;
+
+      if (isImage) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1]); // strip data:image/...;base64, prefix
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        body = { source: "image", data: base64, mediaType: file.type };
+      } else {
+        const text = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+        body = { source: "text", text, fileName: file.name };
+      }
+
+      const res = await fetch(`/api/products/${productId}/extract-design-tokens`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `API error ${res.status}`);
+      }
+      const tokens: DesignTokens = await res.json();
+      applyTokens(tokens);
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "Extraction failed");
+    }
+    setExtracting(false);
+  }, [productId, applyTokens]);
+
+  // Propose style guide via AI
+  const handleProposeStyle = useCallback(async () => {
+    setProposing(true);
+    setExtractError(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/propose-style-guide`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `API error ${res.status}`);
+      }
+      const tokens: DesignTokens = await res.json();
+      applyTokens(tokens);
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "Generation failed");
+    }
+    setProposing(false);
+  }, [productId, applyTokens]);
 
   // Save context and trigger enrichment
   const generatePcd = useCallback(async () => {
@@ -447,25 +633,171 @@ export default function ContextPage() {
         return (
           <div className="space-y-5">
             <div>
-              <FieldLabel>Do you have a design system?</FieldLabel>
+              <FieldLabel>How would you like to define your visual identity?</FieldLabel>
               <div className="space-y-2 mt-1">
                 {DS_OPTIONS.map((d) => (
                   <RadioCard key={d.value} selected={ctx.dsChoice === d.value} onSelect={() => set("dsChoice", d.value)} title={d.title} desc={d.desc} />
                 ))}
               </div>
             </div>
+
             <div>
               <FieldLabel>Describe visual direction</FieldLabel>
               <Textarea value={ctx.vibe} onChange={(e) => set("vibe", e.target.value)} rows={3} placeholder="Reference 2-3 products whose visual style you admire" />
             </div>
-            <div>
-              <FieldLabel>Colors</FieldLabel>
-              <Input value={ctx.colors} onChange={(e) => set("colors", e.target.value)} placeholder="e.g., Primary: #E85C2B. Accent: #2563EB" />
-            </div>
-            <div>
-              <FieldLabel>Fonts</FieldLabel>
-              <Input value={ctx.fonts} onChange={(e) => set("fonts", e.target.value)} placeholder="e.g., Headings: DM Sans Bold. Body: DM Sans Regular" />
-            </div>
+
+            {/* ── Figma Connect ── */}
+            {ctx.dsChoice === "figma" && (
+              <div className="space-y-3">
+                {figmaConnected ? (
+                  <>
+                    <div className="flex items-center gap-2 text-[13px]">
+                      <span className="flex items-center gap-1.5 text-[#065f46] bg-[#ecfdf5] px-2.5 py-1 rounded-md font-medium text-[12px]">
+                        <Check className="w-3.5 h-3.5" /> Figma connected
+                      </span>
+                    </div>
+                    <div>
+                      <FieldLabel>Figma file URL</FieldLabel>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          value={figmaFileUrl}
+                          onChange={(e) => setFigmaFileUrl(e.target.value)}
+                          placeholder="https://www.figma.com/design/..."
+                          className="flex-1"
+                        />
+                        <Button
+                          onClick={handleExtractFigma}
+                          disabled={!figmaFileUrl || extracting}
+                          className="bg-[#111827] hover:bg-[#1f2937] text-white text-[12px] shrink-0"
+                        >
+                          {extracting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Extracting...</> : "Extract Variables"}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="border-2 border-dashed border-[#e5e7eb] rounded-xl p-6 text-center">
+                    <ExternalLink className="w-8 h-8 text-[#9ca3af] mx-auto mb-3" />
+                    <p className="text-[14px] font-medium text-[#111827] mb-1">Connect your Figma account</p>
+                    <p className="text-[12px] text-[#9ca3af] mb-4">We&apos;ll extract design tokens and variables from your file</p>
+                    <Button
+                      onClick={() => window.location.href = `/api/auth/figma?productId=${productId}`}
+                      className="bg-[#111827] hover:bg-[#1f2937] text-white text-[13px] gap-1.5"
+                    >
+                      <ExternalLink className="w-4 h-4" /> Connect Figma
+                    </Button>
+                  </div>
+                )}
+                {extractError && <p className="text-[13px] text-red-500">{extractError}</p>}
+                {ctx.designTokens?.source === "figma" && <DesignTokensPreview tokens={ctx.designTokens} />}
+              </div>
+            )}
+
+            {/* ── Upload ── */}
+            {ctx.dsChoice === "upload" && (
+              <div className="space-y-3">
+                <input
+                  ref={dsFileInputRef}
+                  type="file"
+                  accept=".json,.pdf,.md,.txt,.png,.jpg,.jpeg,.svg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleDsFileUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => dsFileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleDsFileUpload(file);
+                  }}
+                  className={`w-full border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                    dragOver ? "border-[#3b82f6] bg-[#eff6ff]" : "border-[#e5e7eb] hover:border-[#d1d5db]"
+                  }`}
+                >
+                  {extracting ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-6 h-6 text-[#E8713A] animate-spin" />
+                      <p className="text-[13px] text-[#6b7280]">Extracting design tokens from {dsFile?.name}...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center gap-3 mb-3">
+                        <Upload className="w-6 h-6 text-[#9ca3af]" />
+                        <ImageIcon className="w-6 h-6 text-[#9ca3af]" />
+                      </div>
+                      <p className="text-[14px] font-medium text-[#111827] mb-1">
+                        {dsFile ? dsFile.name : "Drop file or click to upload"}
+                      </p>
+                      <p className="text-[12px] text-[#9ca3af]">
+                        JSON tokens, style guide, PDF, or screenshots (PNG, JPG)
+                      </p>
+                      <p className="text-[11px] text-[#d1d5db] mt-1">AI will extract colors and fonts automatically</p>
+                    </>
+                  )}
+                </button>
+                {extractError && <p className="text-[13px] text-red-500">{extractError}</p>}
+                {ctx.designTokens?.source === "upload" && <DesignTokensPreview tokens={ctx.designTokens} />}
+              </div>
+            )}
+
+            {/* ── Describe ── */}
+            {ctx.dsChoice === "describe" && (
+              <>
+                <div>
+                  <FieldLabel>Colors</FieldLabel>
+                  <Input value={ctx.colors} onChange={(e) => set("colors", e.target.value)} placeholder="e.g., Primary: #E85C2B. Accent: #2563EB" />
+                </div>
+                <div>
+                  <FieldLabel>Fonts</FieldLabel>
+                  <Input value={ctx.fonts} onChange={(e) => set("fonts", e.target.value)} placeholder="e.g., Headings: DM Sans Bold. Body: DM Sans Regular" />
+                </div>
+              </>
+            )}
+
+            {/* ── HXOS Propose ── */}
+            {ctx.dsChoice === "propose" && (
+              <div className="space-y-3">
+                {!ctx.designTokens || ctx.designTokens.source !== "ai-proposed" ? (
+                  <div className="border-2 border-dashed border-[#e5e7eb] rounded-xl p-6 text-center">
+                    <Wand2 className="w-8 h-8 text-[#E8713A] mx-auto mb-3" />
+                    <p className="text-[14px] font-medium text-[#111827] mb-1">Generate a style guide</p>
+                    <p className="text-[12px] text-[#9ca3af] mb-4">
+                      AI will create a color palette (2 brand, 1 gradient, 5 neutrals) and 5-level typography system
+                    </p>
+                    <Button
+                      onClick={handleProposeStyle}
+                      disabled={proposing}
+                      className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[13px] gap-1.5"
+                    >
+                      {proposing ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Generating...</> : <><Wand2 className="w-4 h-4" /> Generate Style Guide</>}
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <DesignTokensPreview tokens={ctx.designTokens} />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleProposeStyle}
+                        disabled={proposing}
+                        variant="outline"
+                        className="text-[12px] gap-1.5"
+                      >
+                        {proposing ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> Regenerating...</> : <><Wand2 className="w-3.5 h-3.5" /> Regenerate</>}
+                      </Button>
+                    </div>
+                  </>
+                )}
+                {extractError && <p className="text-[13px] text-red-500">{extractError}</p>}
+              </div>
+            )}
           </div>
         );
       default:

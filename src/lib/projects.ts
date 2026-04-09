@@ -6,7 +6,7 @@ import type { Product, Feature, ProductContext, Concept, ChatMessage } from "./t
 export async function listProducts(): Promise<Product[]> {
   const { data, error } = await supabase
     .from("products")
-    .select("*, features(id, name, feature_type, phase_brief, phase_discovery, phase_concepts, chosen_concept, updated_at)")
+    .select("*, features(id, name, feature_type, phase_brief, phase_discovery, phase_design_concepts, phase_concepts, chosen_concept, updated_at)")
     .order("updated_at", { ascending: false });
 
   if (error) throw error;

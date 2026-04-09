@@ -7,6 +7,14 @@ export interface UserSegment {
   behaviour: string;
 }
 
+export interface DesignTokens {
+  brandColors: { name: string; hex: string }[];
+  gradient?: string;
+  neutrals: { name: string; hex: string }[];
+  typography: { level: string; font: string; weight: string; size: string }[];
+  source: "figma" | "upload" | "ai-proposed";
+}
+
 export interface ProductContext {
   productName: string;
   company: string;
@@ -32,6 +40,7 @@ export interface ProductContext {
   vibe: string;
   colors: string;
   fonts: string;
+  designTokens?: DesignTokens | null;
 }
 
 export interface Product {
@@ -58,6 +67,7 @@ export interface FeatureSummary {
   feature_type: string | null;
   phase_brief: string;
   phase_discovery: string;
+  phase_design_concepts: string;
   phase_concepts: string;
   chosen_concept: string | null;
   updated_at: string;
