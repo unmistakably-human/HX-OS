@@ -70,7 +70,7 @@ export interface Project {
   createdAt: string;
   productContext: ProductContext | null;
   enrichedPcd: string | null;
-  discoveryInsights: string | null;
+  discoveryInsights: import("./discovery-types").DiscoveryDeck | string | null;
   features: Record<string, Feature>;
   phases: {
     context: "locked" | "active" | "complete";

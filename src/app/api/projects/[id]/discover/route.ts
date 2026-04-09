@@ -1,39 +1,29 @@
 import { getProject, saveDiscovery } from "@/lib/projects";
-import { streamClaude } from "@/lib/claude";
+import { callClaude } from "@/lib/claude";
+import { fixJSON } from "@/lib/discovery-types";
 
-const DISCOVERY_SYSTEM = `You are a senior product strategist at HumanX Design Agency. Run structured discovery producing an Insights Deck.
+const DISCOVERY_SYSTEM = `You are a Discovery Agent. You take a product brief and produce a structured Insights Deck as JSON.
 
-Produce 5 analyses, each with exactly 5 sharp insights. Use web search extensively (run 15+ searches across all sections).
+CRITICAL RULES:
+1. Respond ONLY with valid JSON. No markdown, no backticks, no preamble.
+2. Keep ALL string values to max 2 sentences. This prevents truncation.
+3. Never use newlines or unescaped quotes inside string values.
+4. Use web search extensively (15+ searches) to find real competitors, products, market data, reviews, and adoption metrics.
+5. Apply a GLOBAL benchmarking lens — include platforms from US, UK, Europe, Southeast Asia, not just the target market.
 
-## 1. Category Insights
-For each insight: **Statement** (1-2 sentences) → **Evidence** (specific products, data points, market shifts) → **Implication** (what this means for the product being designed).
-Cover: category evolution (5yr timeline), structural shifts (tech/economic/demographic), contradictions (what customers want vs need), competitive clustering (who dominates which segment).
-At least 2 insights should challenge conventional wisdom in this space.
+JSON structure:
+{"title":"string","subtitle":"string","metrics":[{"label":"string","value":"string"}],"category_insights":[{"number":1,"headline":"string","evidence":"string","implication":"string"}],"audience_insights":[{"segment":"string","headline":"string","gap":"string","benchmark":"string"}],"ux_benchmarks":[{"attribute":"string","dominant":{"players":["string"],"description":"string"},"contrarian":{"players":["string"],"description":"string"},"cross_category":{"platform":"string","industry":"string","pattern":"string"},"gap":"string"}],"conversion_retention":{"first_purchase":[{"platform":"string","market":"XX","trigger":"string"}],"retention":[{"platform":"string","mechanism":"string","verdict":"positive|negative","verdict_text":"string"}],"takeaway":"string"},"feature_benchmark":{"local":{"brands":["string"],"features":[{"name":"string","values":["string"]}]},"global":{"brands":["string"],"features":[{"name":"string","values":["string"]}]},"takeaway":"string"},"cross_category":[{"platform":"string","industry":"string","pattern":"string","transferable":"string","study":"string"}],"opportunities":[{"rank":1,"title":"string","description":"string","proof":"string","risk":"string","tags":["string"]}],"glossary":{"platforms":[{"name":"string","market":"XX","url":"string","why":"string","screenshot":"string"}],"patterns":[{"name":"string","example":"string","why":"string"}]}}
 
-## 2. Audience Insights
-For each insight: **Who** (specific segment) → **Current State** (how they solve this today) → **What's Changing** (behavior shifts, new entrants) → **The Gap** (latent needs, unmet moments).
-Cover 3+ distinct segments. At least 1 insight should reveal a say/do contradiction.
-
-## 3. Competitive Benchmarking
-Organize by ATTRIBUTE (onboarding, navigation, product discovery, product page, checkout, retention) — NOT by competitor.
-For each attribute: **Dominant pattern** (what 3+ competitors do), **Contrarian approach** (what 2+ do differently and why), **Global standout** (best-in-class from any market worldwide), **Underexplored space** (what nobody is doing).
-80% within-category competitors, 20% cross-category inspiration (best UX patterns from unrelated industries that solve analogous problems).
-
-## 4. Opportunity Areas
-5 opportunities ranked by potential (most disruptive first). Each: **Opportunity statement** → **Why now** (what changed to make this viable) → **Who benefits** (which audience segments) → **Competitive advantage** (why hard to copy) → **Key risk** (biggest reason this could fail).
-Each opportunity must trace back to 2+ insights from the prior analyses.
-
-## 5. Reference Glossary
-8-12 must-study platforms from multiple markets worldwide. Each: **Platform name**, **Market** (country/region), **Why it matters** (1-2 sentences specific to this product), **Key flows to study** (2-3 specific screens/journeys to screenshot and review).
+Produce exactly: 5 category_insights, 5 audience_insights, 4 ux_benchmarks, 4 first_purchase + 4 retention entries, 4 local + 4 global brands with 8 features each (values: Strong/Basic/None/short phrase), 5 cross_category, 5 opportunities, 8 glossary platforms, 6 glossary patterns, 4 metrics.
 
 QUALITY RULES:
-- Every insight must name specific products, cite specific data, or describe specific behaviors — no vague "users want better X"
+- Every insight must name specific products, cite specific data, or describe specific behaviors
 - Every insight must reveal a tension or contradiction — not just state an obvious fact
 - Every insight must be actionable — the design team can immediately ask "how might we..." based on it
-- Apply a GLOBAL lens — include platforms from US, UK, Europe, Southeast Asia, not just the target market`;
+- Be specific. Global lens. Keep strings SHORT. JSON only.`;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -42,72 +32,70 @@ export async function POST(
   try {
     project = await getProject(id);
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Project not found" }),
-      { status: 404, headers: { "Content-Type": "application/json" } }
-    );
+    return Response.json({ error: "Project not found" }, { status: 404 });
   }
 
   if (!project.enrichedPcd) {
-    return new Response(
-      JSON.stringify({
-        error: "No enriched PCD found. Complete Product Context first.",
-      }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: "No enriched PCD found. Complete Product Context first." },
+      { status: 400 }
     );
   }
 
-  const encoder = new TextEncoder();
+  // Accept optional brief from request body, fall back to enrichedPcd
+  let briefText = project.enrichedPcd;
+  try {
+    const body = await request.json();
+    if (body.brief && typeof body.brief === "string") {
+      briefText = body.brief;
+    }
+  } catch {
+    // No body or invalid JSON — use enrichedPcd
+  }
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      function send(data: object) {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
-        );
-      }
+  try {
+    const userMessage = `Product brief below. Generate the Discovery Insights Deck as JSON. Keep values concise.\n\n${briefText}`;
 
-      try {
-        const messageStream = await streamClaude({
-          system: DISCOVERY_SYSTEM,
-          userMessage: `Here is the enriched Product Context Document:\n\n${project.enrichedPcd}\n\nRun full discovery and produce the Insights Deck.`,
-          useSearch: true,
-          maxTokens: 16000,
-        });
+    let responseText = await callClaude({
+      system: DISCOVERY_SYSTEM,
+      messages: [{ role: "user", content: userMessage }],
+      useSearch: true,
+      maxTokens: 16000,
+    });
 
-        let fullText = "";
+    let deck;
+    try {
+      deck = fixJSON(responseText);
+    } catch {
+      // Retry once with a stronger prompt
+      responseText = await callClaude({
+        system:
+          DISCOVERY_SYSTEM +
+          "\n\nIMPORTANT: Your previous response was not valid JSON. Return ONLY valid JSON. No markdown. No backticks. No text before or after the JSON object.",
+        messages: [
+          { role: "user", content: userMessage },
+          { role: "assistant", content: responseText.slice(0, 2000) },
+          {
+            role: "user",
+            content:
+              "That was not valid JSON. Return ONLY the JSON object, starting with { and ending with }.",
+          },
+        ],
+        useSearch: false,
+        maxTokens: 16000,
+      });
+      deck = fixJSON(responseText);
+    }
 
-        messageStream.on("text", (text: string) => {
-          fullText += text;
-          send({ text });
-        });
+    // Save the structured deck
+    await saveDiscovery(id, deck);
 
-        messageStream.on("error", (err: Error) => {
-          send({ error: err.message });
-          controller.close();
-        });
-
-        await messageStream.finalMessage();
-
-        // Save the discovery insights
-        await saveDiscovery(id, fullText);
-
-        send({ done: true });
-        controller.close();
-      } catch (err) {
-        send({
-          error: err instanceof Error ? err.message : "Discovery failed",
-        });
-        controller.close();
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+    return Response.json({ deck });
+  } catch (err) {
+    console.error("Discovery generation error:", err);
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Discovery failed" },
+      { status: 500 }
+    );
+  }
 }

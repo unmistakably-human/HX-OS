@@ -72,7 +72,7 @@ export async function listProjects(): Promise<Project[]> {
 
 export async function saveDiscovery(
   id: string,
-  insights: string
+  insights: import("./discovery-types").DiscoveryDeck | string
 ): Promise<void> {
   const dir = projectDir(id);
   await fs.writeFile(path.join(dir, "discovery.json"), JSON.stringify({ insights }, null, 2));

@@ -85,7 +85,12 @@ export async function POST(
 
     // Build the user message — aggressively truncate context so output token budget goes to concepts
     const pcdSummary = (project.enrichedPcd || "No PCD available.").slice(0, 3000);
-    const discoverySummary = (project.discoveryInsights || "No discovery insights available.").slice(0, 3000);
+    const rawInsights = typeof project.discoveryInsights === "string"
+      ? project.discoveryInsights
+      : project.discoveryInsights
+        ? JSON.stringify(project.discoveryInsights)
+        : "No discovery insights available.";
+    const discoverySummary = rawInsights.slice(0, 3000);
 
     const userMessage = `## Enriched PCD (summary)
 ${pcdSummary}
