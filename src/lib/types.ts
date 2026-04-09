@@ -165,6 +165,19 @@ export interface Concept {
   stakeholderQuestion: string;
 }
 
+export interface KnowledgeEntry {
+  id: string;
+  product_id: string;
+  feature_id: string | null;
+  source: string;
+  category: string;
+  title: string;
+  content: string;
+  tags: string[];
+  relevance_score: number;
+  created_at: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;

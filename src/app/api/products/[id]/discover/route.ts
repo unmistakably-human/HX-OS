@@ -1,4 +1,5 @@
 import { getProduct, saveDiscovery } from "@/lib/projects";
+import { extractFromDiscovery } from "@/lib/knowledge";
 import { streamClaude } from "@/lib/claude";
 import { fixJSON } from "@/lib/discovery-types";
 
@@ -109,6 +110,10 @@ export async function POST(
 
         const deck = fixJSON(fullText);
         await saveDiscovery(id, deck);
+
+        // Extract knowledge entries (fire-and-forget)
+        extractFromDiscovery(id, deck as unknown as Record<string, unknown>).catch(console.error);
+
         send({ deck, done: true });
         controller.close();
       } catch (err) {

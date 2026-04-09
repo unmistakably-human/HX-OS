@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getProduct, getFeature, saveConcepts } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
+import { getKnowledgeForContext } from "@/lib/knowledge";
 
 const CONCEPT_SYSTEM = `You are a senior product designer generating concept variations.
 
@@ -53,19 +54,17 @@ export async function POST(
   try {
     const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
-    const pcdSummary = (product.enriched_pcd || "No PCD available.").slice(0, 3000);
-    const rawInsights = typeof product.discovery_insights === "string"
-      ? product.discovery_insights
-      : product.discovery_insights
-        ? JSON.stringify(product.discovery_insights)
-        : "No discovery insights available.";
-    const discoverySummary = rawInsights.slice(0, 3000);
+    // Use knowledge base for context instead of full documents
+    const knowledge = await getKnowledgeForContext(
+      id,
+      ["user_behaviour", "domain", "competitor", "pattern", "principle", "persona", "market", "opportunity"],
+      15
+    );
 
-    const userMessage = `## Enriched PCD (summary)
-${pcdSummary}
+    const userMessage = `## Product: ${product.name}${product.company ? ` (${product.company})` : ""}
 
-## Discovery Insights (summary)
-${discoverySummary}
+## Knowledge Base (key insights & research)
+${knowledge || "No knowledge entries yet."}
 
 ## Feature Brief
 - **Feature:** ${feature.name}

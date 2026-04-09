@@ -1,4 +1,5 @@
 import { getProduct, getFeature, updateFeature } from "@/lib/projects";
+import { extractFromInsights } from "@/lib/knowledge";
 import { callClaude } from "@/lib/claude";
 
 const INSIGHTS_SYSTEM = `You are a senior product strategist running focused research for a specific feature. Generate structured insights across exactly 3 categories.
@@ -116,6 +117,9 @@ Generate 15 insights (5 per category) for this feature now.`;
       insights,
       phase_discovery: "active",
     });
+
+    // Extract knowledge entries (fire-and-forget)
+    extractFromInsights(id, fid, insights).catch(console.error);
 
     return Response.json({ insights });
   } catch (err) {

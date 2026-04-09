@@ -1,4 +1,5 @@
 import { getProduct, saveEnrichedPcd } from "@/lib/projects";
+import { extractFromPCD } from "@/lib/knowledge";
 import { streamClaude } from "@/lib/claude";
 
 const ENRICH_SYSTEM = `You are a senior product designer at HumanX (HXOS). Generate an Enriched Product Context Document from this brief. Use web search to research the product, competitors, and market.
@@ -91,6 +92,9 @@ export async function POST(
 
         // Save enriched PCD and advance phase
         await saveEnrichedPcd(id, fullText);
+
+        // Extract knowledge entries (fire-and-forget)
+        extractFromPCD(id, fullText).catch(console.error);
 
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`)

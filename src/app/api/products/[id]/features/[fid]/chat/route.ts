@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getProduct, getFeature } from "@/lib/projects";
 import { streamClaude } from "@/lib/claude";
+import { getKnowledgeForContext } from "@/lib/knowledge";
 import type { Concept } from "@/lib/types";
 
 const CHAT_SYSTEM = `You are a senior product designer at HumanX. You're discussing concept variations with the designer.
@@ -28,16 +29,16 @@ export async function POST(
     // Concepts are stored in the feature JSONB
     const concepts: Concept[] = Array.isArray(feature.concepts) ? feature.concepts : [];
 
+    // Use knowledge base for context instead of full documents
+    const knowledge = await getKnowledgeForContext(
+      id,
+      ["user_behaviour", "domain", "competitor", "pattern", "principle", "opportunity", "persona", "market"],
+      20
+    );
+
     const contextParts = [
       CHAT_SYSTEM,
-      "\n\n## Product Context",
-      product.enriched_pcd || "No enriched PCD available.",
-      "\n\n## Discovery Insights",
-      typeof product.discovery_insights === "string"
-        ? product.discovery_insights
-        : product.discovery_insights
-          ? JSON.stringify(product.discovery_insights)
-          : "No discovery insights available.",
+      `\n\n## Product: ${product.name}${product.company ? ` (${product.company})` : ""}`,
       `\n\n## Feature Brief`,
       `- Feature: ${feature.name}`,
       `- Type: ${feature.feature_type}`,
@@ -46,9 +47,9 @@ export async function POST(
       `- Not-be: ${feature.not_be || "None"}`,
     ];
 
-    if (feature.feature_discovery) {
-      contextParts.push("\n\n## Feature Discovery");
-      contextParts.push(feature.feature_discovery);
+    if (knowledge) {
+      contextParts.push("\n\n## Knowledge Base (key insights & research)");
+      contextParts.push(knowledge);
     }
 
     if (concepts.length > 0) {

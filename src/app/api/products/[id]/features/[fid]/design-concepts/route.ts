@@ -1,4 +1,5 @@
 import { getProduct, getFeature, updateFeature } from "@/lib/projects";
+import { extractFromConcepts } from "@/lib/knowledge";
 import { callClaude } from "@/lib/claude";
 
 const CONCEPTS_SYSTEM = `You are a senior product designer generating design concepts from HMW questions.
@@ -133,6 +134,9 @@ Generate 3 design concepts + baseline + beyond-the-screen interventions now.`;
       phase_hmw: "complete",
       phase_design_concepts: "active",
     });
+
+    // Extract knowledge entries (fire-and-forget)
+    extractFromConcepts(id, fid, concepts, baseline, beyondScreen).catch(console.error);
 
     return Response.json({ concepts, baseline, beyondScreen });
   } catch (err) {
