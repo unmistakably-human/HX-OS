@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X } from "lucide-react";
@@ -64,16 +64,6 @@ export default function DashboardPage() {
   // Delete menu
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-
-  const loadProducts = useCallback(async () => {
-    try {
-      const data = await listProducts();
-      setProducts(data);
-    } catch (err) {
-      console.error("Failed to load products:", err);
-    }
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
