@@ -58,10 +58,10 @@ async function extractFromFigma(
   if (varsRes.ok) {
     const varsData = await varsRes.json();
     const variables = varsData.meta?.variables || {};
-    for (const v of Object.values(variables) as any[]) {
+    for (const v of Object.values(variables) as { resolvedType?: string; valuesByMode?: Record<string, { r?: number; g?: number; b?: number }>; name?: string }[]) {
       if (v.resolvedType === "COLOR" && v.valuesByMode) {
-        const modeValues = Object.values(v.valuesByMode)[0] as any;
-        if (modeValues?.r !== undefined) {
+        const modeValues = Object.values(v.valuesByMode)[0];
+        if (modeValues?.r !== undefined && modeValues?.g !== undefined && modeValues?.b !== undefined) {
           const hex = rgbaToHex(modeValues.r, modeValues.g, modeValues.b);
           const name = v.name?.replace(/\//g, " / ") || "Color";
           // Heuristic: variables with "neutral" or "gray" in name go to neutrals
@@ -139,8 +139,12 @@ async function extractFromImage(
   });
 
   const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const parsed = JSON.parse(cleaned);
-  return { ...parsed, source: "upload" };
+  try {
+    const parsed = JSON.parse(cleaned);
+    return { ...parsed, source: "upload" };
+  } catch {
+    throw new Error("Failed to parse design tokens from image");
+  }
 }
 
 async function extractFromText(text: string): Promise<DesignTokens> {
@@ -155,8 +159,12 @@ async function extractFromText(text: string): Promise<DesignTokens> {
   });
 
   const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const parsed = JSON.parse(cleaned);
-  return { ...parsed, source: "upload" };
+  try {
+    const parsed = JSON.parse(cleaned);
+    return { ...parsed, source: "upload" };
+  } catch {
+    throw new Error("Failed to parse design tokens from text");
+  }
 }
 
 export async function POST(

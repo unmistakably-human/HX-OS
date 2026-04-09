@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DiscoveryDeck } from "@/lib/discovery-types";
@@ -13,8 +13,8 @@ interface DeckNavigatorProps {
 export function DeckNavigator({ data }: DeckNavigatorProps) {
   const [idx, setIdx] = useState(0);
   const [seen, setSeen] = useState<Set<number>>(new Set([0]));
-  const pages = useRef(buildDeckPages(data));
-  const total = pages.current.length;
+  const pages = useMemo(() => buildDeckPages(data), [data]);
+  const total = pages.length;
 
   const go = useCallback(
     (n: number) => {
@@ -56,7 +56,7 @@ export function DeckNavigator({ data }: DeckNavigatorProps) {
 
         {/* Dot indicators */}
         <div className="flex gap-1.5 flex-wrap justify-center flex-1 mx-3">
-          {pages.current.map((_, i) => (
+          {pages.map((_, i) => (
             <div
               key={i}
               onClick={() => go(i)}
@@ -93,7 +93,7 @@ export function DeckNavigator({ data }: DeckNavigatorProps) {
         key={idx}
         className="animate-in fade-in duration-300"
       >
-        {pages.current[idx]}
+        {pages[idx]}
       </div>
     </div>
   );

@@ -76,8 +76,21 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listProducts();
+        if (!cancelled) {
+          setProducts(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load products:", err);
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   async function readFileAsText(file: File): Promise<string> {
     return new Promise((resolve, reject) => {

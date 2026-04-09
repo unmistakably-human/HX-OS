@@ -1,7 +1,12 @@
 import type { DiscoveryDeck } from "./discovery-types";
 
 function esc(s: string | undefined | null): string {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function sec(label: string, title: string, body: string): string {

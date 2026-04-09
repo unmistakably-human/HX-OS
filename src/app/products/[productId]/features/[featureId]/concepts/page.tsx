@@ -12,7 +12,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Loader2, Check, HelpCircle, ExternalLink } from "lucide-react";
-import type { Concept, ChatMessage, Feature, Product } from "@/lib/types";
+import type { Concept, ChatMessage, Feature } from "@/lib/types";
 
 const trackStyles: Record<string, { bg: string; text: string; label: string }> = {
   A: { bg: "#ecfdf5", text: "#065f46", label: "Track A" },
@@ -36,6 +36,11 @@ export default function ConceptsPage() {
   const [loadingState, setLoadingState] = useState<"loading" | "ready">("loading");
 
   const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight chat request on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
 
   // Load feature + product data
   useEffect(() => {

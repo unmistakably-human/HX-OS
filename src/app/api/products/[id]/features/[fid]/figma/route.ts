@@ -115,6 +115,7 @@ ${concept.wireframeHtml ? concept.wireframeHtml.replace(/<[^>]+>/g, " ").substri
 
 Frame: ${width}px wide, auto-height. Use the use_figma tool now.`;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- beta MCP API not yet typed in SDK
     const response = await (client as any).beta.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 16000,
@@ -138,10 +139,10 @@ Frame: ${width}px wide, auto-height. Use the use_figma tool now.`;
     });
 
     const toolUses = response.content.filter(
-      (b: any) => b.type === "mcp_tool_use"
+      (b: { type: string }) => b.type === "mcp_tool_use"
     );
     const textBlocks = response.content.filter(
-      (b: any) => b.type === "text"
+      (b: { type: string }) => b.type === "text"
     );
     const success = toolUses.length > 0;
 
@@ -150,12 +151,13 @@ Frame: ${width}px wide, auto-height. Use the use_figma tool now.`;
       message: success
         ? `"${concept.name}" pushed to Figma!`
         : "Push may have failed. Check your Figma file.",
-      details: textBlocks.map((b: any) => b.text).join("\n"),
+      details: textBlocks.map((b: { text?: string }) => b.text ?? "").join("\n"),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Figma push error:", error);
+    const message = error instanceof Error ? error.message : "Push to Figma failed";
     return NextResponse.json(
-      { error: error.message || "Push to Figma failed" },
+      { error: message },
       { status: 500 }
     );
   }
