@@ -1,5 +1,5 @@
-import { getProject, saveDiscovery } from "@/lib/projects";
-import { callClaude } from "@/lib/claude";
+import { getProduct, saveDiscovery } from "@/lib/projects";
+import { streamClaude } from "@/lib/claude";
 import { fixJSON } from "@/lib/discovery-types";
 
 const DISCOVERY_SYSTEM = `You are a Discovery Agent. You take a product brief and produce a structured Insights Deck as JSON.
@@ -8,7 +8,7 @@ CRITICAL RULES:
 1. Respond ONLY with valid JSON. No markdown, no backticks, no preamble.
 2. Keep ALL string values to max 2 sentences. This prevents truncation.
 3. Never use newlines or unescaped quotes inside string values.
-4. Use web search extensively (15+ searches) to find real competitors, products, market data, reviews, and adoption metrics.
+4. Use web search extensively to find real competitors, products, market data, reviews, and adoption metrics.
 5. Apply a GLOBAL benchmarking lens — include platforms from US, UK, Europe, Southeast Asia, not just the target market.
 
 JSON structure:
@@ -18,8 +18,8 @@ Produce exactly: 5 category_insights, 5 audience_insights, 4 ux_benchmarks, 4 fi
 
 QUALITY RULES:
 - Every insight must name specific products, cite specific data, or describe specific behaviors
-- Every insight must reveal a tension or contradiction — not just state an obvious fact
-- Every insight must be actionable — the design team can immediately ask "how might we..." based on it
+- Every insight must reveal a tension or contradiction
+- Every insight must be actionable
 - Be specific. Global lens. Keep strings SHORT. JSON only.`;
 
 export async function POST(
@@ -28,74 +28,86 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  let project;
+  let product;
   try {
-    project = await getProject(id);
+    product = await getProduct(id);
   } catch {
-    return Response.json({ error: "Project not found" }, { status: 404 });
+    return Response.json({ error: "Product not found" }, { status: 404 });
   }
 
-  if (!project.enrichedPcd) {
+  if (!product.enriched_pcd) {
     return Response.json(
       { error: "No enriched PCD found. Complete Product Context first." },
       { status: 400 }
     );
   }
 
-  // Accept optional brief from request body, fall back to enrichedPcd
-  let briefText = project.enrichedPcd;
+  let briefText = product.enriched_pcd;
   try {
     const body = await request.json();
     if (body.brief && typeof body.brief === "string") {
       briefText = body.brief;
     }
   } catch {
-    // No body or invalid JSON — use enrichedPcd
+    // No body — use enriched_pcd
   }
 
-  try {
-    const userMessage = `Product brief below. Generate the Discovery Insights Deck as JSON. Keep values concise.\n\n${briefText}`;
+  const encoder = new TextEncoder();
 
-    let responseText = await callClaude({
-      system: DISCOVERY_SYSTEM,
-      messages: [{ role: "user", content: userMessage }],
-      useSearch: true,
-      maxTokens: 16000,
-    });
+  const stream = new ReadableStream({
+    async start(controller) {
+      function send(data: object) {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+        );
+      }
 
-    let deck;
-    try {
-      deck = fixJSON(responseText);
-    } catch {
-      // Retry once with a stronger prompt
-      responseText = await callClaude({
-        system:
-          DISCOVERY_SYSTEM +
-          "\n\nIMPORTANT: Your previous response was not valid JSON. Return ONLY valid JSON. No markdown. No backticks. No text before or after the JSON object.",
-        messages: [
-          { role: "user", content: userMessage },
-          { role: "assistant", content: responseText.slice(0, 2000) },
-          {
-            role: "user",
-            content:
-              "That was not valid JSON. Return ONLY the JSON object, starting with { and ending with }.",
-          },
-        ],
-        useSearch: false,
-        maxTokens: 16000,
-      });
-      deck = fixJSON(responseText);
-    }
+      try {
+        const userMessage = `Product brief below. Generate the Discovery Insights Deck as JSON. Keep values concise.\n\n${briefText}`;
 
-    // Save the structured deck
-    await saveDiscovery(id, deck);
+        const messageStream = await streamClaude({
+          system: DISCOVERY_SYSTEM,
+          userMessage,
+          useSearch: true,
+          maxTokens: 16000,
+        });
 
-    return Response.json({ deck });
-  } catch (err) {
-    console.error("Discovery generation error:", err);
-    return Response.json(
-      { error: err instanceof Error ? err.message : "Discovery failed" },
-      { status: 500 }
-    );
-  }
+        let fullText = "";
+        let charCount = 0;
+
+        messageStream.on("text", (text: string) => {
+          fullText += text;
+          charCount += text.length;
+          if (charCount % 500 < text.length) {
+            send({ progress: charCount });
+          }
+        });
+
+        messageStream.on("error", (err: Error) => {
+          send({ error: err.message });
+          controller.close();
+        });
+
+        await messageStream.finalMessage();
+
+        const deck = fixJSON(fullText);
+        await saveDiscovery(id, deck);
+        send({ deck, done: true });
+        controller.close();
+      } catch (err) {
+        send({
+          error: err instanceof Error ? err.message : "Discovery failed",
+        });
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }

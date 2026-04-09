@@ -1,6 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+function getClient() {
+  // HUMANX_ANTHROPIC_KEY takes priority — ANTHROPIC_API_KEY conflicts with
+  // Claude Code's own env which sets it to empty string, preventing Next.js
+  // from loading it from .env.local.
+  const key = process.env.HUMANX_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("Set HUMANX_ANTHROPIC_KEY in .env.local");
+  return new Anthropic({ apiKey: key });
+}
 
 export async function streamClaude({
   system,
@@ -30,7 +37,7 @@ export async function streamClaude({
     ];
   }
 
-  return client.messages.stream(params);
+  return getClient().messages.stream(params);
 }
 
 export async function callClaude({
@@ -60,7 +67,7 @@ export async function callClaude({
     ];
   }
 
-  const response = await client.messages.create(params);
+  const response = await getClient().messages.create(params);
   return response.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)

@@ -81,7 +81,6 @@ function emptyContext(): ProductContext {
   };
 }
 
-// ─── Radio card ────────────────────────────────────────
 function RadioCard({
   selected, onSelect, title, desc,
 }: {
@@ -108,7 +107,6 @@ function RadioCard({
   );
 }
 
-// ─── Checkbox card ─────────────────────────────────────
 function CheckCard({
   checked, onToggle, label,
 }: {
@@ -128,7 +126,6 @@ function CheckCard({
   );
 }
 
-// ─── Blue callout ──────────────────────────────────────
 function WhyCallout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-[#eff6ff] border-l-2 border-[#93c5fd] rounded-md px-3.5 py-2.5 mb-4">
@@ -140,7 +137,6 @@ function WhyCallout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Segment card ──────────────────────────────────────
 function SegmentCard({
   label, seg, onChange, required,
 }: {
@@ -158,10 +154,7 @@ function SegmentCard({
       <div className="space-y-3">
         <div>
           <Label className="text-[12px] text-[#6b7280]">Segment name</Label>
-          <Input
-            value={seg.name} onChange={(e) => set("name", e.target.value)}
-            placeholder="e.g., Working mothers, 28-40" className="mt-1"
-          />
+          <Input value={seg.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g., Working mothers, 28-40" className="mt-1" />
         </div>
         <div>
           <Label className="text-[12px] text-[#6b7280]">Demographics</Label>
@@ -174,17 +167,13 @@ function SegmentCard({
         </div>
         <div>
           <Label className="text-[12px] text-[#6b7280]">Behaviour</Label>
-          <Textarea
-            value={seg.behaviour} onChange={(e) => set("behaviour", e.target.value)}
-            rows={3} className="mt-1"
-          />
+          <Textarea value={seg.behaviour} onChange={(e) => set("behaviour", e.target.value)} rows={3} className="mt-1" />
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Field label ───────────────────────────────────────
 function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
     <Label className="text-[13px] font-medium text-[#374151] mb-1.5 block">
@@ -193,7 +182,6 @@ function FieldLabel({ children, required }: { children: React.ReactNode; require
   );
 }
 
-// ─── Section header ────────────────────────────────────
 function SectionHeader({ title, optional }: { title: string; optional?: boolean }) {
   return (
     <div className="flex items-center gap-2 mt-2">
@@ -205,13 +193,10 @@ function SectionHeader({ title, optional }: { title: string; optional?: boolean 
   );
 }
 
-// ═══════════════════════════════════════════════════════
-// MAIN PAGE COMPONENT
-// ═══════════════════════════════════════════════════════
 export default function ContextPage() {
   const params = useParams();
   const router = useRouter();
-  const projectId = params.projectId as string;
+  const productId = params.productId as string;
 
   const [step, setStep] = useState(0);
   const [ctx, setCtx] = useState<ProductContext>(emptyContext);
@@ -220,20 +205,20 @@ export default function ContextPage() {
 
   // Load existing context from API
   useEffect(() => {
-    fetch(`/api/projects/${projectId}`)
+    fetch(`/api/products/${productId}`)
       .then((r) => r.json())
       .then((p) => {
-        if (p.productContext) setCtx(p.productContext);
+        if (p.product_context) setCtx(p.product_context);
       })
       .catch(() => {});
-  }, [projectId]);
+  }, [productId]);
 
   // Auto-navigate after enrichment completes
   useEffect(() => {
     if (stream.done && !stream.error) {
-      router.push(`/projects/${projectId}/discovery`);
+      router.push(`/products/${productId}/discovery`);
     }
-  }, [stream.done, stream.error, projectId, router]);
+  }, [stream.done, stream.error, productId, router]);
 
   const set = useCallback(<K extends keyof ProductContext>(key: K, val: ProductContext[K]) => {
     setCtx((prev) => ({ ...prev, [key]: val }));
@@ -260,14 +245,14 @@ export default function ContextPage() {
   const generatePcd = useCallback(async () => {
     setGenerating(true);
     // Save context first
-    await fetch(`/api/projects/${projectId}`, {
+    await fetch(`/api/products/${productId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productContext: ctx }),
+      body: JSON.stringify({ product_context: ctx }),
     });
     // Stream enrichment
-    stream.run(`/api/projects/${projectId}/enrich`);
-  }, [projectId, ctx, stream]);
+    stream.run(`/api/products/${productId}/enrich`);
+  }, [productId, ctx, stream]);
 
   // Step validation
   const isStepValid = useCallback((s: number): boolean => {
@@ -281,13 +266,12 @@ export default function ContextPage() {
       case 3:
         return !!ctx.flows;
       case 4:
-        return true; // all optional
+        return true;
       default:
         return false;
     }
   }, [ctx]);
 
-  // ─── Loading / generating state ───────────────────
   if (generating) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
@@ -319,10 +303,8 @@ export default function ContextPage() {
     );
   }
 
-  // ─── Render step content ──────────────────────────
   const renderStep = () => {
     switch (step) {
-      // ── STEP 1: Overview ──
       case 0:
         return (
           <div className="space-y-5">
@@ -376,8 +358,6 @@ export default function ContextPage() {
             </div>
           </div>
         );
-
-      // ── STEP 2: Product ──
       case 1:
         return (
           <div className="space-y-5">
@@ -408,8 +388,6 @@ export default function ContextPage() {
             </div>
           </div>
         );
-
-      // ── STEP 3: User Segments ──
       case 2:
         return (
           <div className="space-y-5">
@@ -430,8 +408,6 @@ export default function ContextPage() {
             </div>
           </div>
         );
-
-      // ── STEP 4: Structure ──
       case 3:
         return (
           <div className="space-y-5">
@@ -454,8 +430,6 @@ export default function ContextPage() {
             </div>
           </div>
         );
-
-      // ── STEP 5: Visual ──
       case 4:
         return (
           <div className="space-y-5">
@@ -481,7 +455,6 @@ export default function ContextPage() {
             </div>
           </div>
         );
-
       default:
         return null;
     }
@@ -489,7 +462,6 @@ export default function ContextPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Header */}
       <PhaseHeader
         title="Product Context"
         step={{ current: step + 1, total: 5 }}
@@ -499,8 +471,6 @@ export default function ContextPage() {
           </Button>
         }
       />
-
-      {/* Step tabs */}
       <div className="flex items-center gap-1 px-5 py-2 border-b border-[#e5e7eb] bg-white">
         {STEP_LABELS.map((label, i) => {
           const isPast = i < step;
@@ -524,40 +494,26 @@ export default function ContextPage() {
           );
         })}
       </div>
-
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[720px] mx-auto px-5 py-6">
           {renderStep()}
         </div>
       </div>
-
-      {/* Bottom nav */}
       <div className="flex items-center justify-between px-5 py-3 border-t border-[#e5e7eb] bg-white">
         <div>
           {step > 0 && (
-            <button
-              onClick={() => setStep(step - 1)}
-              className="flex items-center gap-1.5 text-[13px] text-[#6b7280] hover:text-[#111827] transition-colors"
-            >
+            <button onClick={() => setStep(step - 1)} className="flex items-center gap-1.5 text-[13px] text-[#6b7280] hover:text-[#111827] transition-colors">
               <ArrowLeft className="w-3.5 h-3.5" /> Back
             </button>
           )}
         </div>
         <div>
           {step < 4 ? (
-            <Button
-              onClick={() => setStep(step + 1)}
-              disabled={!isStepValid(step)}
-              className="bg-[#111827] hover:bg-[#1f2937] text-white text-[13px] gap-1.5"
-            >
+            <Button onClick={() => setStep(step + 1)} disabled={!isStepValid(step)} className="bg-[#111827] hover:bg-[#1f2937] text-white text-[13px] gap-1.5">
               Continue <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           ) : (
-            <Button
-              onClick={generatePcd}
-              className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[13px] gap-1.5"
-            >
+            <Button onClick={generatePcd} className="bg-[#E8713A] hover:bg-[#d4652f] text-white text-[13px] gap-1.5">
               Generate PCD <Check className="w-3.5 h-3.5" />
             </Button>
           )}

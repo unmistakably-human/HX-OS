@@ -4,8 +4,9 @@
     {
       "name": "humanx-dev",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "--turbopack"],
-      "port": 3847
+      "runtimeArgs": ["next", "dev", "--turbopack", "-p", "3847"],
+      "port": 3847,
+      "autoPort": false
     }
   ]
 }

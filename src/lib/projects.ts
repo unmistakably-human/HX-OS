@@ -1,134 +1,170 @@
-import fs from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
-import type { Project, Feature, Concept } from "./types";
+import { supabase } from "./supabase";
+import type { Product, Feature, ProductContext, Concept, ChatMessage } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data", "projects");
+// ═══ PRODUCTS ═══
 
-async function ensureDir(dir: string) {
-  await fs.mkdir(dir, { recursive: true });
+export async function listProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, features(id, name, feature_type, phase_brief, phase_discovery, phase_concepts, chosen_concept, updated_at)")
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
-function projectDir(id: string) {
-  return path.join(DATA_DIR, id);
+export async function getProduct(id: string): Promise<Product> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-function projectFile(id: string) {
-  return path.join(projectDir(id), "project.json");
+export async function createProduct(name: string, company?: string): Promise<Product> {
+  const { data, error } = await supabase
+    .from("products")
+    .insert({ name, company: company || null })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-export async function createProject(name: string): Promise<Project> {
-  const id = randomUUID();
-  const project: Project = {
-    id,
-    name,
-    createdAt: new Date().toISOString(),
-    productContext: null,
-    enrichedPcd: null,
-    discoveryInsights: null,
-    features: {},
-    phases: {
-      context: "active",
-      discovery: "locked",
-      features: "locked",
-      concepts: "locked",
-    },
-  };
-  await ensureDir(projectDir(id));
-  await fs.writeFile(projectFile(id), JSON.stringify(project, null, 2));
-  return project;
+export async function updateProduct(id: string, updates: Record<string, unknown>): Promise<Product> {
+  const { data, error } = await supabase
+    .from("products")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-export async function getProject(id: string): Promise<Project> {
-  const raw = await fs.readFile(projectFile(id), "utf-8");
-  return JSON.parse(raw);
+export async function deleteProduct(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw error;
 }
 
-export async function updateProject(
-  id: string,
-  updates: Partial<Project>
-): Promise<Project> {
-  const project = await getProject(id);
-  const merged = { ...project, ...updates };
-  await fs.writeFile(projectFile(id), JSON.stringify(merged, null, 2));
-  return merged;
+// ═══ FEATURES ═══
+
+export async function listFeatures(productId: string): Promise<Feature[]> {
+  const { data, error } = await supabase
+    .from("features")
+    .select("*")
+    .eq("product_id", productId)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
-export async function listProjects(): Promise<Project[]> {
-  await ensureDir(DATA_DIR);
-  const dirs = await fs.readdir(DATA_DIR, { withFileTypes: true });
-  const projects: Project[] = [];
-  for (const d of dirs) {
-    if (!d.isDirectory()) continue;
-    try {
-      const p = await getProject(d.name);
-      projects.push(p);
-    } catch {
-      // skip broken entries
-    }
-  }
-  return projects;
+export async function getFeature(featureId: string): Promise<Feature> {
+  const { data, error } = await supabase
+    .from("features")
+    .select("*")
+    .eq("id", featureId)
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-export async function saveDiscovery(
-  id: string,
-  insights: import("./discovery-types").DiscoveryDeck | string
-): Promise<void> {
-  const dir = projectDir(id);
-  await fs.writeFile(path.join(dir, "discovery.json"), JSON.stringify({ insights }, null, 2));
-  await updateProject(id, {
-    discoveryInsights: insights,
-    phases: {
-      context: "complete",
-      discovery: "complete",
-      features: "active",
-      concepts: "locked",
-    },
-  } as Partial<Project>);
+export async function createFeature(productId: string, name: string, featureType: string): Promise<Feature> {
+  const { data, error } = await supabase
+    .from("features")
+    .insert({ product_id: productId, name, feature_type: featureType })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-export async function createFeature(
-  projectId: string,
-  feature: Omit<Feature, "id">
-): Promise<Feature> {
-  const id = randomUUID().slice(0, 8);
-  const full: Feature = { id, ...feature };
-  const project = await getProject(projectId);
-  project.features[id] = full;
-  await updateProject(projectId, { features: project.features });
-  return full;
+export async function updateFeature(featureId: string, updates: Record<string, unknown>): Promise<Feature> {
+  const { data, error } = await supabase
+    .from("features")
+    .update(updates)
+    .eq("id", featureId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-export async function getFeature(
-  projectId: string,
-  featureId: string
-): Promise<Feature> {
-  const project = await getProject(projectId);
-  const feature = project.features[featureId];
-  if (!feature) throw new Error(`Feature ${featureId} not found`);
-  return feature;
+export async function deleteFeature(featureId: string): Promise<void> {
+  const { error } = await supabase
+    .from("features")
+    .delete()
+    .eq("id", featureId);
+
+  if (error) throw error;
 }
 
-export async function updateFeature(
-  projectId: string,
-  featureId: string,
-  updates: Partial<Feature>
-): Promise<void> {
-  const project = await getProject(projectId);
-  const feature = project.features[featureId];
-  if (!feature) throw new Error(`Feature ${featureId} not found`);
-  project.features[featureId] = { ...feature, ...updates };
-  await updateProject(projectId, { features: project.features });
+// ═══ CONVENIENCE ═══
+
+export async function saveProductContext(id: string, context: ProductContext): Promise<void> {
+  await updateProduct(id, { product_context: context });
 }
 
-export async function saveConcepts(
-  projectId: string,
-  featureId: string,
-  concepts: Concept[]
-): Promise<void> {
-  const dir = projectDir(projectId);
-  await fs.writeFile(
-    path.join(dir, `concepts-${featureId}.json`),
-    JSON.stringify(concepts, null, 2)
-  );
+export async function saveEnrichedPcd(id: string, pcd: string): Promise<void> {
+  await updateProduct(id, {
+    enriched_pcd: pcd,
+    phase_context: "complete",
+    phase_discovery: "active",
+  });
+}
+
+export async function saveDiscovery(id: string, insights: unknown): Promise<void> {
+  await updateProduct(id, {
+    discovery_insights: typeof insights === "string" ? insights : JSON.stringify(insights),
+    phase_discovery: "complete",
+  });
+}
+
+export async function saveFeatureBrief(featureId: string, brief: {
+  problem: string;
+  must_have: string;
+  not_be: string;
+  additional_context: string;
+}): Promise<void> {
+  await updateFeature(featureId, {
+    ...brief,
+    phase_brief: "complete",
+    phase_discovery: "active",
+  });
+}
+
+export async function saveFeatureDiscovery(featureId: string, discovery: string): Promise<void> {
+  await updateFeature(featureId, {
+    feature_discovery: discovery,
+    phase_discovery: "complete",
+    phase_concepts: "active",
+  });
+}
+
+export async function saveConcepts(featureId: string, concepts: Concept[]): Promise<void> {
+  await updateFeature(featureId, { concepts });
+}
+
+export async function saveChatMessages(featureId: string, messages: ChatMessage[]): Promise<void> {
+  await updateFeature(featureId, { chat_messages: messages });
+}
+
+export async function selectConcept(featureId: string, conceptName: string): Promise<void> {
+  await updateFeature(featureId, {
+    chosen_concept: conceptName,
+    phase_concepts: "complete",
+  });
 }

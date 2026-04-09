@@ -16,15 +16,28 @@ const STATUS_MESSAGES = [
   "Assembling deck...",
 ];
 
-export function DiscoveryLoading() {
+interface DiscoveryLoadingProps {
+  progress?: number;
+}
+
+export function DiscoveryLoading({ progress = 0 }: DiscoveryLoadingProps) {
   const [msgIdx, setMsgIdx] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    const msgTimer = setInterval(() => {
       setMsgIdx((i) => Math.min(i + 1, STATUS_MESSAGES.length - 1));
     }, 5000);
-    return () => clearInterval(t);
+    const clockTimer = setInterval(() => {
+      setElapsed((e) => e + 1);
+    }, 1000);
+    return () => {
+      clearInterval(msgTimer);
+      clearInterval(clockTimer);
+    };
   }, []);
+
+  const hasProgress = progress > 0;
 
   return (
     <div className="flex-1 flex items-center justify-center">
@@ -33,11 +46,26 @@ export function DiscoveryLoading() {
         <div className="text-[16px] font-medium text-[#111827] mb-2">
           Building your insights deck
         </div>
-        <div className="text-[13px] text-[#6b7280] animate-pulse">
+        <div className="text-[13px] text-[#6b7280] animate-pulse mb-3">
           {STATUS_MESSAGES[msgIdx]}
         </div>
-        <p className="text-[11px] text-[#9ca3af] mt-5">
-          Typically 30–60 seconds
+
+        {hasProgress && (
+          <div className="mb-3">
+            <div className="w-64 h-1.5 bg-[#e5e7eb] rounded-full mx-auto overflow-hidden">
+              <div
+                className="h-full bg-[#E8713A] rounded-full transition-all duration-500"
+                style={{ width: `${Math.min((progress / 12000) * 100, 95)}%` }}
+              />
+            </div>
+            <div className="text-[11px] text-[#9ca3af] mt-1.5">
+              {Math.round(progress / 1000)}k chars generated
+            </div>
+          </div>
+        )}
+
+        <p className="text-[11px] text-[#9ca3af]">
+          {elapsed}s elapsed — typically takes 30–90 seconds
         </p>
       </div>
     </div>

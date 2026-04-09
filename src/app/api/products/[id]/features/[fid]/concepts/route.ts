@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getProject, getFeature, saveConcepts } from "@/lib/projects";
+import { getProduct, getFeature, saveConcepts } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 
 const CONCEPT_SYSTEM = `You are a senior product designer generating concept variations.
@@ -16,10 +16,8 @@ JSON schema per concept:
 CRITICAL: wireframeHtml must be SHORT (under 500 chars each). Use simple nested divs, not complex layouts. Escape all quotes inside HTML attributes with &quot; since this is inside JSON strings.`;
 
 function extractJSON(text: string): string {
-  // Try to parse directly first
   const trimmed = text.trim();
   if (trimmed.startsWith("[")) {
-    // Find the matching closing bracket
     let depth = 0;
     for (let i = 0; i < trimmed.length; i++) {
       if (trimmed[i] === "[") depth++;
@@ -29,11 +27,9 @@ function extractJSON(text: string): string {
     return trimmed;
   }
 
-  // Try to extract from markdown code blocks
   const codeBlockMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) return codeBlockMatch[1].trim();
 
-  // Try to find array brackets
   const start = trimmed.indexOf("[");
   if (start >= 0) {
     let depth = 0;
@@ -42,53 +38,26 @@ function extractJSON(text: string): string {
       if (trimmed[i] === "]") depth--;
       if (depth === 0) return trimmed.slice(start, i + 1);
     }
-    // If unbalanced, try adding closing brackets
     return trimmed.slice(start) + "]";
   }
 
   return trimmed;
 }
 
-export async function GET(
-  _req: NextRequest,
-  ctx: RouteContext<"/api/projects/[id]/features/[fid]/concepts">
-) {
-  const { id, fid } = await ctx.params;
-  try {
-    // Try to read saved concepts
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const conceptsPath = path.join(
-      process.cwd(),
-      "data",
-      "projects",
-      id,
-      `concepts-${fid}.json`
-    );
-    const raw = await fs.readFile(conceptsPath, "utf-8");
-    const concepts = JSON.parse(raw);
-    return Response.json(concepts);
-  } catch {
-    return Response.json([], { status: 200 });
-  }
-}
-
 export async function POST(
   _req: NextRequest,
-  ctx: RouteContext<"/api/projects/[id]/features/[fid]/concepts">
+  ctx: { params: Promise<{ id: string; fid: string }> }
 ) {
   const { id, fid } = await ctx.params;
 
   try {
-    const project = await getProject(id);
-    const feature = await getFeature(id, fid);
+    const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
-    // Build the user message — aggressively truncate context so output token budget goes to concepts
-    const pcdSummary = (project.enrichedPcd || "No PCD available.").slice(0, 3000);
-    const rawInsights = typeof project.discoveryInsights === "string"
-      ? project.discoveryInsights
-      : project.discoveryInsights
-        ? JSON.stringify(project.discoveryInsights)
+    const pcdSummary = (product.enriched_pcd || "No PCD available.").slice(0, 3000);
+    const rawInsights = typeof product.discovery_insights === "string"
+      ? product.discovery_insights
+      : product.discovery_insights
+        ? JSON.stringify(product.discovery_insights)
         : "No discovery insights available.";
     const discoverySummary = rawInsights.slice(0, 3000);
 
@@ -100,11 +69,13 @@ ${discoverySummary}
 
 ## Feature Brief
 - **Feature:** ${feature.name}
-- **Type:** ${feature.type}
+- **Type:** ${feature.feature_type}
 - **Problem:** ${feature.problem}
-- **Must-have elements:** ${feature.mustHave}
-- **Should NOT be:** ${feature.notBe || "No constraints specified."}
-- **Additional context:** ${feature.context || "None."}
+- **Must-have elements:** ${feature.must_have}
+- **Should NOT be:** ${feature.not_be || "No constraints specified."}
+- **Additional context:** ${feature.additional_context || "None."}
+
+${feature.feature_discovery ? `## Feature-Specific Discovery\n${feature.feature_discovery.slice(0, 3000)}` : ""}
 
 Generate 6 concept variations now. Keep each wireframeHtml under 800 characters — focus on conveying the metaphor clearly, not pixel-perfect layouts.`;
 
@@ -114,13 +85,11 @@ Generate 6 concept variations now. Keep each wireframeHtml under 800 characters 
       maxTokens: 8000,
     });
 
-    // Parse the JSON response
     let concepts;
     try {
       const jsonStr = extractJSON(responseText);
       concepts = JSON.parse(jsonStr);
     } catch {
-      // Retry once
       responseText = await callClaude({
         system:
           CONCEPT_SYSTEM +
@@ -148,8 +117,7 @@ Generate 6 concept variations now. Keep each wireframeHtml under 800 characters 
       );
     }
 
-    // Save concepts
-    await saveConcepts(id, fid, concepts);
+    await saveConcepts(fid, concepts);
 
     return Response.json(concepts);
   } catch (err) {

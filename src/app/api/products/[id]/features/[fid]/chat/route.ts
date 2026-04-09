@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getProject, getFeature } from "@/lib/projects";
+import { getProduct, getFeature } from "@/lib/projects";
 import { streamClaude } from "@/lib/claude";
 import type { Concept } from "@/lib/types";
 
@@ -17,47 +17,39 @@ Rules:
 
 export async function POST(
   req: NextRequest,
-  ctx: RouteContext<"/api/projects/[id]/features/[fid]/chat">
+  ctx: { params: Promise<{ id: string; fid: string }> }
 ) {
   const { id, fid } = await ctx.params;
 
   try {
     const { messages } = await req.json();
-    const project = await getProject(id);
-    const feature = await getFeature(id, fid);
+    const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
-    // Load concepts if they exist
-    let concepts: Concept[] = [];
-    try {
-      const fs = await import("fs/promises");
-      const path = await import("path");
-      const conceptsPath = path.join(
-        process.cwd(),
-        "data",
-        "projects",
-        id,
-        `concepts-${fid}.json`
-      );
-      const raw = await fs.readFile(conceptsPath, "utf-8");
-      concepts = JSON.parse(raw);
-    } catch {
-      // no concepts yet
-    }
+    // Concepts are stored in the feature JSONB
+    const concepts: Concept[] = Array.isArray(feature.concepts) ? feature.concepts : [];
 
-    // Build the full system prompt with context
     const contextParts = [
       CHAT_SYSTEM,
       "\n\n## Product Context",
-      project.enrichedPcd || "No enriched PCD available.",
+      product.enriched_pcd || "No enriched PCD available.",
       "\n\n## Discovery Insights",
-      project.discoveryInsights || "No discovery insights available.",
+      typeof product.discovery_insights === "string"
+        ? product.discovery_insights
+        : product.discovery_insights
+          ? JSON.stringify(product.discovery_insights)
+          : "No discovery insights available.",
       `\n\n## Feature Brief`,
       `- Feature: ${feature.name}`,
-      `- Type: ${feature.type}`,
+      `- Type: ${feature.feature_type}`,
       `- Problem: ${feature.problem}`,
-      `- Must-haves: ${feature.mustHave}`,
-      `- Not-be: ${feature.notBe || "None"}`,
+      `- Must-haves: ${feature.must_have}`,
+      `- Not-be: ${feature.not_be || "None"}`,
     ];
+
+    if (feature.feature_discovery) {
+      contextParts.push("\n\n## Feature Discovery");
+      contextParts.push(feature.feature_discovery);
+    }
 
     if (concepts.length > 0) {
       contextParts.push("\n\n## Generated Concepts");
@@ -72,22 +64,18 @@ export async function POST(
         );
       }
 
-      if (feature.chosenConcept) {
-        contextParts.push(
-          `\n\n## Selected Concept: ${feature.chosenConcept}`
-        );
+      if (feature.chosen_concept) {
+        contextParts.push(`\n\n## Selected Concept: ${feature.chosen_concept}`);
       }
     }
 
     const systemPrompt = contextParts.join("\n");
 
-    // Build the user message from the last message
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage || lastMessage.role !== "user") {
       return Response.json({ error: "No user message" }, { status: 400 });
     }
 
-    // Stream the response as SSE
     const stream = await streamClaude({
       system: systemPrompt,
       userMessage: lastMessage.content,
@@ -104,21 +92,16 @@ export async function POST(
               event.delta.type === "text_delta"
             ) {
               const data = JSON.stringify({ text: event.delta.text });
-              controller.enqueue(
-                encoder.encode(`data: ${data}\n\n`)
-              );
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
             }
           }
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`)
           );
         } catch (err) {
-          const errMsg =
-            err instanceof Error ? err.message : "Stream error";
+          const errMsg = err instanceof Error ? err.message : "Stream error";
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ error: errMsg })}\n\n`
-            )
+            encoder.encode(`data: ${JSON.stringify({ error: errMsg })}\n\n`)
           );
         }
         controller.close();

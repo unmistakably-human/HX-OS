@@ -34,16 +34,49 @@ export interface ProductContext {
   fonts: string;
 }
 
-export interface Feature {
+export interface Product {
   id: string;
   name: string;
-  type: "screen" | "flow";
-  problem: string;
-  mustHave: string;
-  notBe: string;
-  context: string;
-  chosenConcept: string | null;
-  chatMessages: ChatMessage[];
+  company: string | null;
+  created_at: string;
+  updated_at: string;
+  product_context: ProductContext | null;
+  enriched_pcd: string | null;
+  discovery_insights: string | null;
+  phase_context: "locked" | "active" | "complete";
+  phase_discovery: "locked" | "active" | "complete";
+  features?: FeatureSummary[];
+}
+
+export interface FeatureSummary {
+  id: string;
+  name: string;
+  feature_type: string | null;
+  phase_brief: string;
+  phase_discovery: string;
+  phase_concepts: string;
+  chosen_concept: string | null;
+  updated_at: string;
+}
+
+export interface Feature {
+  id: string;
+  product_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  feature_type: "screen" | "flow" | null;
+  problem: string | null;
+  must_have: string | null;
+  not_be: string | null;
+  additional_context: string | null;
+  feature_discovery: string | null;
+  concepts: Concept[] | null;
+  chosen_concept: string | null;
+  chat_messages: ChatMessage[];
+  phase_brief: "locked" | "active" | "complete";
+  phase_discovery: "locked" | "active" | "complete";
+  phase_concepts: "locked" | "active" | "complete";
 }
 
 export interface Concept {
@@ -62,20 +95,4 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  createdAt: string;
-  productContext: ProductContext | null;
-  enrichedPcd: string | null;
-  discoveryInsights: import("./discovery-types").DiscoveryDeck | string | null;
-  features: Record<string, Feature>;
-  phases: {
-    context: "locked" | "active" | "complete";
-    discovery: "locked" | "active" | "complete";
-    features: "locked" | "active" | "complete";
-    concepts: "locked" | "active" | "complete";
-  };
 }

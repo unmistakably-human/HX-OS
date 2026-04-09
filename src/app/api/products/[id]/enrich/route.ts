@@ -1,4 +1,4 @@
-import { getProject, updateProject } from "@/lib/projects";
+import { getProduct, saveEnrichedPcd } from "@/lib/projects";
 import { streamClaude } from "@/lib/claude";
 
 const ENRICH_SYSTEM = `You are a senior product designer at HumanX (HXOS). Generate an Enriched Product Context Document from this brief. Use web search to research the product, competitors, and market.
@@ -41,14 +41,14 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  let project;
+  let product;
   try {
-    project = await getProject(id);
+    product = await getProduct(id);
   } catch {
-    return new Response(JSON.stringify({ error: "Project not found" }), { status: 404 });
+    return new Response(JSON.stringify({ error: "Product not found" }), { status: 404 });
   }
 
-  const context = project.productContext;
+  const context = product.product_context;
   if (!context) {
     return new Response(JSON.stringify({ error: "No product context" }), { status: 400 });
   }
@@ -82,14 +82,7 @@ export async function POST(
         }
 
         // Save enriched PCD and advance phase
-        await updateProject(id, {
-          enrichedPcd: fullText,
-          phases: {
-            ...project.phases,
-            context: "complete",
-            discovery: "active",
-          },
-        });
+        await saveEnrichedPcd(id, fullText);
 
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`)
