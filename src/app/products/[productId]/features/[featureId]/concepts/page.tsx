@@ -5,14 +5,15 @@ import { useParams } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Loader2, Check, HelpCircle } from "lucide-react";
-import type { Concept, ChatMessage, Feature } from "@/lib/types";
+import { Loader2, Check, HelpCircle, ExternalLink, PenTool } from "lucide-react";
+import type { Concept, ChatMessage, Feature, Product } from "@/lib/types";
 
 const trackStyles: Record<string, { bg: string; text: string; label: string }> = {
   A: { bg: "#ecfdf5", text: "#065f46", label: "Track A" },
@@ -35,20 +36,38 @@ export default function ConceptsPage() {
   const [selectedConcept, setSelectedConcept] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState<"loading" | "ready">("loading");
 
+  // Figma state
+  const [figmaConnected, setFigmaConnected] = useState(false);
+  const [figmaFileUrl, setFigmaFileUrl] = useState("");
+  const [figmaFileUrlSaved, setFigmaFileUrlSaved] = useState("");
+  const [savingFileUrl, setSavingFileUrl] = useState(false);
+  const [pushingConcept, setPushingConcept] = useState<number | null>(null);
+  const [pushResult, setPushResult] = useState<{ index: number; success: boolean; message: string } | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
 
-  // Load feature data (concepts are stored in feature.concepts JSONB)
+  // Load feature + product data
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/products/${productId}/features/${featureId}`);
-        if (!res.ok) return;
-        const feat: Feature = await res.json();
-        setFeature(feat);
-        setChatMessages(feat.chat_messages || []);
-        setSelectedConcept(feat.chosen_concept || null);
-        if (Array.isArray(feat.concepts) && feat.concepts.length > 0) {
-          setConcepts(feat.concepts);
+        const [fRes, pRes] = await Promise.all([
+          fetch(`/api/products/${productId}/features/${featureId}`),
+          fetch(`/api/products/${productId}`),
+        ]);
+        if (fRes.ok) {
+          const feat: Feature = await fRes.json();
+          setFeature(feat);
+          setChatMessages(feat.chat_messages || []);
+          setSelectedConcept(feat.chosen_concept || null);
+          if (Array.isArray(feat.concepts) && feat.concepts.length > 0) {
+            setConcepts(feat.concepts);
+          }
+        }
+        if (pRes.ok) {
+          const prod: Product = await pRes.json();
+          setFigmaConnected(!!prod.figma_access_token);
+          setFigmaFileUrl(prod.figma_file_url || "");
+          setFigmaFileUrlSaved(prod.figma_file_url || "");
         }
       } catch {
         // ignore
@@ -132,7 +151,6 @@ export default function ConceptsPage() {
         setChatMessages(finalMessages);
         setChatStreamText("");
 
-        // Save messages via feature update
         await fetch(`/api/products/${productId}/features/${featureId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -160,6 +178,48 @@ export default function ConceptsPage() {
     [productId, featureId]
   );
 
+  const saveFigmaFileUrl = useCallback(async () => {
+    if (!figmaFileUrl.match(/figma\.com\/(?:design|file)\//)) return;
+    setSavingFileUrl(true);
+    try {
+      await fetch(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ figma_file_url: figmaFileUrl }),
+      });
+      setFigmaFileUrlSaved(figmaFileUrl);
+    } catch {
+      // ignore
+    }
+    setSavingFileUrl(false);
+  }, [figmaFileUrl, productId]);
+
+  const handlePushToFigma = useCallback(async (conceptIndex: number) => {
+    if (!figmaFileUrlSaved) return;
+    setPushingConcept(conceptIndex);
+    setPushResult(null);
+    try {
+      const res = await fetch(
+        `/api/products/${productId}/features/${featureId}/figma`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conceptIndex, figmaFileUrl: figmaFileUrlSaved }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Push failed");
+      setPushResult({ index: conceptIndex, success: data.success, message: data.message });
+    } catch (err) {
+      setPushResult({
+        index: conceptIndex,
+        success: false,
+        message: err instanceof Error ? err.message : "Push failed",
+      });
+    }
+    setPushingConcept(null);
+  }, [productId, featureId, figmaFileUrlSaved]);
+
   if (loadingState === "loading") {
     return (
       <div className="flex items-center justify-center h-full text-[#9ca3af]">
@@ -169,6 +229,7 @@ export default function ConceptsPage() {
   }
 
   const currentConcept = concepts[activeTab];
+  const canPush = figmaConnected && !!figmaFileUrlSaved;
 
   return (
     <div className="flex flex-col h-full">
@@ -176,6 +237,47 @@ export default function ConceptsPage() {
         title="Concept Variations"
         subtitle={feature?.name || "Concepts"}
       />
+
+      {/* Figma connection banner */}
+      {concepts.length > 0 && (
+        <div className="px-4 py-2.5 border-b border-[#e5e7eb] bg-[#fafafa]">
+          {!figmaConnected ? (
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] text-[#6b7280]">
+                Connect Figma to push wireframes directly
+              </p>
+              <a
+                href={`/api/auth/figma?productId=${productId}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-white bg-[#18181b] rounded-md hover:bg-[#333] transition-colors"
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                Connect Figma
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-[#065f46] font-medium flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> Figma connected
+              </span>
+              <Input
+                value={figmaFileUrl}
+                onChange={(e) => setFigmaFileUrl(e.target.value)}
+                placeholder="https://www.figma.com/design/..."
+                className="flex-1 h-8 text-[12px]"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[12px]"
+                onClick={saveFigmaFileUrl}
+                disabled={savingFileUrl || figmaFileUrl === figmaFileUrlSaved || !figmaFileUrl.match(/figma\.com\/(?:design|file)\//)}
+              >
+                {savingFileUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT PANEL (60%) */}
@@ -300,17 +402,63 @@ export default function ConceptsPage() {
                       </AccordionItem>
                     </Accordion>
 
-                    <div className="pb-4">
+                    {/* Action buttons */}
+                    <div className="pb-4 flex gap-2">
                       {selectedConcept === currentConcept.name ? (
-                        <Button variant="outline" className="w-full border-[#E8713A] bg-[#E8713A] text-white hover:bg-[#d4632e]" disabled>
+                        <Button variant="outline" className="flex-1 border-[#E8713A] bg-[#E8713A] text-white hover:bg-[#d4632e]" disabled>
                           <Check className="w-4 h-4 mr-1.5" />Selected
                         </Button>
                       ) : (
-                        <Button variant="outline" className="w-full border-[#E8713A] text-[#E8713A] hover:bg-[#E8713A]/5" onClick={() => handleSelectConcept(currentConcept.name)}>
+                        <Button variant="outline" className="flex-1 border-[#E8713A] text-[#E8713A] hover:bg-[#E8713A]/5" onClick={() => handleSelectConcept(currentConcept.name)}>
                           Select this concept
                         </Button>
                       )}
+
+                      {/* Push to Figma button */}
+                      {pushingConcept === activeTab ? (
+                        <Button variant="outline" className="flex-1" disabled>
+                          <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                          Pushing to Figma...
+                        </Button>
+                      ) : pushResult?.index === activeTab && pushResult.success ? (
+                        <a
+                          href={figmaFileUrlSaved}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1"
+                        >
+                          <Button variant="outline" className="w-full text-[#065f46] border-[#065f46]">
+                            <Check className="w-4 h-4 mr-1.5" />
+                            Pushed
+                            <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                          </Button>
+                        </a>
+                      ) : pushResult?.index === activeTab && !pushResult.success ? (
+                        <Button
+                          variant="outline"
+                          className="flex-1 text-red-600 border-red-300"
+                          onClick={() => handlePushToFigma(activeTab)}
+                        >
+                          Failed — Retry
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          disabled={!canPush}
+                          onClick={() => handlePushToFigma(activeTab)}
+                          title={!canPush ? "Connect Figma and set a file URL first" : ""}
+                        >
+                          <PenTool className="w-4 h-4 mr-1.5" />
+                          Push to Figma
+                        </Button>
+                      )}
                     </div>
+
+                    {/* Push error message */}
+                    {pushResult?.index === activeTab && !pushResult.success && (
+                      <p className="text-[12px] text-red-500 -mt-2 pb-2">{pushResult.message}</p>
+                    )}
                   </>
                 )}
               </div>

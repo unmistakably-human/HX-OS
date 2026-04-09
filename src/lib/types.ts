@@ -46,6 +46,10 @@ export interface Product {
   phase_context: "locked" | "active" | "complete";
   phase_discovery: "locked" | "active" | "complete";
   features?: FeatureSummary[];
+  figma_access_token: string | null;
+  figma_refresh_token: string | null;
+  figma_token_expires_at: string | null;
+  figma_file_url: string | null;
 }
 
 export interface FeatureSummary {
