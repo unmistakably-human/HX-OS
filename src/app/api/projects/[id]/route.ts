@@ -1,29 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getProject, updateProject } from "@/lib/projects";
 
 export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: NextRequest,
+  ctx: RouteContext<"/api/projects/[id]">
 ) {
-  const { id } = await params;
+  const { id } = await ctx.params;
   try {
     const project = await getProject(id);
-    return NextResponse.json(project);
+    return Response.json(project);
   } catch {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    return Response.json({ error: "Project not found" }, { status: 404 });
   }
 }
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  ctx: RouteContext<"/api/projects/[id]">
 ) {
-  const { id } = await params;
+  const { id } = await ctx.params;
   try {
     const updates = await req.json();
+    // Merge features deeply — don't overwrite existing features
+    const existing = await getProject(id);
+    if (updates.features) {
+      updates.features = { ...existing.features, ...updates.features };
+    }
     const project = await updateProject(id, updates);
-    return NextResponse.json(project);
+    return Response.json(project);
   } catch {
-    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+    return Response.json({ error: "Failed to update project" }, { status: 500 });
   }
 }
