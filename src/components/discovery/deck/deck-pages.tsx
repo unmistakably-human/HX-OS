@@ -211,9 +211,9 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
         <ExpandableCard
           key={i}
           label={x.name}
-          title={`${x.url || ""} — ${x.why || ""}`}
+          title={x.why || ""}
         >
-          <B>Screenshot:</B> {x.screenshot}
+          {null}
         </ExpandableCard>
       ))}
     </div>
