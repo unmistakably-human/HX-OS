@@ -1,7 +1,13 @@
-export default function DiscoveryPage() {
-  return (
-    <div className="flex items-center justify-center h-full text-[#9ca3af]">
-      Loading Discovery...
-    </div>
-  );
+import { getProject } from "@/lib/projects";
+import { DiscoveryClient } from "@/components/discovery/discovery-client";
+
+export default async function DiscoveryPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
+  const project = await getProject(projectId);
+
+  return <DiscoveryClient project={project} />;
 }
