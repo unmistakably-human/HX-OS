@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhaseHeader } from "@/components/phase-header";
 import { DEMO_FEATURE } from "@/lib/demo-data";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, Search, Loader2 } from "lucide-react";
 import type { Feature } from "@/lib/types";
 
 export default function FeatureBriefPage() {
@@ -54,6 +54,7 @@ export default function FeatureBriefPage() {
     if (!name || !problem || !mustHave) return;
     setSaving(true);
     try {
+      // Save the brief
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -68,6 +69,13 @@ export default function FeatureBriefPage() {
           phase_discovery: "active",
         }),
       });
+
+      // Trigger insight generation immediately
+      await fetch(`/api/products/${productId}/features/${featureId}/insights`, {
+        method: "POST",
+      });
+
+      // Navigate to discovery page where insights are now ready
       router.push(`/products/${productId}/features/${featureId}/discovery`);
     } catch {
       setSaving(false);
@@ -87,6 +95,32 @@ export default function FeatureBriefPage() {
     return (
       <div className="flex items-center justify-center h-full text-content-muted">
         Loading...
+      </div>
+    );
+  }
+
+  if (saving) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 text-[#3b82f6] animate-spin" strokeWidth={1.5} />
+          <h2 className="text-[18px] font-bold text-[#111827]">
+            Researching Insights...
+          </h2>
+        </div>
+        <p className="text-[13px] text-[#9ca3af] text-center max-w-md">
+          Saving your brief and generating insights across User Behaviour, Domain, and Competitor categories. This takes 15-30 seconds.
+        </p>
+        <div className="w-64 h-1.5 bg-[#e5e7eb] rounded-full overflow-hidden">
+          <div className="h-full bg-[#3b82f6] rounded-full animate-pulse" style={{ width: "60%", animation: "progress 2s ease-in-out infinite" }} />
+        </div>
+        <style>{`
+          @keyframes progress {
+            0% { width: 10%; }
+            50% { width: 80%; }
+            100% { width: 10%; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -146,8 +180,11 @@ export default function FeatureBriefPage() {
               disabled={!name || !problem || !mustHave || saving}
               className="gap-1.5"
             >
-              {saving ? "Saving..." : "Save & Continue"}
-              <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+              {saving ? (
+                <><Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />Researching Insights...</>
+              ) : (
+                <><Search className="w-3.5 h-3.5" strokeWidth={1.5} />Research Insights</>
+              )}
             </Button>
           </div>
         </div>
