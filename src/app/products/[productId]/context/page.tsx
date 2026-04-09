@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useStream } from "@/hooks/use-stream";
 import { DEMO_CONTEXT } from "@/lib/demo-data";
-import type { ProductContext, UserSegment, DesignTokens } from "@/lib/types";
-import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon } from "lucide-react";
+import type { ProductContext, UserSegment, DesignTokens, AudienceEntry } from "@/lib/types";
+import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon, X } from "lucide-react";
 
 const STEP_LABELS = ["Overview", "Product", "User Segments", "Structure", "Visual"] as const;
 
@@ -41,13 +41,21 @@ const INDUSTRIES = [
   "Real Estate & Property", "AI & Machine Learning", "Logistics & Supply Chain", "Other",
 ];
 
-const AUDIENCES = [
-  { value: "tier1", title: "Tier 1 cities", desc: "Metro cities — Mumbai, Delhi, Bangalore, etc." },
-  { value: "tier2", title: "Tier 2 cities", desc: "Emerging cities — Jaipur, Lucknow, Kochi, etc." },
-  { value: "northIndia", title: "Only North India", desc: "" },
-  { value: "allIndia", title: "All India", desc: "" },
-  { value: "global", title: "Global", desc: "No single dominant market" },
-  { value: "other", title: "Other country / region", desc: "" },
+const COUNTRIES = [
+  { value: "india", label: "India" },
+  { value: "usa", label: "USA" },
+  { value: "uk", label: "UK" },
+  { value: "global", label: "Global" },
+  { value: "sea", label: "Southeast Asia" },
+  { value: "europe", label: "Europe" },
+  { value: "mena", label: "Middle East & North Africa" },
+  { value: "other", label: "Other" },
+];
+
+const CITY_TIERS = [
+  { value: "tier1", label: "Tier 1 cities" },
+  { value: "tier2", label: "Tier 2 cities" },
+  { value: "tier3", label: "Tier 3 cities" },
 ];
 
 const PLATFORMS = [
@@ -74,7 +82,7 @@ function emptySegment(): UserSegment {
 function emptyContext(): ProductContext {
   return {
     productName: "", company: "", productType: "", stage: "", industries: [],
-    audience: "", platform: "", explain: "", briefWhy: "", valueProp: "",
+    audience: [], platform: "", explain: "", briefWhy: "", valueProp: "",
     notThis: "", clientBrief: "",
     seg1: emptySegment(), seg2: emptySegment(),
     behInsights: "", competitors: "", flows: "", ia: "", figmaLink: "",
@@ -191,12 +199,14 @@ function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
       {tokens.brandColors.length > 0 && (
         <div>
           <div className="text-xs font-semibold text-content-label mb-2">Brand Colors</div>
-          <div className="flex gap-3">
-            {tokens.brandColors.map((c) => (
-              <div key={c.hex} className="text-center">
-                <div className="w-12 h-12 rounded-md border border-divider shadow-sm" style={{ backgroundColor: c.hex }} />
-                <div className="text-[10px] text-content-secondary mt-1.5">{c.name}</div>
-                <div className="text-[10px] font-mono text-content-muted">{c.hex}</div>
+          <div className="flex flex-wrap gap-3">
+            {tokens.brandColors.map((c, i) => (
+              <div key={`${c.hex}-${i}`} className="flex items-start gap-2.5 min-w-0" style={{ flexBasis: "calc(50% - 6px)" }}>
+                <div className="w-10 h-10 rounded-md border border-divider shadow-sm shrink-0" style={{ backgroundColor: c.hex }} />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium text-content-heading truncate">{c.name}</div>
+                  <div className="text-[10px] text-content-secondary leading-snug">{c.usage || c.hex}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -213,11 +223,14 @@ function DesignTokensPreview({ tokens }: { tokens: DesignTokens }) {
       {tokens.neutrals.length > 0 && (
         <div>
           <div className="text-xs font-semibold text-content-label mb-2">Neutrals</div>
-          <div className="flex gap-2">
-            {tokens.neutrals.map((c) => (
-              <div key={c.hex} className="text-center">
-                <div className="w-10 h-10 rounded-md border border-divider" style={{ backgroundColor: c.hex }} />
-                <div className="text-[10px] font-mono text-content-muted mt-1">{c.hex}</div>
+          <div className="flex flex-wrap gap-3">
+            {tokens.neutrals.map((c, i) => (
+              <div key={`${c.hex}-${i}`} className="flex items-start gap-2.5 min-w-0" style={{ flexBasis: "calc(50% - 6px)" }}>
+                <div className="w-8 h-8 rounded-md border border-divider shrink-0" style={{ backgroundColor: c.hex }} />
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium text-content-heading truncate">{c.name}</div>
+                  <div className="text-[10px] text-content-secondary leading-snug">{c.usage || c.hex}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -252,6 +265,138 @@ function SectionHeader({ title, optional }: { title: string; optional?: boolean 
   );
 }
 
+function AudienceMultiSelect({
+  value,
+  onChange,
+}: {
+  value: AudienceEntry[];
+  onChange: (entries: AudienceEntry[]) => void;
+}) {
+  const [newCountry, setNewCountry] = useState("");
+  const [newTiers, setNewTiers] = useState<string[]>([]);
+
+  function addEntry() {
+    if (!newCountry) return;
+    onChange([...value, { country: newCountry, tiers: newTiers }]);
+    setNewCountry("");
+    setNewTiers([]);
+  }
+
+  function removeEntry(idx: number) {
+    onChange(value.filter((_, i) => i !== idx));
+  }
+
+  function toggleTier(tier: string) {
+    setNewTiers((prev) =>
+      prev.includes(tier) ? prev.filter((t) => t !== tier) : [...prev, tier]
+    );
+  }
+
+  return (
+    <div className="space-y-3 mt-1">
+      {value.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2 bg-surface-subtle rounded-md px-3 py-2">
+          <span className="text-sm text-content-heading font-medium">
+            {COUNTRIES.find((c) => c.value === entry.country)?.label || entry.country}
+          </span>
+          {entry.tiers.length > 0 && (
+            <span className="text-xs text-content-secondary">
+              ({entry.tiers.map((t) => CITY_TIERS.find((ct) => ct.value === t)?.label || t).join(", ")})
+            </span>
+          )}
+          <button onClick={() => removeEntry(i)} className="ml-auto text-content-muted hover:text-content-heading transition-colors">
+            <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </button>
+        </div>
+      ))}
+      <div className="border border-divider rounded-md p-3 space-y-3">
+        <div>
+          <Label className="text-xs text-content-secondary mb-1 block">Country / Region</Label>
+          <div className="space-y-1.5">
+            {COUNTRIES.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setNewCountry(c.value === newCountry ? "" : c.value)}
+                className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  newCountry === c.value
+                    ? "bg-action-primary-bg text-action-primary-text"
+                    : "hover:bg-surface-subtle text-content-heading"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {newCountry && (
+          <div>
+            <Label className="text-xs text-content-secondary mb-1 block">City tiers (optional)</Label>
+            <div className="flex gap-2">
+              {CITY_TIERS.map((tier) => (
+                <CheckCard key={tier.value} checked={newTiers.includes(tier.value)} onToggle={() => toggleTier(tier.value)} label={tier.label} />
+              ))}
+            </div>
+          </div>
+        )}
+        <Button variant="outline" size="sm" onClick={addEntry} disabled={!newCountry}>
+          Add market
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function IAUploadZone({
+  iaText, onIaTextChange, figmaLink, onFigmaLinkChange,
+}: {
+  iaText: string; onIaTextChange: (v: string) => void;
+  figmaLink: string; onFigmaLinkChange: (v: string) => void;
+}) {
+  const iaFileRef = useRef<HTMLInputElement>(null);
+  const [iaFile, setIaFile] = useState<File | null>(null);
+  const [iaDragOver, setIaDragOver] = useState(false);
+
+  async function handleFile(file: File) {
+    setIaFile(file);
+    if (file.name.endsWith(".md") || file.name.endsWith(".txt")) {
+      const text = await file.text();
+      onIaTextChange(iaText ? iaText + "\n\n" + text : text);
+    } else {
+      onIaTextChange(iaText ? iaText + `\n\n[Uploaded: ${file.name}]` : `[Uploaded: ${file.name}]`);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <Textarea value={iaText} onChange={(e) => onIaTextChange(e.target.value)} rows={5}
+        placeholder="Describe your information architecture or upload files below" />
+      <input ref={iaFileRef} type="file" accept=".png,.jpg,.jpeg,.pdf,.md,.txt" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
+      <button
+        type="button"
+        onClick={() => iaFileRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setIaDragOver(true); }}
+        onDragLeave={() => setIaDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setIaDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
+        className={`w-full border-2 border-dashed rounded-[8px] p-5 text-center transition-colors ${
+          iaDragOver ? "border-divider-card-hover bg-surface-subtle" : "border-divider hover:border-divider-card-hover"
+        }`}
+      >
+        <Upload className="w-5 h-5 text-content-muted mx-auto mb-2" strokeWidth={1.5} />
+        <p className="text-sm font-medium text-content-heading">
+          {iaFile ? iaFile.name : "Drop file or click to upload"}
+        </p>
+        <p className="text-xs text-content-muted mt-0.5">PNG, JPG, PDF, or Markdown</p>
+      </button>
+      <div>
+        <FieldLabel>Figma link (IA / sitemap)</FieldLabel>
+        <Input value={figmaLink} onChange={(e) => onFigmaLinkChange(e.target.value)} placeholder="https://www.figma.com/design/..." />
+      </div>
+    </div>
+  );
+}
+
 export default function ContextPage() {
   const params = useParams();
   const router = useRouter();
@@ -279,7 +424,20 @@ export default function ContextPage() {
       .then((r) => r.json())
       .then((p) => {
         if (p.product_context) {
-          setCtx({ ...emptyContext(), ...p.product_context, industries: p.product_context.industries || [] });
+          let loadedCtx = { ...emptyContext(), ...p.product_context, industries: p.product_context.industries || [] };
+          // Migrate old string audience to new array format
+          if (typeof loadedCtx.audience === "string" && loadedCtx.audience) {
+            const MIGRATION: Record<string, AudienceEntry[]> = {
+              tier1: [{ country: "india", tiers: ["tier1"] }],
+              tier2: [{ country: "india", tiers: ["tier2"] }],
+              northIndia: [{ country: "india", tiers: ["tier1"] }],
+              allIndia: [{ country: "india", tiers: ["tier1", "tier2", "tier3"] }],
+              global: [{ country: "global", tiers: [] }],
+              other: [{ country: "other", tiers: [] }],
+            };
+            loadedCtx = { ...loadedCtx, audience: MIGRATION[loadedCtx.audience] || [] };
+          }
+          setCtx(loadedCtx);
         } else {
           // Pre-fill from product-level name/company
           setCtx((prev) => ({
@@ -339,8 +497,8 @@ export default function ContextPage() {
   const applyTokens = useCallback((tokens: DesignTokens) => {
     set("designTokens", tokens);
     const colorStr = [
-      ...tokens.brandColors.map((c) => `${c.name}: ${c.hex}`),
-      ...tokens.neutrals.map((c) => `${c.name}: ${c.hex}`),
+      ...tokens.brandColors.map((c) => c.usage ? `${c.name} (${c.usage}): ${c.hex}` : `${c.name}: ${c.hex}`),
+      ...tokens.neutrals.map((c) => c.usage ? `${c.name} (${c.usage}): ${c.hex}` : `${c.name}: ${c.hex}`),
     ].join(". ");
     set("colors", colorStr);
     const fontStr = tokens.typography
@@ -457,11 +615,11 @@ export default function ContextPage() {
   const isStepValid = useCallback((s: number): boolean => {
     switch (s) {
       case 0:
-        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && ctx.audience && ctx.platform);
+        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && (Array.isArray(ctx.audience) ? ctx.audience.length > 0 : !!ctx.audience) && ctx.platform);
       case 1:
         return !!(ctx.explain && ctx.briefWhy && ctx.valueProp && ctx.notThis);
       case 2:
-        return !!(ctx.seg1.name && ctx.seg2.name && ctx.behInsights);
+        return !!(ctx.seg1.name && ctx.seg2.name);
       case 3:
         return !!ctx.flows;
       case 4:
@@ -477,19 +635,17 @@ export default function ContextPage() {
         <div className="flex items-center gap-3">
           <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
           <h2 className="text-h2 font-bold text-content-heading">
-            Generating your Product Context Document...
+            Enriching Product Context
           </h2>
         </div>
         <p className="text-body-sm text-content-muted">
           Researching your product, competitors, and market with web search
         </p>
-        {stream.text && (
-          <div className="w-full max-w-2xl mt-4 max-h-64 overflow-y-auto rounded-[8px] border border-divider bg-surface-subtle p-4">
-            <pre className="text-xs text-content-secondary whitespace-pre-wrap font-mono leading-relaxed opacity-60">
-              {stream.text.slice(-2000)}
-            </pre>
+        <div className="w-64 mt-4">
+          <div className="h-1.5 bg-divider rounded-full overflow-hidden">
+            <div className="h-full w-1/3 bg-action-primary-bg rounded-full animate-indeterminate-bar" />
           </div>
-        )}
+        </div>
         {stream.error && (
           <div className="text-body-sm text-red-500 mt-2">
             Error: {stream.error}
@@ -507,14 +663,6 @@ export default function ContextPage() {
       case 0:
         return (
           <div className="space-y-5">
-            <div>
-              <FieldLabel required>Product name</FieldLabel>
-              <Input value={ctx.productName} disabled className="bg-surface-page-alt text-content-secondary cursor-not-allowed mt-1" />
-            </div>
-            <div>
-              <FieldLabel required>Company / Organization</FieldLabel>
-              <Input value={ctx.company} disabled className="bg-surface-page-alt text-content-secondary cursor-not-allowed mt-1" />
-            </div>
             <div>
               <FieldLabel required>What type of product?</FieldLabel>
               <div className="space-y-2 mt-1">
@@ -541,11 +689,10 @@ export default function ContextPage() {
             </div>
             <div>
               <FieldLabel required>Target audience / Market</FieldLabel>
-              <div className="space-y-2 mt-1">
-                {AUDIENCES.map((a) => (
-                  <RadioCard key={a.value} selected={ctx.audience === a.value} onSelect={() => set("audience", a.value)} title={a.title} desc={a.desc} />
-                ))}
-              </div>
+              <AudienceMultiSelect
+                value={Array.isArray(ctx.audience) ? ctx.audience : []}
+                onChange={(entries) => set("audience", entries as unknown as ProductContext["audience"])}
+              />
             </div>
             <div>
               <FieldLabel required>Platform</FieldLabel>
@@ -561,15 +708,12 @@ export default function ContextPage() {
         return (
           <div className="space-y-5">
             <div>
-              <WhyCallout>
-                &ldquo;AI-powered platform for marketers&rdquo; tells HXOS nothing about what to put on a screen. &ldquo;You type what kind of ad you want, pick a brand, and AI makes 10 versions you can edit&rdquo; tells HXOS exactly what components to design.
-              </WhyCallout>
-              <FieldLabel required>Explain to a smart 10-year-old</FieldLabel>
-              <Textarea value={ctx.explain} onChange={(e) => set("explain", e.target.value)} rows={4} placeholder="Describe what the product does in plain language..." />
+              <FieldLabel required>Describe the product</FieldLabel>
+              <Textarea value={ctx.explain} onChange={(e) => set("explain", e.target.value)} rows={4} placeholder="Explain the product in simple language. Include key features" />
             </div>
             <div>
-              <FieldLabel required>Why does this brief exist?</FieldLabel>
-              <Textarea value={ctx.briefWhy} onChange={(e) => set("briefWhy", e.target.value)} rows={3} placeholder="What matters most — the single reason for this design project" />
+              <FieldLabel required>What matters most</FieldLabel>
+              <Textarea value={ctx.briefWhy} onChange={(e) => set("briefWhy", e.target.value)} rows={3} placeholder="What is the primary goal of this design project?" />
             </div>
             <div>
               <FieldLabel required>Why THIS over alternatives?</FieldLabel>
@@ -577,50 +721,42 @@ export default function ContextPage() {
             </div>
             <div>
               <FieldLabel required>What this product is NOT</FieldLabel>
-              <Textarea value={ctx.notThis} onChange={(e) => set("notThis", e.target.value)} rows={3} placeholder="Name 2-3 things people might confuse this with" />
+              <Textarea value={ctx.notThis} onChange={(e) => set("notThis", e.target.value)} rows={3} placeholder="Define boundaries of the product's scope. State what this product does not aim to do" />
             </div>
             <Separator />
             <SectionHeader title="Insights" optional />
             <div>
-              <FieldLabel>Paste/summarize client brief</FieldLabel>
-              <Textarea value={ctx.clientBrief} onChange={(e) => set("clientBrief", e.target.value)} rows={4} placeholder="Paste relevant data, research findings, or context..." />
+              <FieldLabel>Preliminary insights if any</FieldLabel>
+              <Textarea value={ctx.clientBrief} onChange={(e) => set("clientBrief", e.target.value)} rows={4} placeholder="State research findings, inputs or insights if available" />
+            </div>
+            <div>
+              <FieldLabel>Competitors — user experience</FieldLabel>
+              <Textarea value={ctx.competitors} onChange={(e) => set("competitors", e.target.value)} rows={3} placeholder="Which competitors do these users currently use? What UX patterns do they use?" />
             </div>
           </div>
         );
       case 2:
         return (
           <div className="space-y-5">
-            <WhyCallout>
-              Understanding user segments by behaviour (working mother midnight orders, Gen-Z deal hunters) produces designs calibrated to real usage patterns, not hypothetical personas.
-            </WhyCallout>
             <SegmentCard label="Primary User Segment" seg={ctx.seg1} onChange={(s) => setSeg("seg1", s)} required />
             <SegmentCard label="Secondary User Segment" seg={ctx.seg2} onChange={(s) => setSeg("seg2", s)} required />
-            <div>
-              <FieldLabel required>User behaviour insights</FieldLabel>
-              <Textarea value={ctx.behInsights} onChange={(e) => set("behInsights", e.target.value)} rows={4} placeholder="Key metrics, patterns, or qualitative observations..." />
-            </div>
-            <Separator />
-            <SectionHeader title="Insights" optional />
-            <div>
-              <FieldLabel>Competitors — user experience</FieldLabel>
-              <Textarea value={ctx.competitors} onChange={(e) => set("competitors", e.target.value)} rows={3} placeholder="Which competitors do these users currently use?" />
-            </div>
           </div>
         );
       case 3:
         return (
           <div className="space-y-5">
             <div>
-              <FieldLabel required>Key user flows</FieldLabel>
+              <FieldLabel required>Key modules</FieldLabel>
               <Textarea value={ctx.flows} onChange={(e) => set("flows", e.target.value)} rows={4} placeholder="Describe 3-5 most important flows. Start with verb." />
             </div>
             <div>
               <FieldLabel>Information Architecture</FieldLabel>
-              <Textarea value={ctx.ia} onChange={(e) => set("ia", e.target.value)} rows={5} placeholder="Describe or upload your sitemap" />
-            </div>
-            <div>
-              <FieldLabel>Figma file link</FieldLabel>
-              <Input value={ctx.figmaLink} onChange={(e) => set("figmaLink", e.target.value)} placeholder="https://www.figma.com/design/..." />
+              <IAUploadZone
+                iaText={ctx.ia}
+                onIaTextChange={(v) => set("ia", v)}
+                figmaLink={ctx.figmaLink}
+                onFigmaLinkChange={(v) => set("figmaLink", v)}
+              />
             </div>
             <Separator />
             <div>
@@ -770,7 +906,7 @@ export default function ContextPage() {
                     <Wand2 className="w-8 h-8 text-action-primary-bg mx-auto mb-3" strokeWidth={1.5} />
                     <p className="text-sm font-medium text-content-heading mb-1">Generate a style guide</p>
                     <p className="text-xs text-content-muted mb-4">
-                      AI will create a color palette (2 brand, 1 gradient, 5 neutrals) and 5-level typography system
+                      AI will create a color palette with brand colors, neutrals, gradient, and a 5-level typography system — each color includes where it's used
                     </p>
                     <Button
                       onClick={handleProposeStyle}
@@ -859,7 +995,7 @@ export default function ContextPage() {
             </Button>
           ) : (
             <Button onClick={generatePcd} className="text-body-sm gap-1.5">
-              Generate PCD <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Run Discovery <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
             </Button>
           )}
         </div>

@@ -8,11 +8,16 @@ export interface UserSegment {
 }
 
 export interface DesignTokens {
-  brandColors: { name: string; hex: string }[];
+  brandColors: { name: string; hex: string; usage: string }[];
   gradient?: string;
-  neutrals: { name: string; hex: string }[];
+  neutrals: { name: string; hex: string; usage: string }[];
   typography: { level: string; font: string; weight: string; size: string }[];
   source: "figma" | "upload" | "ai-proposed";
+}
+
+export interface AudienceEntry {
+  country: string;
+  tiers: string[];
 }
 
 export interface ProductContext {
@@ -21,7 +26,7 @@ export interface ProductContext {
   productType: string;
   stage: string;
   industries: string[];
-  audience: string;
+  audience: string | AudienceEntry[];
   platform: string;
   explain: string;
   briefWhy: string;

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, RotateCcw, ArrowRight, Download } from "lucide-react";
+import { Search, RotateCcw, ArrowRight, Download, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createFeature } from "@/lib/projects";
 import { PhaseHeader } from "@/components/phase-header";
 import { DeckNavigator } from "@/components/discovery/deck/deck-navigator";
 import { DiscoveryLoading } from "@/components/discovery/discovery-loading";
-import { DiscoveryBriefInput } from "@/components/discovery/discovery-brief-input";
 import { downloadDeckHtml } from "@/lib/discovery-export";
 import type { DiscoveryDeck } from "@/lib/discovery-types";
 import type { Product } from "@/lib/types";
@@ -18,6 +19,21 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [snippets, setSnippets] = useState<string[]>([]);
+  const [newFeatureName, setNewFeatureName] = useState("");
+  const [creatingFeature, setCreatingFeature] = useState(false);
+
+  const handleCreateFeature = useCallback(async () => {
+    if (!newFeatureName.trim()) return;
+    setCreatingFeature(true);
+    try {
+      const feature = await createFeature(product.id, newFeatureName.trim(), "screen");
+      router.push(`/products/${product.id}/features/${feature.id}`);
+    } catch (err) {
+      console.error("Failed to create feature:", err);
+      setCreatingFeature(false);
+    }
+  }, [product.id, newFeatureName, router]);
 
   // Resolve existing deck — handle both string and object format
   const existingInsights = product.discovery_insights;
@@ -35,11 +51,13 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
   }
 
   const [deck, setDeck] = useState<DiscoveryDeck | null>(existingDeck);
+  const autoStarted = useRef(false);
 
   async function handleGenerate(brief: string) {
     setLoading(true);
     setError(null);
     setProgress(0);
+    setSnippets([]);
     try {
       const res = await fetch(`/api/products/${product.id}/discover`, {
         method: "POST",
@@ -67,6 +85,7 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           try {
             const data = JSON.parse(line.slice(6));
             if (data.progress) setProgress(data.progress);
+            if (data.snippets) setSnippets(data.snippets);
             if (data.error) throw new Error(data.error);
             if (data.deck) {
               setDeck(data.deck);
@@ -89,9 +108,20 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
     setLoading(false);
   }
 
+  // Auto-trigger discovery when enriched PCD exists but no deck
+  useEffect(() => {
+    if (product.enriched_pcd && !existingDeck && !loading && !error && !autoStarted.current) {
+      autoStarted.current = true;
+      handleGenerate(product.enriched_pcd);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.enriched_pcd, existingDeck]);
+
   function handleRerun() {
     setDeck(null);
     setError(null);
+    autoStarted.current = false;
+    // Re-trigger will happen via the useEffect above
   }
 
   // STATE 1: No enriched PCD
@@ -104,16 +134,15 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
             <div className="w-12 h-12 rounded-[8px] bg-surface-page-alt flex items-center justify-center mx-auto mb-4">
               <Search className="w-6 h-6 text-content-muted" strokeWidth={1.5} />
             </div>
-            <h2 className="text-[18px] font-bold text-content-heading mb-2">
+            <h2 className="text-h3 font-bold text-content-heading mb-2">
               Complete Product Context First
             </h2>
-            <p className="text-[14px] text-content-tertiary mb-5">
+            <p className="text-sm text-content-tertiary mb-5">
               The discovery phase requires an enriched Product Context Document.
               Go back and complete the context phase.
             </p>
             <Button
               onClick={() => router.push(`/products/${product.id}/context`)}
-              className="bg-action-primary-bg text-action-primary-text"
             >
               Go to Product Context
             </Button>
@@ -128,12 +157,29 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
     return (
       <>
         <PhaseHeader title="Discovery" subtitle="Running analysis..." />
-        <DiscoveryLoading progress={progress} />
+        <DiscoveryLoading progress={progress} snippets={snippets} />
       </>
     );
   }
 
-  // STATE 3: Deck complete
+  // STATE 3: Error (show retry)
+  if (error && !deck) {
+    return (
+      <>
+        <PhaseHeader title="Discovery" subtitle="Research & insights" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-[400px]">
+            <p className="text-sm text-feedback-error-text mb-4">Error: {error}</p>
+            <Button onClick={() => { setError(null); autoStarted.current = false; }}>
+              Try again
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // STATE 4: Deck complete
   if (deck) {
     return (
       <>
@@ -142,21 +188,13 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           subtitle="Insights deck complete"
           actions={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => downloadDeckHtml(deck)} className="text-[12px] h-8 rounded-md">
+              <Button variant="outline" size="sm" onClick={() => downloadDeckHtml(deck)} className="text-xs h-8 rounded-md">
                 <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 Download
               </Button>
-              <Button variant="outline" size="sm" onClick={handleRerun} className="text-[12px] h-8 rounded-md">
+              <Button variant="outline" size="sm" onClick={handleRerun} className="text-xs h-8 rounded-md">
                 <RotateCcw className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 Re-run
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => router.push(`/`)}
-                className="bg-action-primary-bg hover:bg-action-primary-hover text-action-primary-text text-[12px] h-8 rounded-md"
-              >
-                Back to Dashboard
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" strokeWidth={1.5} />
               </Button>
             </div>
           }
@@ -165,17 +203,35 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           <div className="max-w-[900px] mx-auto bg-white border border-divider rounded-[8px] p-5">
             <DeckNavigator data={deck} />
           </div>
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-divider max-w-[900px] mx-auto">
-            <Button variant="outline" onClick={handleRerun} className="text-[13px] rounded-md">
+          <div className="mt-6 pt-4 border-t border-divider max-w-[900px] mx-auto space-y-4">
+            <div>
+              <p className="text-sm font-medium text-content-heading mb-2">Create your first feature</p>
+              <div className="flex gap-2">
+                <Input
+                  value={newFeatureName}
+                  onChange={(e) => setNewFeatureName(e.target.value)}
+                  placeholder="e.g., Product Detail Page"
+                  onKeyDown={(e) => e.key === "Enter" && !creatingFeature && handleCreateFeature()}
+                />
+                <Button
+                  onClick={handleCreateFeature}
+                  disabled={!newFeatureName.trim() || creatingFeature}
+                  className="shrink-0"
+                >
+                  {creatingFeature ? (
+                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+                      New Feature
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleRerun} className="text-body-sm rounded-md">
               <RotateCcw className="w-4 h-4 mr-2" strokeWidth={1.5} />
               Re-run Discovery
-            </Button>
-            <Button
-              onClick={() => router.push(`/`)}
-              className="bg-action-primary-bg hover:bg-action-primary-hover text-action-primary-text text-[14px] px-6 rounded-md"
-            >
-              Back to Dashboard
-              <ArrowRight className="w-4 h-4 ml-2" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -183,15 +239,11 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
     );
   }
 
-  // STATE 4: Ready — show brief input
+  // STATE 5: Auto-triggering (brief flash while useEffect kicks in)
   return (
     <>
-      <PhaseHeader title="Discovery" subtitle="Research & insights" />
-      <DiscoveryBriefInput
-        enrichedPcd={product.enriched_pcd}
-        onGenerate={handleGenerate}
-        error={error}
-      />
+      <PhaseHeader title="Discovery" subtitle="Starting analysis..." />
+      <DiscoveryLoading progress={0} snippets={[]} />
     </>
   );
 }

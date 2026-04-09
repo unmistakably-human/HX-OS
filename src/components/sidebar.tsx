@@ -79,11 +79,11 @@ export function Sidebar({ product, productId }: SidebarProps) {
 
   return (
     <aside className="w-[200px] min-h-screen bg-surface-sidebar flex flex-col border-r border-divider">
-      <Link href="/" className="flex items-center gap-2.5 px-4 py-4 border-b border-divider hover:bg-surface-subtle transition-colors duration-fast">
+      <Link href="/" className="flex items-center gap-2.5 px-4 py-4 hover:bg-surface-subtle transition-colors duration-fast">
         <img src="/humanx-logo.svg" alt="" className="h-6 w-auto shrink-0" />
         <div className="min-w-0">
           <div className="text-sm font-bold text-content-heading leading-tight">HumanX Studio</div>
-          <div className="text-overline text-content-section-label">AI Design Workflow</div>
+          <div className="text-overline text-content-section-label truncate">{product.name}</div>
         </div>
       </Link>
 

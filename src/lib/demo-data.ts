@@ -6,7 +6,7 @@ export const DEMO_CONTEXT: ProductContext = {
   productType: "ecommerce",
   stage: "growth",
   industries: ["E-commerce & Retail", "Healthcare & Wellness"],
-  audience: "allIndia",
+  audience: [{ country: "india", tiers: ["tier1", "tier2"] }],
   platform: "responsive",
   explain:
     "You open the website and see toothbrushes and toothpastes, but they look fancy — like skincare. Each product page shows ingredients with science explanations. You can read real dentist reviews. You add stuff to cart and check out with UPI or card. Your order arrives in a Perfora box with a thank-you note.",

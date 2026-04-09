@@ -1,4 +1,5 @@
 import { getFeature } from "@/lib/projects";
+import { PreviewClient } from "./preview-client";
 
 export default async function WireframePreviewPage({
   params,
@@ -33,48 +34,11 @@ export default async function WireframePreviewPage({
   }
 
   return (
-    <html>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{concept.name} — {feature.name}</title>
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body {
-                font-family: Inter, system-ui, -apple-system, sans-serif;
-                background: #F5F5F5;
-                color: #333;
-                min-height: 100vh;
-              }
-            `,
-          }}
-        />
-      </head>
-      <body>
-        <div dangerouslySetInnerHTML={{ __html: concept.wireframeHtml }} />
-        {injectCapture && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                // Inject Figma's capture.js for clipboard copy
-                (function() {
-                  var s = document.createElement('script');
-                  s.src = 'https://mcp.figma.com/mcp/html-to-design/capture.js';
-                  document.head.appendChild(s);
-                  // Re-inject after 500ms to handle CSP race conditions
-                  setTimeout(function() {
-                    var s2 = document.createElement('script');
-                    s2.src = 'https://mcp.figma.com/mcp/html-to-design/capture.js';
-                    document.head.appendChild(s2);
-                  }, 500);
-                })();
-              `,
-            }}
-          />
-        )}
-      </body>
-    </html>
+    <PreviewClient
+      wireframeHtml={concept.wireframeHtml}
+      conceptName={concept.name}
+      featureName={feature.name}
+      injectCapture={injectCapture}
+    />
   );
 }

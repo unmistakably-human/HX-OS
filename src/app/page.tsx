@@ -8,11 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import type { Product, FeatureSummary, ProductContext } from "@/lib/types";
 import {
   listProducts,
   createProduct,
   deleteProduct,
+  deleteFeature,
   createFeature,
   saveProductContext,
 } from "@/lib/projects";
@@ -42,6 +52,14 @@ function PhaseCheck({ done, label }: { done: boolean; label: string }) {
   );
 }
 
+function StepDot({ done, label }: { done: boolean; label: string }) {
+  return (
+    <span className={done ? "text-hx-green-dark font-medium" : "text-content-muted"}>
+      {label}
+    </span>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -64,6 +82,10 @@ export default function DashboardPage() {
   // Delete menu
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  // Confirm delete dialog
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "product" | "feature"; id: string; productId?: string; name: string } | null>(null);
+  const [deletingFeature, setDeletingFeature] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +137,7 @@ export default function DashboardPage() {
               productType: parsed.productType || "",
               stage: parsed.stage || "",
               industries: parsed.industries || [],
-              audience: parsed.audience || "",
+              audience: parsed.audience || [],
               platform: parsed.platform || "",
               explain: parsed.explain || "",
               briefWhy: parsed.briefWhy || "",
@@ -168,16 +190,36 @@ export default function DashboardPage() {
     setCreatingFeature(false);
   }
 
-  async function handleDeleteProduct(id: string) {
-    setDeleting(id);
-    try {
-      await deleteProduct(id);
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      console.error("Failed to delete product:", err);
+  async function handleConfirmDelete() {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === "product") {
+      setDeleting(confirmDelete.id);
+      try {
+        await deleteProduct(confirmDelete.id);
+        setProducts((prev) => prev.filter((p) => p.id !== confirmDelete.id));
+      } catch (err) {
+        console.error("Failed to delete product:", err);
+      }
+      setDeleting(null);
+      setOpenMenu(null);
+    } else if (confirmDelete.type === "feature") {
+      setDeletingFeature(confirmDelete.id);
+      try {
+        await deleteFeature(confirmDelete.id);
+        // Remove feature from the product's features list in local state
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === confirmDelete.productId
+              ? { ...p, features: (p.features || []).filter((f) => f.id !== confirmDelete.id) }
+              : p
+          )
+        );
+      } catch (err) {
+        console.error("Failed to delete feature:", err);
+      }
+      setDeletingFeature(null);
     }
-    setDeleting(null);
-    setOpenMenu(null);
+    setConfirmDelete(null);
   }
 
   if (loading) {
@@ -262,33 +304,49 @@ export default function DashboardPage() {
                   </div>
                 </button>
 
-                {/* Three-dot menu */}
-                <div className="relative">
-                  <button
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenMenu(openMenu === product.id ? null : product.id);
+                      setShowNewFeature(product.id);
+                      setNewFeatureName("");
+                      setNewFeatureType("screen");
                     }}
-                    className="p-1.5 rounded-md hover:bg-surface-page-alt transition-colors"
+                    className="text-xs h-7 rounded-md"
                   >
-                    <MoreHorizontal className="w-4 h-4 text-content-tertiary" strokeWidth={1.5} />
-                  </button>
-                  {openMenu === product.id && (
-                    <div className="absolute right-0 top-8 bg-surface-card border border-divider rounded-[8px] shadow-md z-10 py-1 min-w-[140px]">
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        disabled={deleting === product.id}
-                        className="w-full text-left px-3 py-2 text-body-sm text-feedback-error-text hover:bg-feedback-error-bg flex items-center gap-2"
-                      >
-                        {deleting === product.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        )}
-                        Delete
-                      </button>
-                    </div>
-                  )}
+                    <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                    New Feature
+                  </Button>
+                  {/* Three-dot menu */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenu(openMenu === product.id ? null : product.id);
+                      }}
+                      className="p-1.5 rounded-md hover:bg-surface-page-alt transition-colors"
+                    >
+                      <MoreHorizontal className="w-4 h-4 text-content-tertiary" strokeWidth={1.5} />
+                    </button>
+                    {openMenu === product.id && (
+                      <div className="absolute right-0 top-8 bg-surface-card border border-divider rounded-[8px] shadow-md z-10 py-1 min-w-[140px]">
+                        <button
+                          onClick={() => setConfirmDelete({ type: "product", id: product.id, name: product.name })}
+                          disabled={deleting === product.id}
+                          className="w-full text-left px-3 py-2 text-body-sm text-feedback-error-text hover:bg-feedback-error-bg flex items-center gap-2"
+                        >
+                          {deleting === product.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          )}
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -299,69 +357,45 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-3 mt-3">
-                {features.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => router.push(`/products/${product.id}/features/${f.id}`)}
-                    className="w-[200px] bg-surface-card border border-divider rounded-[8px] p-3 text-left hover:border-divider transition-colors"
-                  >
-                    <div className="text-sm font-semibold text-content-heading truncate">
-                      {f.name || "Untitled"}
-                    </div>
-                    <div className="mt-2 space-y-0.5">
-                      <div className="flex items-center gap-1 text-overline">
-                        {f.phase_brief === "complete" ? (
-                          <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
-                        ) : (
-                          <span className="w-3 h-3 rounded-full border border-divider inline-block" />
-                        )}
-                        <span className={f.phase_brief === "complete" ? "text-hx-green-dark" : "text-content-muted"}>
-                          Brief
-                        </span>
+              {features.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+                  {features.map((f) => (
+                    <div
+                      key={f.id}
+                      onClick={() => router.push(`/products/${product.id}/features/${f.id}`)}
+                      className="group relative bg-surface-card border border-divider rounded-[8px] p-4 text-left hover:border-divider-card-hover transition-colors cursor-pointer"
+                    >
+                      {/* Delete button - top right */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDelete({ type: "feature", id: f.id, productId: product.id, name: f.name || "Untitled" });
+                        }}
+                        className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-feedback-error-bg text-content-muted hover:text-feedback-error-text transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      </button>
+                      <div className="text-sm font-semibold text-content-heading truncate pr-6">
+                        {f.name || "Untitled"}
                       </div>
-                      <div className="flex items-center gap-1 text-overline">
-                        {f.phase_discovery === "complete" ? (
-                          <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
-                        ) : (
-                          <span className="w-3 h-3 rounded-full border border-divider inline-block" />
-                        )}
-                        <span className={f.phase_discovery === "complete" ? "text-hx-green-dark" : "text-content-muted"}>
-                          Discovery
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-overline">
-                        {f.phase_concepts === "complete" ? (
-                          <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
-                        ) : (
-                          <span className="w-3 h-3 rounded-full border border-divider inline-block" />
-                        )}
-                        <span className={f.phase_concepts === "complete" ? "text-hx-green-dark" : "text-content-muted"}>
-                          Concepts
-                        </span>
+                      {/* Horizontal step progress */}
+                      <div className="flex items-center gap-1 mt-2 text-overline flex-wrap">
+                        <StepDot done={f.phase_brief === "complete"} label="Brief" />
+                        <span className="text-content-muted">&gt;</span>
+                        <StepDot done={f.phase_discovery === "complete"} label="Insights" />
+                        <span className="text-content-muted">&gt;</span>
+                        <StepDot done={f.phase_design_concepts === "complete"} label="Concepts" />
+                        <span className="text-content-muted">&gt;</span>
+                        <StepDot done={f.phase_concepts === "complete"} label="Visuals" />
+                        <span className="text-content-muted">&gt;</span>
+                        <StepDot done={false} label="High Fidelity" />
+                        <span className="text-content-muted">&gt;</span>
+                        <StepDot done={false} label="Review" />
                       </div>
                     </div>
-                    {f.chosen_concept && (
-                      <div className="mt-2 text-overline text-content-heading font-medium truncate">
-                        {f.chosen_concept}
-                      </div>
-                    )}
-                  </button>
-                ))}
-
-                {/* + New Feature card */}
-                <button
-                  onClick={() => {
-                    setShowNewFeature(product.id);
-                    setNewFeatureName("");
-                    setNewFeatureType("screen");
-                  }}
-                  className="w-[200px] border-2 border-dashed border-divider-dashed rounded-[8px] p-3 text-center hover:border-divider-card-hover hover:text-content-heading transition-colors text-content-muted"
-                >
-                  <Plus className="w-5 h-5 mx-auto mb-1" strokeWidth={1.5} />
-                  <div className="text-body-sm font-medium">New Feature</div>
-                </button>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
@@ -505,6 +539,36 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirm Delete Dialog */}
+      {confirmDelete && (
+        <Dialog open onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}>
+          <DialogContent showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle>Delete {confirmDelete.name}?</DialogTitle>
+              <DialogDescription>
+                This {confirmDelete.type} will be permanently deleted. This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={deleting === confirmDelete.id || deletingFeature === confirmDelete.id}
+              >
+                {(deleting === confirmDelete.id || deletingFeature === confirmDelete.id) ? (
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" strokeWidth={1.5} /> Deleting...</>
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

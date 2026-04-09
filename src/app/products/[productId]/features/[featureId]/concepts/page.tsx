@@ -11,7 +11,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Loader2, Check, HelpCircle, ExternalLink } from "lucide-react";
+import { Loader2, Check, HelpCircle, Copy } from "lucide-react";
 import type { Concept, ChatMessage, Feature } from "@/lib/types";
 
 const trackStyles: Record<string, { bg: string; text: string; label: string }> = {
@@ -34,12 +34,43 @@ export default function ConceptsPage() {
   const [chatStreamText, setChatStreamText] = useState("");
   const [selectedConcept, setSelectedConcept] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState<"loading" | "ready">("loading");
+  const [copyingToFigma, setCopyingToFigma] = useState(false);
+  const [copyResult, setCopyResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
 
   // Abort any in-flight chat request on unmount
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
+  }, []);
+
+  // Inject Figma capture.js once
+  useEffect(() => {
+    if (document.querySelector('script[data-figma-capture]')) return;
+    const s = document.createElement("script");
+    s.src = "https://mcp.figma.com/mcp/html-to-design/capture.js";
+    s.setAttribute("data-figma-capture", "true");
+    document.head.appendChild(s);
+  }, []);
+
+  const handleCopyToFigma = useCallback(async () => {
+    setCopyingToFigma(true);
+    setCopyResult(null);
+    try {
+      const w = window as unknown as { figma?: { captureForDesign?: (opts: { selector: string }) => Promise<{ success: boolean; error?: string }> } };
+      if (!w.figma?.captureForDesign) {
+        throw new Error("Figma capture not loaded. Try refreshing the page.");
+      }
+      const result = await w.figma.captureForDesign({ selector: "#wireframe-render" });
+      if (result && result.success !== false) {
+        setCopyResult({ success: true, message: "Copied! Paste into Figma (Cmd+V)" });
+      } else {
+        throw new Error(result?.error || "Capture failed");
+      }
+    } catch (err) {
+      setCopyResult({ success: false, message: err instanceof Error ? err.message : "Copy failed" });
+    }
+    setCopyingToFigma(false);
   }, []);
 
   // Load feature + product data
@@ -240,22 +271,12 @@ export default function ConceptsPage() {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {currentConcept && (
                   <>
-                    <div className="border border-divider rounded-lg overflow-hidden">
-                      <iframe
-                        srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,sans-serif;background:#F5F5F5;color:#333;}</style></head><body>${currentConcept.wireframeHtml}</body></html>`}
-                        className="w-full border-0"
-                        style={{ minHeight: 400 }}
-                        title={currentConcept.name}
-                        sandbox="allow-same-origin"
-                        onLoad={(e) => {
-                          const iframe = e.target as HTMLIFrameElement;
-                          try {
-                            const height = iframe.contentDocument?.body?.scrollHeight;
-                            if (height && height > 400) iframe.style.height = `${height + 32}px`;
-                          } catch { /* cross-origin */ }
-                        }}
-                      />
-                    </div>
+                    <div
+                      id="wireframe-render"
+                      className="border border-divider rounded-lg overflow-hidden"
+                      style={{ minHeight: 300, padding: 16, background: "#F5F5F5", fontFamily: "system-ui, -apple-system, sans-serif", color: "#333" }}
+                      dangerouslySetInnerHTML={{ __html: currentConcept.wireframeHtml }}
+                    />
 
                     <Accordion>
                       <AccordionItem value="details">
@@ -322,19 +343,27 @@ export default function ConceptsPage() {
                         </Button>
                       )}
 
-                      {/* Copy to Figma — opens preview with Figma capture toolbar */}
-                      <a
-                        href={`/preview/${featureId}/${activeTab}?capture=true`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      {/* Copy to Figma — captures wireframe div to clipboard */}
+                      <Button
+                        variant="outline"
                         className="flex-1"
+                        disabled={copyingToFigma}
+                        onClick={handleCopyToFigma}
                       >
-                        <Button variant="outline" className="w-full">
-                          <ExternalLink className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
-                          Copy to Figma
-                        </Button>
-                      </a>
+                        {copyingToFigma ? (
+                          <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Copying...</>
+                        ) : copyResult?.success ? (
+                          <><Check className="w-4 h-4 mr-1.5 text-green-600" strokeWidth={1.5} />Copied!</>
+                        ) : (
+                          <><Copy className="w-4 h-4 mr-1.5" strokeWidth={1.5} />Copy to Figma</>
+                        )}
+                      </Button>
                     </div>
+                    {copyResult && (
+                      <p className={`text-xs -mt-2 pb-2 ${copyResult.success ? "text-green-600" : "text-red-500"}`}>
+                        {copyResult.message}
+                      </p>
+                    )}
                   </>
                 )}
               </div>

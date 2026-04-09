@@ -5,15 +5,9 @@ import { callClaude } from "@/lib/claude";
 const PROPOSE_SYSTEM = `You are a senior brand designer. Generate a complete visual style guide for a product.
 Return ONLY valid JSON — no markdown, no explanation:
 {
-  "brandColors": [{"name":"Primary","hex":"#XXXXXX"},{"name":"Secondary","hex":"#XXXXXX"}],
+  "brandColors": [{"name":"Primary","hex":"#XXXXXX","usage":"CTA buttons, primary action backgrounds, active tab indicators"}],
   "gradient": "linear-gradient(135deg, #XXXXXX 0%, #XXXXXX 100%)",
-  "neutrals": [
-    {"name":"White","hex":"#FFFFFF"},
-    {"name":"Light","hex":"#F5F5F5"},
-    {"name":"Mid","hex":"#9CA3AF"},
-    {"name":"Dark","hex":"#374151"},
-    {"name":"Black","hex":"#111827"}
-  ],
+  "neutrals": [{"name":"White","hex":"#FFFFFF","usage":"Page backgrounds, card surfaces, modal overlays"}],
   "typography": [
     {"level":"H1","font":"...","weight":"Bold","size":"48px"},
     {"level":"H2","font":"...","weight":"Semi Bold","size":"32px"},
@@ -26,7 +20,8 @@ Return ONLY valid JSON — no markdown, no explanation:
 Rules:
 - Choose fonts from Google Fonts that match the product's personality.
 - Brand colors should feel unique and appropriate to the industry — avoid generic blue/gray unless warranted.
-- Neutrals should range from pure white to near-black with 5 distinct steps.
+- Include as many brand colors as the product needs (typically 2-5). Include as many neutrals as needed (typically 4-6), ranging from white to near-black.
+- The "usage" field is CRITICAL for every color — describe the specific UI elements and states where each color is applied (e.g. "CTA buttons, link text, active indicators" or "Card borders, input outlines, divider lines"). Do NOT just repeat the color name.
 - The gradient should blend the two brand colors or a brand color with a complementary tone.
 - Consider the industry, audience, stage, and vibe description when choosing.
 - Each generation should feel distinct — randomize your choices. Be creative and opinionated.`;

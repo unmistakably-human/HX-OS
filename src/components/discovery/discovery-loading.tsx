@@ -18,55 +18,66 @@ const STATUS_MESSAGES = [
 
 interface DiscoveryLoadingProps {
   progress?: number;
+  snippets?: string[];
 }
 
-export function DiscoveryLoading({ progress = 0 }: DiscoveryLoadingProps) {
+export function DiscoveryLoading({ progress = 0, snippets = [] }: DiscoveryLoadingProps) {
   const [msgIdx, setMsgIdx] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
+  const [snippetIdx, setSnippetIdx] = useState(0);
 
+  // Rotate status messages every 5 seconds
   useEffect(() => {
     const msgTimer = setInterval(() => {
       setMsgIdx((i) => Math.min(i + 1, STATUS_MESSAGES.length - 1));
     }, 5000);
-    const clockTimer = setInterval(() => {
-      setElapsed((e) => e + 1);
-    }, 1000);
-    return () => {
-      clearInterval(msgTimer);
-      clearInterval(clockTimer);
-    };
+    return () => clearInterval(msgTimer);
   }, []);
 
-  const hasProgress = progress > 0;
+  // Rotate insight snippets every 10 seconds
+  useEffect(() => {
+    if (snippets.length === 0) return;
+    setSnippetIdx(0);
+    const snippetTimer = setInterval(() => {
+      setSnippetIdx((i) => (i + 1) % snippets.length);
+    }, 10000);
+    return () => clearInterval(snippetTimer);
+  }, [snippets.length]);
+
+  const currentSnippet = snippets.length > 0 ? snippets[snippetIdx % snippets.length] : null;
 
   return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center max-w-[400px]">
         <Loader2 className="w-10 h-10 text-action-primary-bg animate-spin mx-auto mb-6" strokeWidth={1.5} />
-        <div className="text-[16px] font-medium text-content-heading mb-2">
+        <div className="text-base font-medium text-content-heading mb-2">
           Building your insights deck
         </div>
-        <div className="text-[13px] text-content-secondary animate-pulse mb-3">
+        <div className="text-body-sm text-content-secondary animate-pulse mb-4">
           {STATUS_MESSAGES[msgIdx]}
         </div>
 
-        {hasProgress && (
-          <div className="mb-3">
-            <div className="w-64 h-1.5 bg-divider rounded-full mx-auto overflow-hidden">
+        {/* Progress bar — always visible, no numbers */}
+        <div className="mb-4">
+          <div className="w-64 h-1.5 bg-divider rounded-full mx-auto overflow-hidden">
+            {progress > 0 ? (
               <div
                 className="h-full bg-action-primary-bg rounded-full transition-all duration-500"
                 style={{ width: `${Math.min((progress / 12000) * 100, 95)}%` }}
               />
-            </div>
-            <div className="text-[11px] text-content-muted mt-1.5">
-              {Math.round(progress / 1000)}k chars generated
-            </div>
+            ) : (
+              <div className="h-full w-1/3 bg-action-primary-bg rounded-full animate-indeterminate-bar" />
+            )}
+          </div>
+        </div>
+
+        {/* Real-time insight snippets */}
+        {currentSnippet && (
+          <div className="mt-4 px-4 py-3 bg-surface-subtle rounded-[8px] transition-opacity duration-500">
+            <p className="text-xs text-content-secondary italic leading-relaxed">
+              &ldquo;{currentSnippet}&rdquo;
+            </p>
           </div>
         )}
-
-        <p className="text-[11px] text-content-muted">
-          {elapsed}s elapsed — typically takes 30–90 seconds
-        </p>
       </div>
     </div>
   );

@@ -19,6 +19,14 @@ function serializeContext(ctx: Record<string, unknown>): string {
   const lines: string[] = [];
   for (const [key, val] of Object.entries(ctx)) {
     if (!val) continue;
+    // Handle AudienceEntry[] format
+    if (key === "audience" && Array.isArray(val) && val.length > 0 && typeof val[0] === "object" && "country" in (val[0] as Record<string, unknown>)) {
+      const formatted = (val as { country: string; tiers: string[] }[])
+        .map((e) => `${e.country}${e.tiers.length ? ` (${e.tiers.join(", ")})` : ""}`)
+        .join(", ");
+      lines.push(`audience: ${formatted}`);
+      continue;
+    }
     if (typeof val === "string") {
       lines.push(`${key}: ${val}`);
     } else if (Array.isArray(val)) {
