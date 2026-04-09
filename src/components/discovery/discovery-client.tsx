@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, RotateCcw, ArrowRight, Download, Plus, Loader2 } from "lucide-react";
+import { Search, ArrowRight, Download, Plus, Loader2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createFeature } from "@/lib/projects";
@@ -117,12 +117,6 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.enriched_pcd, existingDeck]);
 
-  function handleRerun() {
-    setDeck(null);
-    setError(null);
-    autoStarted.current = false;
-    // Re-trigger will happen via the useEffect above
-  }
 
   // STATE 1: No enriched PCD
   if (!product.enriched_pcd) {
@@ -192,9 +186,9 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
                 <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 Download
               </Button>
-              <Button variant="outline" size="sm" onClick={handleRerun} className="text-xs h-8 rounded-md">
-                <RotateCcw className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
-                Re-run
+              <Button variant="outline" size="sm" onClick={() => router.push(`/products/${product.id}/knowledge`)} className="text-xs h-8 rounded-md">
+                <BookOpen className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
+                Knowledge Base
               </Button>
             </div>
           }
@@ -229,9 +223,9 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
                 </Button>
               </div>
             </div>
-            <Button variant="outline" onClick={handleRerun} className="text-body-sm rounded-md">
-              <RotateCcw className="w-4 h-4 mr-2" strokeWidth={1.5} />
-              Re-run Discovery
+            <Button variant="outline" onClick={() => router.push(`/products/${product.id}/knowledge`)} className="text-body-sm rounded-md">
+              <BookOpen className="w-4 h-4 mr-2" strokeWidth={1.5} />
+              Knowledge Base
             </Button>
           </div>
         </div>
