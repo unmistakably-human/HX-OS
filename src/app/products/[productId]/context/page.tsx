@@ -10,9 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useStream } from "@/hooks/use-stream";
-import { DEMO_CONTEXT } from "@/lib/demo-data";
 import type { ProductContext, UserSegment, DesignTokens, AudienceEntry } from "@/lib/types";
-import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon, X, Sparkles } from "lucide-react";
 
 const STEP_LABELS = ["Overview", "Product", "User Segments", "Structure", "Visual"] as const;
 
@@ -417,6 +416,7 @@ export default function ContextPage() {
   const [dsFile, setDsFile] = useState<File | null>(null);
   const [proposing, setProposing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
 
   // Load existing context from API, pre-fill name/company from product record
   useEffect(() => {
@@ -485,13 +485,30 @@ export default function ContextPage() {
     }));
   }, []);
 
-  const fillDemo = useCallback(() => {
-    setCtx((prev) => ({
-      ...DEMO_CONTEXT,
-      productName: prev.productName,
-      company: prev.company,
-    }));
-  }, []);
+  const handleAutofill = useCallback(async () => {
+    setAutofilling(true);
+    try {
+      const res = await fetch(`/api/products/${productId}/autofill-context`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `API error ${res.status}`);
+      }
+      const generated = await res.json();
+      setCtx((prev) => ({
+        ...prev,
+        ...generated,
+        productName: prev.productName,
+        company: prev.company,
+        // Preserve audience as-is if it's already structured
+        audience: generated.audience || prev.audience,
+      }));
+    } catch (err) {
+      console.error("Autofill failed:", err);
+    }
+    setAutofilling(false);
+  }, [productId]);
 
   // Helper: apply extracted tokens to context strings for downstream compat
   const applyTokens = useCallback((tokens: DesignTokens) => {
@@ -947,8 +964,8 @@ export default function ContextPage() {
         title="Product Context"
         step={{ current: step + 1, total: 5 }}
         actions={
-          <Button variant="outline" size="sm" className="text-xs text-content-secondary" onClick={fillDemo}>
-            Fill demo data
+          <Button variant="outline" size="sm" className="text-xs text-content-secondary gap-1" onClick={handleAutofill} disabled={autofilling}>
+            {autofilling ? <><Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} />Generating...</> : <><Sparkles className="w-3 h-3" strokeWidth={1.5} />Autofill</>}
           </Button>
         }
       />

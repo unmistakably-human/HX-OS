@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhaseHeader } from "@/components/phase-header";
-import { DEMO_FEATURE } from "@/lib/demo-data";
 import { Sparkles, Search, Loader2 } from "lucide-react";
 import type { Feature } from "@/lib/types";
 
@@ -26,6 +25,7 @@ export default function FeatureBriefPage() {
   const [context, setContext] = useState("");
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
 
   // Load existing feature data
   useEffect(() => {
@@ -82,13 +82,26 @@ export default function FeatureBriefPage() {
     }
   }
 
-  function fillDemo() {
-    setName(DEMO_FEATURE.name);
-    setType(DEMO_FEATURE.type as "screen" | "flow");
-    setProblem(DEMO_FEATURE.problem);
-    setMustHave(DEMO_FEATURE.mustHave);
-    setNotBe(DEMO_FEATURE.notBe);
-    setContext(DEMO_FEATURE.context);
+  async function handleAutofill() {
+    setAutofilling(true);
+    try {
+      const res = await fetch(
+        `/api/products/${productId}/features/${featureId}/autofill-brief`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `API error ${res.status}`);
+      }
+      const generated = await res.json();
+      if (generated.problem) setProblem(generated.problem);
+      if (generated.mustHave) setMustHave(generated.mustHave);
+      if (generated.notBe) setNotBe(generated.notBe);
+      if (generated.context) setContext(generated.context);
+    } catch (err) {
+      console.error("Autofill failed:", err);
+    }
+    setAutofilling(false);
   }
 
   if (!loaded) {
@@ -184,11 +197,15 @@ export default function FeatureBriefPage() {
           </div>
           <div className="pt-3">
             <button
-              onClick={fillDemo}
-              className="text-xs text-content-muted hover:text-content-secondary transition-colors flex items-center gap-1"
+              onClick={handleAutofill}
+              disabled={autofilling}
+              className="text-xs text-content-muted hover:text-content-secondary transition-colors flex items-center gap-1 disabled:opacity-50"
             >
-              <Sparkles className="w-3 h-3" strokeWidth={1.5} />
-              Fill demo data
+              {autofilling ? (
+                <><Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} />Generating brief...</>
+              ) : (
+                <><Sparkles className="w-3 h-3" strokeWidth={1.5} />Autofill</>
+              )}
             </button>
           </div>
         </div>
