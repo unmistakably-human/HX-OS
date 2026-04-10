@@ -1,0 +1,132 @@
+/* =====================================================================
+ * Human X Labs — Splash Screen
+ * All selectors prefixed with .hx-splash so nothing leaks into the app.
+ * White background, black text, colorful X.
+ * ===================================================================== */
+
+.hx-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  opacity: 1;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.hx-splash.hx-splash--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The logo is a flex row with three items in order:
+   [Human]  [X logo — slightly larger]  [Labs]
+   align-items: center keeps all three on the same visual centerline. */
+.hx-splash__logo {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 2.2vw, 32px);
+  font-size: clamp(56px, 9vw, 112px);
+  font-weight: 500;
+  color: #0a0a0a;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.hx-splash__word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: hx-word-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.hx-splash__word--human { animation-delay: 150ms; }
+.hx-splash__word--labs  { animation-delay: 450ms; }
+
+/* X is 1.35× the text size and reserves its own slot in the flex row
+   from the very first paint. Human and Labs never shift when it arrives. */
+.hx-splash__x {
+  width: 1.35em;
+  height: 1.35em;
+  flex-shrink: 0;
+  display: block;
+  opacity: 0;
+  transform: translateY(320px) scale(0.9);
+  animation: hx-x-rise 1200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 1000ms;
+}
+
+.hx-splash__tag {
+  margin-top: 44px;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(10, 10, 10, 0.5);
+  opacity: 0;
+  animation: hx-fade-in 500ms ease forwards;
+  animation-delay: 2300ms;
+}
+
+.hx-splash__bar {
+  position: absolute;
+  bottom: clamp(40px, 8vh, 72px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0;
+  animation: hx-fade-in 400ms ease forwards;
+  animation-delay: 2400ms;
+}
+
+.hx-splash__bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    #f6a11f 0%,
+    #e92627 25%,
+    #b62169 50%,
+    #b854a0 70%,
+    #219bd7 88%,
+    #016938 100%
+  );
+  border-radius: 2px;
+  animation: hx-bar-fill 1500ms ease-out forwards;
+  animation-delay: 2500ms;
+}
+
+@keyframes hx-word-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hx-x-rise {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes hx-fade-in {
+  to { opacity: 1; }
+}
+@keyframes hx-bar-fill {
+  to { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-splash__word,
+  .hx-splash__x,
+  .hx-splash__tag,
+  .hx-splash__bar,
+  .hx-splash__bar-fill {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .hx-splash__bar-fill { width: 100% !important; }
+}
