@@ -76,6 +76,9 @@ ${knowledge || "No knowledge entries yet."}
 
 ${feature.feature_discovery ? `## Feature-Specific Discovery\n${feature.feature_discovery.slice(0, 3000)}` : ""}
 
+## Platform
+${product.product_context?.platform === "ios" || product.product_context?.platform === "android" || product.product_context?.platform === "iosAndroid" || product.product_context?.platform === "mobile" ? "MOBILE APP — wireframeHtml must use max-width:375px, min-height:667px (phone aspect ratio). Design as a mobile screen." : product.product_context?.platform === "desktop" ? "DESKTOP — wireframeHtml should use min-width:800px." : "RESPONSIVE — wireframeHtml should work at 375px mobile width."}
+
 Generate 6 concept variations now. Keep each wireframeHtml under 800 characters — focus on conveying the metaphor clearly, not pixel-perfect layouts.`;
 
     let responseText = await callClaude({

@@ -155,7 +155,7 @@ export async function saveFeatureDiscovery(featureId: string, discovery: string)
 }
 
 export async function saveConcepts(featureId: string, concepts: Concept[]): Promise<void> {
-  await updateFeature(featureId, { concepts });
+  await updateFeature(featureId, { concepts, phase_visual: "complete", phase_concepts: "complete" });
 }
 
 export async function saveChatMessages(featureId: string, messages: ChatMessage[]): Promise<void> {
