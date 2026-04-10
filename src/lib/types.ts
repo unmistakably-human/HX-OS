@@ -74,6 +74,7 @@ export interface FeatureSummary {
   phase_discovery: string;
   phase_design_concepts: string;
   phase_concepts: string;
+  phase_flow: string;
   phase_hifi: string;
   phase_review: string;
   chosen_concept: string | null;
@@ -116,6 +117,56 @@ export interface BeyondScreen {
   why: string;
 }
 
+// ═══ User Flow ═══
+
+export interface FlowScreen {
+  id: string;
+  title: string;
+  elements: string[];
+  x: number;
+  y: number;
+}
+
+export interface FlowDecision {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface FlowConnection {
+  from: string;
+  to: string;
+  label: string;
+  type?: "error";
+}
+
+export interface FlowChangelog {
+  screen: string;
+  status: "original" | "new" | "updated";
+  note: string;
+}
+
+export interface FlowRationale {
+  title: string;
+  icon: string;
+  reason: string;
+}
+
+export interface FlowEdgeCaseCategory {
+  category: string;
+  items: string[];
+}
+
+export interface UserFlow {
+  screens: FlowScreen[];
+  decisions: FlowDecision[];
+  connections: FlowConnection[];
+  changelog: FlowChangelog[];
+  rationale: FlowRationale[];
+  edge_cases: FlowEdgeCaseCategory[];
+}
+
 // ═══ Feature (updated with insights flow fields) ═══
 
 export interface Feature {
@@ -151,6 +202,10 @@ export interface Feature {
   hifi_chat_messages: ChatMessage[];
   chosen_hifi: string | null;
   phase_hifi: "locked" | "active" | "complete";
+
+  // User flow
+  user_flow: UserFlow | null;
+  phase_flow: "locked" | "active" | "complete";
 
   // Design review
   review_result: ReviewResult | null;

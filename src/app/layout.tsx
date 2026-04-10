@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { SplashHider } from "@/components/splash-hider";
@@ -49,7 +50,7 @@ export default function RootLayout({
           <div className="hx-splash__tag">loading workspace</div>
           <div className="hx-splash__bar"><div className="hx-splash__bar-fill"></div></div>
         </div>
-        <script src="/splash.js" />
+        <Script src="/splash.js" strategy="beforeInteractive" />
 
         <TooltipProvider>{children}</TooltipProvider>
         <SplashHider />

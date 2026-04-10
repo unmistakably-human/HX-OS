@@ -25,6 +25,7 @@ export default async function ProductLayout({
       phase_discovery: f.phase_discovery,
       phase_design_concepts: f.phase_design_concepts,
       phase_concepts: f.phase_concepts,
+      phase_flow: f.phase_flow || "locked",
       phase_hifi: f.phase_hifi || "locked",
       phase_review: f.phase_review || "locked",
       chosen_concept: f.chosen_concept,

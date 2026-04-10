@@ -54,6 +54,14 @@ function getFeaturePhases(pid: string, fid: string) {
       href: `/products/${pid}/features/${fid}/design-concepts`,
       phaseField: "phase_design_concepts" as const,
     },
+    {
+      key: "flow",
+      num: "04",
+      label: "User Flow",
+      subtitle: "Screen flowchart",
+      href: `/products/${pid}/features/${fid}/flow`,
+      phaseField: "phase_flow" as const,
+    },
   ];
 }
 

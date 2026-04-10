@@ -94,8 +94,8 @@ export default function DesignConceptsPage() {
     setGenerating(false);
   }, [productId, featureId, feature?.selected_hmws, feature?.selected_insights]);
 
-  // ── Save selected concepts and proceed ──
-  const handleContinueToVisual = useCallback(async () => {
+  // ── Save selected concepts and proceed to flow ──
+  const handleContinueToFlow = useCallback(async () => {
     try {
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
@@ -103,11 +103,10 @@ export default function DesignConceptsPage() {
         body: JSON.stringify({
           selected_concepts: selectedConcepts,
           phase_design_concepts: "complete",
-          phase_visual: "active",
-          phase_concepts: "active",
+          phase_flow: "active",
         }),
       });
-      router.push(`/products/${productId}/features/${featureId}/concepts`);
+      router.push(`/products/${productId}/features/${featureId}/flow`);
     } catch {
       // ignore
     }
@@ -188,11 +187,11 @@ export default function DesignConceptsPage() {
               <span className="text-xs text-content-muted">{selectedConcepts.length}/3 selected</span>
               <Button
                 size="sm"
-                onClick={handleContinueToVisual}
+                onClick={handleContinueToFlow}
                 disabled={selectedConcepts.length === 0}
                 className="text-xs h-8"
               >
-                Sketch Visuals <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} />
+                Generate Flow <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} />
               </Button>
             </div>
           ) : undefined
