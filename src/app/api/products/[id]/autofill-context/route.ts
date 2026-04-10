@@ -74,8 +74,8 @@ export async function POST(
     const response = await callClaude({
       system: AUTOFILL_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
-      useSearch: !knowledge, // Use web search if no knowledge base yet
-      maxTokens: 4000,
+      maxTokens: 2500,
+      model: "claude-haiku-4-5",
     });
 
     const cleaned = response

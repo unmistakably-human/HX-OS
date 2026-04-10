@@ -231,7 +231,7 @@ export default function HifiPage() {
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chosen_hifi: designName, phase_hifi: "complete" }),
+        body: JSON.stringify({ chosen_hifi: designName, phase_hifi: "complete", phase_review: "active" }),
       });
     },
     [productId, featureId]

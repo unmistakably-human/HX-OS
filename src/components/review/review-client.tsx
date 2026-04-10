@@ -279,8 +279,9 @@ export function ReviewClient({
         );
       }
 
-      const data: FigmaFrame[] = await res.json();
-      if (!Array.isArray(data) || data.length === 0) {
+      const raw = await res.json();
+      const data: FigmaFrame[] = Array.isArray(raw) ? raw : raw.frames || [];
+      if (data.length === 0) {
         throw new Error("No frames found in the provided Figma URL");
       }
 
@@ -348,7 +349,8 @@ export function ReviewClient({
         throw new Error(err.error || "Failed to fetch frame images");
       }
 
-      const frameData = await framesRes.json();
+      const rawFrameData = await framesRes.json();
+      const frameData = Array.isArray(rawFrameData) ? rawFrameData : rawFrameData.frames || [];
 
       // Run review
       const reviewRes = await fetch(

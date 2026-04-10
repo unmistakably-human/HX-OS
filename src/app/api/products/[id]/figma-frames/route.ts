@@ -69,7 +69,7 @@ async function figmaGet(
   token: string
 ): Promise<Record<string, unknown>> {
   const res = await fetch(`${FIGMA_API}${path}`, {
-    headers: { "X-Figma-Token": token },
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
     const text = await res.text();

@@ -153,7 +153,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
                 ? (featureSummary[phase.phaseField] as string)
                 : "locked";
               const isActive = pathname.includes(phase.href) || pathname === phase.href;
-              const isLocked = state === "locked";
+              const isLocked = phase.key === "review" ? false : state === "locked";
               const isComplete = state === "complete";
 
               const content = (

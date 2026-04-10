@@ -63,7 +63,8 @@ export async function POST(
       system: AUTOFILL_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
       cachedContext: productContext,
-      maxTokens: 2000,
+      maxTokens: 1000,
+      model: "claude-haiku-4-5",
     });
 
     const cleaned = response
