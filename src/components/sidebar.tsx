@@ -252,11 +252,11 @@ export function Sidebar({ product, productId }: SidebarProps) {
               </div>
               {product.features.map((f) => (
                 <Link key={f.id} href={`/products/${productId}/features/${f.id}`}>
-                  <div className="flex items-center gap-2 px-2 py-1.5 rounded text-overline text-nav-item-text-default hover:text-nav-item-text-active transition-colors duration-fast">
-                    {f.phase_concepts === "complete" ? (
-                      <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded text-overline text-nav-item-text-default hover:bg-nav-item-hover-bg hover:text-nav-item-text-active transition-colors duration-fast cursor-pointer">
+                    {f.phase_concepts === "complete" || f.phase_brief === "complete" ? (
+                      <Check className="w-3 h-3 text-hx-green-dark shrink-0" strokeWidth={1.5} />
                     ) : (
-                      <span className="w-3 h-3 rounded-full border border-content-muted inline-block" />
+                      <span className="w-3 h-3 rounded-full border border-content-muted inline-block shrink-0" />
                     )}
                     <span className="truncate">{f.name}</span>
                   </div>

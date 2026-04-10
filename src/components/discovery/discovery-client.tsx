@@ -197,35 +197,25 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           <div className="max-w-[960px] mx-auto">
             <DeckNavigator data={deck} />
           </div>
-          <div className="mt-8 pt-5 border-t border-divider max-w-[960px] mx-auto space-y-4">
-            <div>
-              <p className="text-sm font-medium text-content-heading mb-2">Create your first feature</p>
-              <div className="flex gap-2">
-                <Input
-                  value={newFeatureName}
-                  onChange={(e) => setNewFeatureName(e.target.value)}
-                  placeholder="e.g., Product Detail Page"
-                  onKeyDown={(e) => e.key === "Enter" && !creatingFeature && handleCreateFeature()}
-                />
-                <Button
-                  onClick={handleCreateFeature}
-                  disabled={!newFeatureName.trim() || creatingFeature}
-                  className="shrink-0"
-                >
-                  {creatingFeature ? (
-                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
-                      New Feature
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-            <Button variant="outline" onClick={() => router.push(`/products/${product.id}/knowledge`)} className="text-body-sm rounded-md">
-              <BookOpen className="w-4 h-4 mr-2" strokeWidth={1.5} />
-              Knowledge Base
+          <div className="mt-8 pt-5 border-t border-divider max-w-[960px] mx-auto flex gap-2">
+            <Input
+              value={newFeatureName}
+              onChange={(e) => setNewFeatureName(e.target.value)}
+              placeholder="New feature name..."
+              className="max-w-xs"
+              onKeyDown={(e) => e.key === "Enter" && !creatingFeature && handleCreateFeature()}
+            />
+            <Button
+              onClick={handleCreateFeature}
+              disabled={!newFeatureName.trim() || creatingFeature}
+              variant="outline"
+              size="sm"
+            >
+              {creatingFeature ? (
+                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+              ) : (
+                <><Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />Create</>
+              )}
             </Button>
           </div>
         </div>
