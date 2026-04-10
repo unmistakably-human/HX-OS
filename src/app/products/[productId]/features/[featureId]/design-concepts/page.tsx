@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
+import { ChatPanel } from "@/components/chat-panel";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight, Lightbulb } from "lucide-react";
-import type { Feature, Product, DesignConcept, Baseline, BeyondScreen } from "@/lib/types";
+import type { Feature, Product, DesignConcept, Baseline, BeyondScreen, ChatMessage } from "@/lib/types";
 
 export default function DesignConceptsPage() {
   const params = useParams<{ productId: string; featureId: string }>();
@@ -25,6 +26,12 @@ export default function DesignConceptsPage() {
   const [beyondScreen, setBeyondScreen] = useState<BeyondScreen[]>([]);
   const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
   const [needsGeneration, setNeedsGeneration] = useState(false);
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatStreamText, setChatStreamText] = useState("");
+  const chatAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -115,6 +122,47 @@ export default function DesignConceptsPage() {
     }
   }, [needsGeneration, generating, feature?.selected_hmws, generateConcepts]);
 
+  const handleChatSend = useCallback(async (content: string) => {
+    const userMsg: ChatMessage = { role: "user", content, timestamp: Date.now() };
+    const updated = [...chatMessages, userMsg];
+    setChatMessages(updated);
+    setChatLoading(true);
+    setChatStreamText("");
+    try {
+      chatAbortRef.current = new AbortController();
+      const res = await fetch(`/api/products/${productId}/features/${featureId}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updated }),
+        signal: chatAbortRef.current.signal,
+      });
+      if (!res.ok) throw new Error("Chat failed");
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.text) { fullText += data.text; setChatStreamText(fullText); }
+          } catch { /* skip */ }
+        }
+      }
+      setChatMessages([...updated, { role: "assistant", content: fullText, timestamp: Date.now() }]);
+      setChatStreamText("");
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") console.error("Chat error:", err);
+    }
+    setChatLoading(false);
+  }, [chatMessages, productId, featureId]);
+
   if (loading) {
     return <div className="flex items-center justify-center h-full text-content-muted"><Loader2 className="w-5 h-5 animate-spin mr-2" strokeWidth={1.5} />Loading...</div>;
   }
@@ -181,7 +229,8 @@ export default function DesignConceptsPage() {
 
       {/* Concepts display */}
       {designConcepts.length > 0 && !generating && (
-        <>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
           <div className="px-5 pt-5 pb-3">
             <p className="text-body-sm text-content-secondary">
               {designConcepts.length} concepts generated. Select up to 3 for visual variations.
@@ -271,7 +320,25 @@ export default function DesignConceptsPage() {
             )}
           </div>
 
-        </>
+          </div>
+
+          {/* Chat Panel */}
+          <div className="w-[320px] shrink-0 flex flex-col bg-surface-page-alt border-l border-divider">
+            <div className="px-4 py-2.5 border-b border-divider bg-surface-card">
+              <h2 className="text-body-sm font-semibold text-content-heading">Design Chat</h2>
+              <p className="text-overline text-content-muted">Discuss concepts with AI</p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatPanel
+                messages={chatMessages}
+                onSend={handleChatSend}
+                loading={chatLoading}
+                streamingText={chatStreamText}
+                placeholder="Ask about a concept..."
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

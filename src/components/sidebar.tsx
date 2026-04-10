@@ -54,22 +54,6 @@ function getFeaturePhases(pid: string, fid: string) {
       href: `/products/${pid}/features/${fid}/design-concepts`,
       phaseField: "phase_design_concepts" as const,
     },
-    {
-      key: "concepts",
-      num: "04",
-      label: "Visual Variations",
-      subtitle: "Wireframes & chat",
-      href: `/products/${pid}/features/${fid}/concepts`,
-      phaseField: "phase_concepts" as const,
-    },
-    {
-      key: "hifi",
-      num: "05",
-      label: "High Fidelity",
-      subtitle: "Polished designs",
-      href: `/products/${pid}/features/${fid}/hifi`,
-      phaseField: "phase_hifi" as const,
-    },
   ];
 }
 
