@@ -210,24 +210,7 @@ export default function FeatureBriefPage() {
               </div>
             </RadioGroup>
           </div>
-          <div>
-            <Label className="text-[13px] font-medium text-content-label">Problem statement *</Label>
-            <Textarea value={problem} onChange={(e) => setProblem(e.target.value)} rows={4} placeholder="What problem does this feature solve?" className="mt-1" />
-          </div>
-          <div>
-            <Label className="text-[13px] font-medium text-content-label">Must-have elements *</Label>
-            <Textarea value={mustHave} onChange={(e) => setMustHave(e.target.value)} rows={4} placeholder="What elements must appear?" className="mt-1" />
-          </div>
-          <div>
-            <Label className="text-[13px] font-medium text-content-label">Should NOT be</Label>
-            <Textarea value={notBe} onChange={(e) => setNotBe(e.target.value)} rows={3} placeholder="What should this feature avoid?" className="mt-1" />
-          </div>
-          <div>
-            <Label className="text-[13px] font-medium text-content-label">Additional context</Label>
-            <Textarea value={context} onChange={(e) => setContext(e.target.value)} rows={3} placeholder="Any other relevant context..." className="mt-1" />
-          </div>
-
-          {/* BRD Upload */}
+          {/* BRD Upload — either/or with manual fields */}
           <div>
             <Label className="text-[13px] font-medium text-content-label">Upload BRD (optional)</Label>
             <input
@@ -253,7 +236,7 @@ export default function FeatureBriefPage() {
             ) : (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-[#d1d5db] rounded-lg text-[#6b7280] hover:border-content-muted hover:text-content-secondary transition-colors text-[13px]"
+                className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-divider rounded-lg text-content-muted hover:border-content-muted hover:text-content-secondary transition-colors text-[13px]"
               >
                 <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Upload BRD (PDF, MD, DOCX)
@@ -261,6 +244,30 @@ export default function FeatureBriefPage() {
             )}
             <p className="text-[11px] text-content-muted mt-1">AI will extract fields from the document.</p>
           </div>
+
+          <div className="flex items-center gap-3 text-content-muted">
+            <div className="flex-1 h-px bg-divider" />
+            <span className="text-xs">or fill in manually</span>
+            <div className="flex-1 h-px bg-divider" />
+          </div>
+
+          <div>
+            <Label className="text-[13px] font-medium text-content-label">Problem statement *</Label>
+            <Textarea value={problem} onChange={(e) => setProblem(e.target.value)} rows={4} placeholder="What problem does this feature solve?" className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-[13px] font-medium text-content-label">Must-have elements *</Label>
+            <Textarea value={mustHave} onChange={(e) => setMustHave(e.target.value)} rows={4} placeholder="What elements must appear?" className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-[13px] font-medium text-content-label">Should NOT be</Label>
+            <Textarea value={notBe} onChange={(e) => setNotBe(e.target.value)} rows={3} placeholder="What should this feature avoid?" className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-[13px] font-medium text-content-label">Additional context</Label>
+            <Textarea value={context} onChange={(e) => setContext(e.target.value)} rows={3} placeholder="Any other relevant context..." className="mt-1" />
+          </div>
+
 
           <div className="pt-3">
             <button
