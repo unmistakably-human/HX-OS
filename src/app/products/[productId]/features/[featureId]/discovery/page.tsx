@@ -131,9 +131,12 @@ export default function FeatureInsightsPage() {
     setGenerating(false);
   }, [productId, featureId, selectedInsights]);
 
-  // ── Save selected HMWs and proceed to Concepts ──
-  const handleContinueToConcepts = useCallback(async () => {
+  // ── Save selected HMWs, generate concepts, then navigate ──
+  const handleIdeateConcepts = useCallback(async () => {
+    setGenerating(true);
+    setError(null);
     try {
+      // Save selected HMWs
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -143,9 +146,22 @@ export default function FeatureInsightsPage() {
           phase_design_concepts: "active",
         }),
       });
+
+      // Trigger concept generation
+      const res = await fetch(`/api/products/${productId}/features/${featureId}/design-concepts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectedHmwIds: selectedHmws }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Concept generation failed");
+      }
+
       router.push(`/products/${productId}/features/${featureId}/design-concepts`);
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate concepts");
+      setGenerating(false);
     }
   }, [productId, featureId, selectedHmws, router]);
 
@@ -223,7 +239,7 @@ export default function FeatureInsightsPage() {
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
           <p className="text-sm text-content-secondary">
-            {step === 0 ? "Generating insights..." : "Generating HMW statements..."}
+            {step === 0 ? "Generating insights..." : step === 1 ? "Generating HMW statements..." : "Ideating concepts..."}
           </p>
           <p className="text-xs text-content-muted">This takes 15-30 seconds</p>
           {error && (
@@ -398,8 +414,8 @@ export default function FeatureInsightsPage() {
                   <span className="text-h2 font-bold text-content-heading">{selectedHmws.length}</span>
                   <span className="text-body-sm text-content-muted">/ {MAX_HMW} HMWs</span>
                 </div>
-                <Button onClick={handleContinueToConcepts} disabled={selectedHmws.length === 0}>
-                  Continue to Concepts <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
+                <Button onClick={handleIdeateConcepts} disabled={selectedHmws.length === 0 || generating}>
+                  Ideate Concepts <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
                 </Button>
               </div>
             </div>

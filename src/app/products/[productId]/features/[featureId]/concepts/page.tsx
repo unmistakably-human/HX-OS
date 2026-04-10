@@ -88,6 +88,20 @@ export default function ConceptsPage() {
           setSelectedConcept(feat.chosen_concept || null);
           if (Array.isArray(feat.concepts) && feat.concepts.length > 0) {
             setConcepts(feat.concepts);
+          } else {
+            // Auto-trigger visual variation generation
+            setGenerating(true);
+            try {
+              const genRes = await fetch(
+                `/api/products/${productId}/features/${featureId}/concepts`,
+                { method: "POST" }
+              );
+              if (genRes.ok) {
+                const data = await genRes.json();
+                if (Array.isArray(data)) setConcepts(data);
+              }
+            } catch { /* ignore */ }
+            setGenerating(false);
           }
         }
         // product data loaded if needed
@@ -223,21 +237,9 @@ export default function ConceptsPage() {
         <div className="w-[60%] flex flex-col overflow-hidden border-r border-divider">
           {concepts.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4">
-              {generating ? (
-                <>
-                  <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
-                  <p className="text-sm text-content-secondary">Generating concept variations...</p>
-                  <p className="text-xs text-content-muted">This takes 30-60 seconds</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-content-secondary">Ready to generate concepts</p>
-                  <Button onClick={generateConcepts} className="px-6">
-                    Generate 6 Concepts
-                  </Button>
-                  <p className="text-xs text-content-muted">Takes 30-60 seconds</p>
-                </>
-              )}
+              <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
+              <p className="text-sm text-content-secondary">Sketching visual variations...</p>
+              <p className="text-xs text-content-muted">This takes 30-60 seconds</p>
             </div>
           ) : (
             <>

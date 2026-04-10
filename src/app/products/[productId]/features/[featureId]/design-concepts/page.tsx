@@ -108,6 +108,13 @@ export default function DesignConceptsPage() {
     });
   };
 
+  // Auto-trigger generation if concepts haven't been generated yet
+  useEffect(() => {
+    if (needsGeneration && !generating && feature?.selected_hmws?.length) {
+      generateConcepts();
+    }
+  }, [needsGeneration, generating, feature?.selected_hmws, generateConcepts]);
+
   if (loading) {
     return <div className="flex items-center justify-center h-full text-content-muted"><Loader2 className="w-5 h-5 animate-spin mr-2" strokeWidth={1.5} />Loading...</div>;
   }
@@ -254,7 +261,7 @@ export default function DesignConceptsPage() {
               <span className="text-body-sm text-content-muted">/ 3 concepts</span>
             </div>
             <Button onClick={handleContinueToVisual} disabled={selectedConcepts.length === 0} className="text-white">
-              Continue to Visual Variations <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
+              Sketch Visuals <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
             </Button>
           </div>
         </>
