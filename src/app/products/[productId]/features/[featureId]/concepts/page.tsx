@@ -278,6 +278,32 @@ export default function ConceptsPage() {
       <PhaseHeader
         title="Visual Variations"
         subtitle={feature?.name || "Concepts"}
+        actions={
+          concepts.length > 0 ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-content-muted">{selectedConcepts.length}/3 selected</span>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  await fetch(`/api/products/${productId}/features/${featureId}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chosen_concept: selectedConcepts.join("|||"),
+                      phase_concepts: "complete",
+                      phase_hifi: "active",
+                    }),
+                  });
+                  router.push(`/products/${productId}/features/${featureId}/hifi`);
+                }}
+                disabled={selectedConcepts.length === 0}
+                className="text-xs h-8"
+              >
+                Design HiFi <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} />
+              </Button>
+            </div>
+          ) : undefined
+        }
       />
 
       <div className="flex flex-1 overflow-hidden">

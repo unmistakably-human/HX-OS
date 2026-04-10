@@ -125,7 +125,25 @@ export default function DesignConceptsPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <PhaseHeader title="Design Concepts" subtitle={feature.name} />
+      <PhaseHeader
+        title="Design Concepts"
+        subtitle={feature.name}
+        actions={
+          designConcepts.length > 0 ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-content-muted">{selectedConcepts.length}/3 selected</span>
+              <Button
+                size="sm"
+                onClick={handleContinueToVisual}
+                disabled={selectedConcepts.length === 0}
+                className="text-xs h-8"
+              >
+                Sketch Visuals <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} />
+              </Button>
+            </div>
+          ) : undefined
+        }
+      />
 
       {/* Generate concepts prompt */}
       {needsGeneration && !generating && (
@@ -253,16 +271,6 @@ export default function DesignConceptsPage() {
             )}
           </div>
 
-          {/* Bottom bar */}
-          <div className="border-t border-divider bg-surface-frosted backdrop-blur px-5 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-h2 font-bold text-content-heading">{selectedConcepts.length}</span>
-              <span className="text-body-sm text-content-muted">/ 3 concepts</span>
-            </div>
-            <Button onClick={handleContinueToVisual} disabled={selectedConcepts.length === 0} className="text-white">
-              Sketch Visuals <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
-            </Button>
-          </div>
         </>
       )}
     </div>
