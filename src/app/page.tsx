@@ -239,7 +239,7 @@ export default function DashboardPage() {
           <a href="/" className="flex items-center gap-3">
             <img src="/humanx-logo.svg" alt="" className="h-8 w-auto shrink-0" />
             <div>
-              <h1 className="text-h3 font-bold text-content-heading leading-tight">HumanX Studio</h1>
+              <h1 className="text-h3 font-bold text-content-heading leading-tight">HumanX Labs</h1>
               <p className="text-xs text-content-tertiary">AI Design Workflow</p>
             </div>
           </a>

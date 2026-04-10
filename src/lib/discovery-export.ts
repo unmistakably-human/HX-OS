@@ -40,7 +40,7 @@ export function buildExportHtml(data: DiscoveryDeck): string {
   let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(d.title || "Insights Deck")}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,-apple-system,sans-serif;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto;font-size:14px;line-height:1.5}@media print{body{padding:20px}}</style></head><body>`;
 
   // Cover
-  html += `<div style="margin-bottom:32px"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#E8713A;margin-bottom:8px">HumanX Studio — Insights Deck</div><div style="font-size:22px;font-weight:500;margin-bottom:6px">${esc(d.title)}</div><div style="font-size:14px;color:#6b6b6b;margin-bottom:16px">${esc(d.subtitle)}</div><div style="display:flex;gap:12px;flex-wrap:wrap">`;
+  html += `<div style="margin-bottom:32px"><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#E8713A;margin-bottom:8px">HumanX Labs — Insights Deck</div><div style="font-size:22px;font-weight:500;margin-bottom:6px">${esc(d.title)}</div><div style="font-size:14px;color:#6b6b6b;margin-bottom:16px">${esc(d.subtitle)}</div><div style="display:flex;gap:12px;flex-wrap:wrap">`;
   (d.metrics || []).forEach(m => {
     html += `<div style="background:#f5f5f3;border-radius:6px;padding:8px 14px"><div style="font-size:10px;color:#9a9a9a">${esc(m.label)}</div><div style="font-size:16px;font-weight:500">${esc(m.value)}</div></div>`;
   });

@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HumanX Studio",
+  title: "HumanX Labs",
   description: "AI Design Workflow Platform",
 };
 
