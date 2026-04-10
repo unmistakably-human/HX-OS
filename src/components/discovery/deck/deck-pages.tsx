@@ -23,30 +23,40 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
 
   const pages: ReactNode[] = [];
 
-  // 1. Cover — overview with metrics + HumanX branding
+  // 1. Cover — HumanX branding + title
   pages.push(
     <div key="cover">
-      <div className="flex items-center gap-2.5 mb-6">
+      <div className="flex items-center gap-2.5 mb-8">
         <img src="/humanx-logo.svg" alt="" className="h-6 w-auto" />
         <span className="text-xs tracking-widest uppercase text-content-muted font-medium">Discovery Agent</span>
       </div>
       <div className="text-2xl font-medium text-content-heading mb-3 leading-snug tracking-tight">
         {d.title || "Insights Deck"}
       </div>
-      <div className="text-sm text-content-secondary mb-5 leading-relaxed">
+      <div className="text-sm text-content-secondary mb-6 leading-relaxed">
         {d.subtitle}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-        {(d.metrics || []).map((m, i) => (
-          <div key={i} className="bg-surface-subtle rounded-lg px-3.5 py-3">
-            <div className="text-xs text-content-muted mb-1">{m.label}</div>
-            <div className="text-lg font-medium text-content-heading tracking-tight">{m.value}</div>
-          </div>
-        ))}
       </div>
       <p className="text-xs text-content-muted">Tap cards to expand. Use arrows or keyboard to navigate.</p>
     </div>
   );
+
+  // 2. Overview — key metrics
+  if (d.metrics && d.metrics.length > 0) {
+    pages.push(
+      <div key="overview">
+        <DeckLabel t="Overview" />
+        <DeckHeading t="Key metrics" />
+        <div className="grid grid-cols-2 gap-3">
+          {d.metrics.map((m, i) => (
+            <div key={i} className="bg-surface-subtle rounded-lg px-4 py-3.5">
+              <div className="text-xs text-content-muted mb-1">{m.label}</div>
+              <div className="text-lg font-medium text-content-heading tracking-tight">{m.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // 2. Category Insights
   pages.push(
