@@ -243,14 +243,21 @@ export function Sidebar({ product, productId }: SidebarProps) {
         )}
 
         {/* Features list on product-level pages */}
-        {!isFeatureRoute && product.features && product.features.length > 0 && (
+        {!isFeatureRoute && (
           <>
             <div className="mx-3 border-t border-[#27272a] my-2" />
             <div className="px-3">
-              <div className="text-overline font-medium text-content-section-label uppercase tracking-wider px-2 mb-1">
-                Features
+              <div className="flex items-center justify-between px-2 mb-1">
+                <span className="text-overline font-medium text-content-section-label uppercase tracking-wider">
+                  Features
+                </span>
+                <Link href={`/?newFeature=${productId}`}>
+                  <span className="text-overline text-nav-item-text-default hover:text-nav-item-text-active cursor-pointer">
+                    + New
+                  </span>
+                </Link>
               </div>
-              {product.features.map((f) => (
+              {(product.features || []).map((f) => (
                 <Link key={f.id} href={`/products/${productId}/features/${f.id}`}>
                   <div className="flex items-center gap-2 px-2 py-1.5 rounded text-overline text-nav-item-text-default hover:bg-nav-item-hover-bg hover:text-nav-item-text-active transition-colors duration-fast cursor-pointer">
                     {f.phase_concepts === "complete" || f.phase_brief === "complete" ? (
@@ -262,6 +269,9 @@ export function Sidebar({ product, productId }: SidebarProps) {
                   </div>
                 </Link>
               ))}
+              {(!product.features || product.features.length === 0) && (
+                <p className="text-overline text-content-muted px-2 py-1">No features yet</p>
+              )}
             </div>
           </>
         )}

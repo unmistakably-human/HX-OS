@@ -197,27 +197,6 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           <div className="max-w-[960px] mx-auto">
             <DeckNavigator data={deck} />
           </div>
-          <div className="mt-8 pt-5 border-t border-divider max-w-[960px] mx-auto flex gap-2">
-            <Input
-              value={newFeatureName}
-              onChange={(e) => setNewFeatureName(e.target.value)}
-              placeholder="New feature name..."
-              className="max-w-xs"
-              onKeyDown={(e) => e.key === "Enter" && !creatingFeature && handleCreateFeature()}
-            />
-            <Button
-              onClick={handleCreateFeature}
-              disabled={!newFeatureName.trim() || creatingFeature}
-              variant="outline"
-              size="sm"
-            >
-              {creatingFeature ? (
-                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
-              ) : (
-                <><Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />Create</>
-              )}
-            </Button>
-          </div>
         </div>
       </>
     );
