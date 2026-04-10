@@ -12,7 +12,7 @@ export function PhaseHeader({ title, subtitle, step, actions }: PhaseHeaderProps
     <div className="flex items-center justify-between border-b border-divider bg-surface-card px-5 py-2.5">
       <div className="flex items-center gap-4">
         <div>
-          <h1 className="text-h2 font-semibold text-content-heading">{title}</h1>
+          <h3 className="text-h3 font-semibold text-content-heading">{title}</h3>
           {subtitle && (
             <p className="text-xs text-content-muted mt-0.5">{subtitle}</p>
           )}
