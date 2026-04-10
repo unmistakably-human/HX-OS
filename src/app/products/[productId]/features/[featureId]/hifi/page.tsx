@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Loader2, Check, Copy } from "lucide-react";
+import { Loader2, Check, Copy, ArrowRight } from "lucide-react";
 import type { HifiDesign, ChatMessage, Feature } from "@/lib/types";
 
 export default function HifiPage() {
   const params = useParams<{ productId: string; featureId: string }>();
+  const router = useRouter();
   const productId = params.productId;
   const featureId = params.featureId;
 
@@ -98,7 +99,7 @@ export default function HifiPage() {
     setCopyingToFigma(false);
   }, []);
 
-  // Load feature + product data
+  // Load feature + product data (fast — no generation)
   useEffect(() => {
     async function load() {
       try {
@@ -113,20 +114,6 @@ export default function HifiPage() {
           setSelectedDesign(feat.chosen_hifi || null);
           if (Array.isArray(feat.hifi_designs) && feat.hifi_designs.length > 0) {
             setDesigns(feat.hifi_designs);
-          } else {
-            // Auto-trigger hifi design generation
-            setGenerating(true);
-            try {
-              const genRes = await fetch(
-                `/api/products/${productId}/features/${featureId}/hifi`,
-                { method: "POST" }
-              );
-              if (genRes.ok) {
-                const data = await genRes.json();
-                if (Array.isArray(data)) setDesigns(data);
-              }
-            } catch { /* ignore */ }
-            setGenerating(false);
           }
         }
         if (pRes.ok) {
@@ -140,6 +127,14 @@ export default function HifiPage() {
     }
     load();
   }, [productId, featureId]);
+
+  // Auto-trigger generation AFTER loading completes, if no designs exist
+  useEffect(() => {
+    if (loadingState === "ready" && designs.length === 0 && !generating && feature) {
+      generateDesigns();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingState, designs.length, feature]);
 
   const generateDesigns = useCallback(async () => {
     setGenerating(true);
@@ -257,6 +252,24 @@ export default function HifiPage() {
       <PhaseHeader
         title="High Fidelity"
         subtitle={feature?.name || "HiFi Designs"}
+        actions={
+          designs.length > 0 ? (
+            <Button
+              size="sm"
+              onClick={async () => {
+                await fetch(`/api/products/${productId}/features/${featureId}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ phase_hifi: "complete", phase_review: "active" }),
+                });
+                router.push(`/products/${productId}/features/${featureId}/review`);
+              }}
+              className="text-xs h-8"
+            >
+              Start Review <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} />
+            </Button>
+          ) : undefined
+        }
       />
 
       <div className="flex flex-1 overflow-hidden">

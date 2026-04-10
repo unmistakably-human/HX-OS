@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getProduct, getFeature } from "@/lib/projects";
 import { streamClaude } from "@/lib/claude";
 import { getKnowledgeForContext } from "@/lib/knowledge";
+import { buildProductContext, buildFeatureContext } from "@/lib/context-utils";
 import type { Concept } from "@/lib/types";
 
 const CHAT_SYSTEM = `You are a senior product designer at HumanX. You're discussing concept variations with the designer.
@@ -36,26 +37,19 @@ export async function POST(
       limit: 20,
     });
 
-    const contextParts = [
-      CHAT_SYSTEM,
-      `\n\n## Product: ${product.name}${product.company ? ` (${product.company})` : ""}`,
-      `\n\n## Feature Brief`,
-      `- Feature: ${feature.name}`,
-      `- Type: ${feature.feature_type}`,
-      `- Problem: ${feature.problem}`,
-      `- Must-haves: ${feature.must_have}`,
-      `- Not-be: ${feature.not_be || "None"}`,
-    ];
+    // Build cached context combining product + feature + knowledge + concepts
+    const cachedParts: string[] = [];
+    cachedParts.push(buildProductContext(product));
+    cachedParts.push(buildFeatureContext(feature));
 
     if (knowledge) {
-      contextParts.push("\n\n## Knowledge Base (key insights & research)");
-      contextParts.push(knowledge);
+      cachedParts.push("## Knowledge Base (key insights & research)\n" + knowledge);
     }
 
     if (concepts.length > 0) {
-      contextParts.push("\n\n## Generated Concepts");
+      const conceptLines: string[] = ["## Generated Concepts"];
       for (const c of concepts) {
-        contextParts.push(
+        conceptLines.push(
           `\n### ${c.name} (Track ${c.track})`,
           `Core idea: ${c.coreIdea}`,
           `Principles: ${c.principles.join("; ")}`,
@@ -66,11 +60,12 @@ export async function POST(
       }
 
       if (feature.chosen_concept) {
-        contextParts.push(`\n\n## Selected Concept: ${feature.chosen_concept}`);
+        conceptLines.push(`\n## Selected Concept: ${feature.chosen_concept}`);
       }
+      cachedParts.push(conceptLines.join("\n"));
     }
 
-    const systemPrompt = contextParts.join("\n");
+    const cachedContext = cachedParts.join("\n\n");
 
     const lastMessage = messages[messages.length - 1];
     if (!lastMessage || lastMessage.role !== "user") {
@@ -78,9 +73,10 @@ export async function POST(
     }
 
     const stream = await streamClaude({
-      system: systemPrompt,
+      system: CHAT_SYSTEM,
       userMessage: lastMessage.content,
       maxTokens: 4000,
+      cachedContext,
     });
 
     const encoder = new TextEncoder();

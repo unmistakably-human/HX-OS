@@ -1,5 +1,7 @@
 import { getProduct, getFeature, saveFeatureDiscovery } from "@/lib/projects";
 import { streamClaude } from "@/lib/claude";
+import { getKnowledgeForContext } from "@/lib/knowledge";
+import { buildProductContext } from "@/lib/context-utils";
 
 const FEATURE_DISCOVERY_SYSTEM = `You are a senior product strategist at HumanX. Run a focused discovery for a specific FEATURE within a product.
 
@@ -44,10 +46,20 @@ export async function POST(
     );
   }
 
-  const userMessage = `## Product Context (Enriched PCD)
-${product.enriched_pcd}
+  // Build cached product context
+  const cachedContext = buildProductContext(product);
 
-${product.discovery_insights ? `## Product Discovery Insights\n${typeof product.discovery_insights === "string" ? product.discovery_insights : JSON.stringify(product.discovery_insights)}` : ""}
+  // Check knowledge to decide if web search is needed
+  const searchQuery = `${feature.name} ${feature.problem || ""} ${feature.must_have || ""}`;
+  const knowledge = await getKnowledgeForContext(id, {
+    query: searchQuery,
+    limit: 15,
+  }).catch(() => "");
+  const needsSearch = !knowledge || knowledge.length < 500;
+
+  const userMessage = `${product.discovery_insights ? `## Product Discovery Insights\n${typeof product.discovery_insights === "string" ? product.discovery_insights : JSON.stringify(product.discovery_insights)}` : ""}
+
+${knowledge ? `## Knowledge Base\n${knowledge}` : ""}
 
 ## Feature Brief
 - Feature: ${feature.name}
@@ -74,8 +86,9 @@ Run feature-specific discovery now.`;
         const messageStream = await streamClaude({
           system: FEATURE_DISCOVERY_SYSTEM,
           userMessage,
-          useSearch: true,
+          useSearch: needsSearch,
           maxTokens: 8000,
+          cachedContext,
         });
 
         let fullText = "";

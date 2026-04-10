@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getProduct, getFeature, saveHifiDesigns } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 import { getKnowledgeForContext } from "@/lib/knowledge";
+import { buildProductContext } from "@/lib/context-utils";
 
 const HIFI_SYSTEM = `You are a senior product designer generating HIGH FIDELITY design variations.
 
@@ -72,6 +73,9 @@ export async function POST(
   try {
     const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
+    // Build cached product context
+    const cachedContext = buildProductContext(product);
+
     // Use knowledge base with semantic search based on feature context
     const searchQuery = `${feature.name} ${feature.problem || ""} ${feature.must_have || ""}`;
     const knowledge = await getKnowledgeForContext(id, {
@@ -94,30 +98,8 @@ export async function POST(
           .join("\n")
       : "No concepts available.";
 
-    // Gather design tokens
-    const colors = product.product_context?.colors || "No brand colors specified.";
-    const fonts = product.product_context?.fonts || "No brand fonts specified.";
-    const designTokens = product.product_context?.designTokens
-      ? JSON.stringify(product.product_context.designTokens, null, 2)
-      : "No structured design tokens available.";
-
-    // Enriched PCD for content context
-    const enrichedPcd = product.enriched_pcd
-      ? product.enriched_pcd.slice(0, 3000)
-      : "No enriched PCD available.";
-
-    const userMessage = `## Product: ${product.name}${product.company ? ` (${product.company})` : ""}
-
-## Knowledge Base (key insights & research)
+    const userMessage = `## Knowledge Base (key insights & research)
 ${knowledge || "No knowledge entries yet."}
-
-## Enriched Product Context
-${enrichedPcd}
-
-## Design Tokens
-- **Colors:** ${colors}
-- **Fonts:** ${fonts}
-- **Structured Tokens:** ${designTokens}
 
 ## Selected Concept(s) from Visual Variations
 ${conceptContext}
@@ -135,12 +117,15 @@ ${feature.feature_discovery ? `## Feature-Specific Discovery\n${feature.feature_
 ## Platform
 ${product.product_context?.platform === "ios" || product.product_context?.platform === "android" || product.product_context?.platform === "iosAndroid" || product.product_context?.platform === "mobile" ? "MOBILE APP — htmlContent must use max-width:375px, min-height:667px (phone aspect ratio). Design as a mobile screen." : product.product_context?.platform === "desktop" ? "DESKTOP — htmlContent should use min-width:800px." : "RESPONSIVE — htmlContent should work at 375px mobile width."}
 
-Generate 3 high-fidelity design variations now. Each htmlContent should be 1500-2500 characters of polished, production-quality HTML using the brand's actual colors, fonts, and real content from the brief. Each design must explore a distinctly different layout approach.`;
+Generate 3 high-fidelity design variations now. Each htmlContent should be 1500-2500 characters of polished, production-quality HTML using the brand's actual colors, fonts, and real content from the brief. Each design must explore a distinctly different layout approach.
+Return ONLY valid JSON. Start with [ and end with ].`;
 
     let responseText = await callClaude({
       system: HIFI_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
-      maxTokens: 12000,
+      maxTokens: 10000,
+      model: "claude-opus-4-6",
+      cachedContext,
     });
 
     let designs;
@@ -161,7 +146,9 @@ Generate 3 high-fidelity design variations now. Each htmlContent should be 1500-
               "That was not valid JSON. Please return ONLY the JSON array, with no other text.",
           },
         ],
-        maxTokens: 12000,
+        maxTokens: 10000,
+        model: "claude-opus-4-6",
+        cachedContext,
       });
 
       const jsonStr = extractJSON(responseText);

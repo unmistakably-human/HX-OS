@@ -1,6 +1,7 @@
 import { getProduct, getFeature, updateFeature } from "@/lib/projects";
 import { extractFromConcepts } from "@/lib/knowledge";
 import { callClaude } from "@/lib/claude";
+import { buildProductContext, truncatePCD } from "@/lib/context-utils";
 
 const CONCEPTS_SYSTEM = `You are a senior product designer generating design concepts from HMW questions.
 
@@ -85,12 +86,10 @@ export async function POST(
       selectedHmwIds.includes(h.id)
     );
 
-    const pcdSummary = (product.enriched_pcd || "").slice(0, 3000);
+    // Build cached product context from PCD
+    const cachedContext = buildProductContext(product);
 
-    const userMessage = `## Product Context
-${pcdSummary}
-
-## Feature
+    const userMessage = `## Feature
 - Name: ${feature.name}
 - Type: ${feature.feature_type}
 - Problem: ${feature.problem}
@@ -111,7 +110,8 @@ Generate 3 design concepts + baseline + beyond-the-screen interventions now.`;
       system: CONCEPTS_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
       useSearch: true,
-      maxTokens: 8000,
+      maxTokens: 5000,
+      cachedContext,
     });
 
     const jsonStr = extractJSON(responseText);

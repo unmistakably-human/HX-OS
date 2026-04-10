@@ -1,6 +1,7 @@
 import { getProduct, getFeature, updateFeature } from "@/lib/projects";
 import { extractFromInsights, getKnowledgeForContext } from "@/lib/knowledge";
 import { callClaude } from "@/lib/claude";
+import { buildProductContext } from "@/lib/context-utils";
 
 const INSIGHTS_SYSTEM = `You are a senior product strategist running focused research for a specific feature. Generate structured insights across exactly 3 categories.
 
@@ -74,6 +75,9 @@ export async function POST(
       return Response.json({ error: "Complete product context first." }, { status: 400 });
     }
 
+    // Build cached product context
+    const cachedContext = buildProductContext(product);
+
     // Use knowledge base with semantic search for relevant context
     const searchQuery = `${feature.name} ${feature.problem || ""} ${feature.must_have || ""}`;
     const knowledge = await getKnowledgeForContext(id, {
@@ -81,9 +85,10 @@ export async function POST(
       limit: 20,
     });
 
-    const userMessage = `## Product: ${product.name}${product.company ? ` (${product.company})` : ""}
+    // Only skip search if knowledge is very rich
+    const needsSearch = !knowledge || knowledge.length < 500;
 
-${knowledge ? `## Knowledge Base (key insights & research)\n${knowledge}` : `## Product Context\n${product.enriched_pcd.slice(0, 4000)}`}
+    const userMessage = `${knowledge ? `## Knowledge Base (key insights & research)\n${knowledge}` : ""}
 
 ## Feature Brief
 - Feature: ${feature.name}
@@ -98,8 +103,9 @@ Generate 15 insights (5 per category) for this feature now.`;
     const responseText = await callClaude({
       system: INSIGHTS_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
-      useSearch: true,
+      useSearch: needsSearch,
       maxTokens: 8000,
+      cachedContext,
     });
 
     const jsonStr = extractJSON(responseText);

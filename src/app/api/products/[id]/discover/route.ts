@@ -72,13 +72,14 @@ export async function POST(
       }
 
       try {
-        const userMessage = `Product brief below. Generate the Discovery Insights Deck as JSON. Keep values concise.\n\n${briefText}`;
+        const userMessage = `Product brief provided in context. Generate the Discovery Insights Deck as JSON. Keep values concise.`;
 
         const messageStream = await streamClaude({
           system: DISCOVERY_SYSTEM,
           userMessage,
           useSearch: true,
-          maxTokens: 16000,
+          maxTokens: 12000,
+          cachedContext: briefText,
         });
 
         let fullText = "";

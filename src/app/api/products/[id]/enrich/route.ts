@@ -70,9 +70,10 @@ export async function POST(
       try {
         const stream = await streamClaude({
           system: ENRICH_SYSTEM,
-          userMessage: briefText,
+          userMessage: `Enrich the product context provided below. Use web search to verify and expand.`,
           useSearch: true,
-          maxTokens: 8000,
+          maxTokens: 6000,
+          cachedContext: briefText,
         });
         let fullText = "";
 

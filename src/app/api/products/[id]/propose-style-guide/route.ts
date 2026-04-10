@@ -54,6 +54,7 @@ export async function POST(
     const response = await callClaude({
       system: PROPOSE_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
+      maxTokens: 4000,
     });
 
     const cleaned = response.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();

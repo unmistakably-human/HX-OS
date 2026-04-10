@@ -25,13 +25,6 @@ const PRODUCT_PHASES = [
     subtitle: "Research & insights",
     href: (pid: string) => `/products/${pid}/discovery`,
   },
-  {
-    key: "review",
-    num: "03",
-    label: "Review",
-    subtitle: "Design audit",
-    href: (pid: string) => `/products/${pid}/review`,
-  },
 ];
 
 function getFeaturePhases(pid: string, fid: string) {
@@ -122,9 +115,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
                 const state =
                   phase.key === "context"
                     ? product.phase_context
-                    : phase.key === "review"
-                      ? "active"
-                      : product.phase_discovery;
+                    : product.phase_discovery;
                 // Also check if discovery_insights exist (covers stale phase field)
                 const isComplete = state === "complete" || (phase.key === "discovery" && !!product.discovery_insights);
 

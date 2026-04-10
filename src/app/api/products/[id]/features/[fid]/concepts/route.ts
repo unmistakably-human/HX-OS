@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getProduct, getFeature, saveConcepts } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 import { getKnowledgeForContext } from "@/lib/knowledge";
+import { buildProductContext } from "@/lib/context-utils";
 
 const CONCEPT_SYSTEM = `You are a senior product designer generating concept variations.
 
@@ -60,6 +61,9 @@ export async function POST(
   try {
     const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
+    // Build cached product context
+    const cachedContext = buildProductContext(product);
+
     // Use knowledge base with semantic search based on feature context
     const searchQuery = `${feature.name} ${feature.problem || ""} ${feature.must_have || ""}`;
     const knowledge = await getKnowledgeForContext(id, {
@@ -67,9 +71,7 @@ export async function POST(
       limit: 15,
     });
 
-    const userMessage = `## Product: ${product.name}${product.company ? ` (${product.company})` : ""}
-
-## Knowledge Base (key insights & research)
+    const userMessage = `## Knowledge Base (key insights & research)
 ${knowledge || "No knowledge entries yet."}
 
 ## Feature Brief
@@ -85,12 +87,14 @@ ${feature.feature_discovery ? `## Feature-Specific Discovery\n${feature.feature_
 ## Platform
 ${product.product_context?.platform === "ios" || product.product_context?.platform === "android" || product.product_context?.platform === "iosAndroid" || product.product_context?.platform === "mobile" ? "MOBILE APP — wireframeHtml must use max-width:375px, min-height:667px (phone aspect ratio). Design as a mobile screen." : product.product_context?.platform === "desktop" ? "DESKTOP — wireframeHtml should use min-width:800px." : "RESPONSIVE — wireframeHtml should work at 375px mobile width."}
 
-Generate 6 concept variations now. Keep each wireframeHtml under 800 characters — focus on conveying the metaphor clearly, not pixel-perfect layouts.`;
+Generate 6 concept variations now. Keep each wireframeHtml under 800 characters — focus on conveying the metaphor clearly, not pixel-perfect layouts.
+Return ONLY valid JSON. Start with [ and end with ].`;
 
     let responseText = await callClaude({
       system: CONCEPT_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
-      maxTokens: 8000,
+      maxTokens: 6000,
+      cachedContext,
     });
 
     let concepts;
@@ -111,7 +115,8 @@ Generate 6 concept variations now. Keep each wireframeHtml under 800 characters 
               "That was not valid JSON. Please return ONLY the JSON array, with no other text.",
           },
         ],
-        maxTokens: 8000,
+        maxTokens: 6000,
+        cachedContext,
       });
 
       const jsonStr = extractJSON(responseText);

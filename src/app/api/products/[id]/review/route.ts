@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getProduct, getFeature } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 import { getKnowledgeForContext } from "@/lib/knowledge";
+import { buildProductContext } from "@/lib/context-utils";
 import type { ReviewResult, ReviewIssue, ReviewDimension } from "@/lib/types";
 
 // ═══ Review type definitions ═══
@@ -438,6 +439,9 @@ export async function POST(
       }).catch(() => ""),
     ]);
 
+    // Build cached product context
+    const cachedContext = buildProductContext(product);
+
     const systemPrompt = buildSystemPrompt(type);
     const userContent = buildUserContent(
       product as {
@@ -464,6 +468,7 @@ export async function POST(
       system: systemPrompt,
       messages: [{ role: "user", content: userContent }],
       maxTokens: 4000,
+      cachedContext,
     });
 
     const parsed = parseReviewResponse(raw, type);

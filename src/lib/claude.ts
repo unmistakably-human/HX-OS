@@ -1,9 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 function getClient() {
-  // HUMANX_ANTHROPIC_KEY takes priority — ANTHROPIC_API_KEY conflicts with
-  // Claude Code's own env which sets it to empty string, preventing Next.js
-  // from loading it from .env.local.
   const key = process.env.HUMANX_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error("Set HUMANX_ANTHROPIC_KEY in .env.local");
   return new Anthropic({ apiKey: key });
@@ -14,18 +11,29 @@ export async function streamClaude({
   userMessage,
   useSearch = false,
   maxTokens = 8000,
+  cachedContext,
 }: {
   system: string;
   userMessage: string;
   useSearch?: boolean;
   maxTokens?: number;
+  cachedContext?: string;
 }) {
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    { type: "text", text: system, cache_control: { type: "ephemeral" } },
+  ];
+  if (cachedContext) {
+    systemBlocks.push({
+      type: "text",
+      text: cachedContext,
+      cache_control: { type: "ephemeral" },
+    });
+  }
+
   const params: Anthropic.MessageCreateParams = {
     model: "claude-sonnet-4-6",
     max_tokens: maxTokens,
-    system: [
-      { type: "text", text: system, cache_control: { type: "ephemeral" } },
-    ],
+    system: systemBlocks,
     messages: [{ role: "user", content: userMessage }],
     stream: true,
   };
@@ -45,18 +53,31 @@ export async function callClaude({
   messages,
   useSearch = false,
   maxTokens = 8000,
+  model = "claude-sonnet-4-6",
+  cachedContext,
 }: {
   system: string;
   messages: Anthropic.MessageParam[];
   useSearch?: boolean;
   maxTokens?: number;
+  model?: string;
+  cachedContext?: string;
 }) {
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    { type: "text", text: system, cache_control: { type: "ephemeral" } },
+  ];
+  if (cachedContext) {
+    systemBlocks.push({
+      type: "text",
+      text: cachedContext,
+      cache_control: { type: "ephemeral" },
+    });
+  }
+
   const params: Anthropic.MessageCreateParams = {
-    model: "claude-sonnet-4-6",
+    model,
     max_tokens: maxTokens,
-    system: [
-      { type: "text", text: system, cache_control: { type: "ephemeral" } },
-    ],
+    system: systemBlocks,
     messages,
   };
 
