@@ -333,6 +333,22 @@ export async function extractFromDiscovery(productId: string, deck: Record<strin
       }
     }
 
+    // UX Patterns → pattern
+    const uxPatterns = deck.ux_patterns as { name?: string; example?: string; how?: string; applicability?: string }[] | undefined;
+    if (Array.isArray(uxPatterns)) {
+      for (const up of uxPatterns) {
+        if (up.name) {
+          entries.push({
+            ...base,
+            category: "pattern",
+            title: `${up.name} (${up.example || "global"})`,
+            content: up.how || up.applicability || "",
+            tags: ["ux_pattern"],
+          });
+        }
+      }
+    }
+
     await saveKnowledgeEntries(entries);
   } catch (err) {
     console.error("Discovery knowledge extraction failed:", err);
