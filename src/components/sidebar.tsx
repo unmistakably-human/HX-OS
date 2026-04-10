@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Product } from "@/lib/types";
 
 interface SidebarProps {
@@ -68,14 +69,6 @@ function getFeaturePhases(pid: string, fid: string) {
       subtitle: "Polished designs",
       href: `/products/${pid}/features/${fid}/hifi`,
       phaseField: "phase_hifi" as const,
-    },
-    {
-      key: "review",
-      num: "06",
-      label: "Review",
-      subtitle: "Design audit",
-      href: `/products/${pid}/features/${fid}/review`,
-      phaseField: "phase_review" as const,
     },
   ];
 }
@@ -250,10 +243,11 @@ export function Sidebar({ product, productId }: SidebarProps) {
               <div className="text-overline font-medium text-content-section-label uppercase tracking-wider px-2 mb-2">
                 Features
               </div>
-              <Link href={`/?newFeature=${productId}`}>
-                <div className="flex items-center justify-center gap-1.5 mx-1 mb-2 py-1.5 rounded-md border border-[#3f3f46] text-overline text-nav-item-text-default hover:bg-nav-item-hover-bg hover:text-nav-item-text-active transition-colors duration-fast cursor-pointer">
-                  + New Feature
-                </div>
+              <Link href={`/?newFeature=${productId}`} className="block mx-1 mb-2">
+                <Button variant="outline" size="sm" className="w-full text-xs">
+                  <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                  New Feature
+                </Button>
               </Link>
               {(product.features || []).map((f) => (
                 <Link key={f.id} href={`/products/${productId}/features/${f.id}`}>

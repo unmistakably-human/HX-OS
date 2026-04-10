@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Design Review — HumanX Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--hx-red:#171717;--hx-crimson:#262626;--hx-magenta:#404040;--hx-purple:#8B5CF6;--hx-blue:#3B82F6;--hx-orange:#F59E0B;--hx-flame:#EF4444;--bg:#FFFFFF;--bg1:#FAFAFA;--bg2:#FFFFFF;--bg3:#F5F5F5;--bg4:#EFEFEF;--bd:#E5E5E5;--bd2:#D4D4D4;--t1:#171717;--t2:#525252;--t3:#737373;--t4:#A3A3A3;--green:#065F46;--green-d:#D1FAE5;--red-d:#FEE2E2;--amber-d:#FEF3C7;--grad:#171717;--r:8px;--rs:6px;--rl:12px;--sidebar-w:260px;--err-red:#EF4444}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{display:flex;overflow:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+
+/* SIDEBAR */
+.sb{width:var(--sidebar-w);height:100vh;background:var(--bg1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s ease}
+.sb-brand{padding:22px 20px 18px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--bd)}
+.sb-logo{width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0}
+.sb-name{font-size:17px;font-weight:700;letter-spacing:-.03em;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sb-sub{font-size:11px;color:var(--t3)}
+.sb-proj{margin:12px 10px;padding:11px 14px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:10px;transition:border-color .12s}
+.sb-proj:hover{border-color:var(--bd2)}
+.sb-proj .dot{width:10px;height:10px;border-radius:50%}
+.sb-proj .pn{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 10px}
+.nav-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t4);padding:12px 12px 6px}
+.ni{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:var(--rs);cursor:pointer;color:var(--t2);font-size:14px;font-weight:500;transition:all .12s;margin-bottom:2px}
+.ni:hover{background:var(--bg3);color:var(--t1)}
+.ni.active{background:rgba(0,0,0,.04);color:var(--hx-red);font-weight:600}
+.ni .ic{font-size:15px;width:22px;text-align:center}
+.sb-foot{padding:12px 20px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.sb-foot img{width:16px;height:16px;border-radius:4px}
+.sb-foot span{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t4)}
+
+/* HAMBURGER */
+.ham{display:none;position:fixed;top:14px;left:14px;z-index:100;width:40px;height:40px;border-radius:10px;background:var(--bg2);border:1px solid var(--bd);cursor:pointer;align-items:center;justify-content:center;font-size:18px;color:var(--t2)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49}
+
+/* MAIN */
+.ct{flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.ct-hdr{padding:22px 36px 16px;border-bottom:1px solid var(--bd);background:var(--bg);position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px;flex-shrink:0}
+.bk{background:none;border:1px solid var(--bd);color:var(--t3);padding:6px 14px;border-radius:var(--rs);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;display:none;transition:all .12s}
+.bk:hover{color:var(--t1);border-color:var(--bd2)}.bk.vis{display:flex}
+.pt{font-size:21px;font-weight:700;letter-spacing:-.02em;flex:1}
+.badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 12px;border-radius:20px;background:var(--bg1);color:var(--t3);border:1px solid var(--bd)}
+.cb{flex:1;padding:24px 36px 60px;max-width:900px}
+.scr{display:none;flex-direction:column;gap:16px;animation:fi .2s ease}.scr.active{display:flex}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* FORM */
+.label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:5px}
+textarea,.inp{background:var(--bg1);border:1.5px solid var(--bd);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:15px;color:var(--t1);padding:13px 16px;resize:vertical;outline:none;width:100%;transition:border-color .2s;line-height:1.5}
+textarea{min-height:90px;max-height:500px;white-space:pre-wrap;tab-size:2}textarea::placeholder,.inp::placeholder{color:var(--t4)}
+textarea:focus,.inp:focus{border-color:var(--hx-red);box-shadow:0 0 0 2px rgba(0,0,0,.06)}
+.btn{padding:12px 24px;border:none;border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;transition:all .12s}
+.btn-g{background:var(--grad);color:#fff;box-shadow:0 4px 18px rgba(0,0,0,.10)}
+.btn-g:hover{box-shadow:0 6px 24px rgba(0,0,0,.16);transform:translateY(-1px)}
+.btn-g:disabled{background:var(--bg3);color:var(--t4);box-shadow:none;cursor:not-allowed;transform:none}
+.btn-s{background:var(--bg2);color:var(--t2);border:1px solid var(--bd)}
+.btn-s:hover{background:var(--bg3);color:var(--t1)}
+.btn-full{width:100%}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px;transition:all .12s}
+.card:hover{border-color:var(--bd2)}.card.active{border-color:var(--hx-red);background:rgba(0,0,0,.02)}
+.err{display:none;align-items:center;gap:10px;padding:13px 16px;background:var(--red-d);border:1px solid rgba(239,68,68,.15);border-radius:var(--rs);font-size:14px;color:var(--err-red)}.err.vis{display:flex}
+.success-banner{display:none;padding:14px 18px;background:var(--green-d);border:1px solid rgba(34,197,94,.15);border-radius:var(--rs);font-size:14px;color:var(--green);gap:10px;align-items:flex-start;line-height:1.5}.success-banner.vis{display:flex}
+.success-banner .sb-details{font-size:13px;color:var(--t2);margin-top:4px}
+.field-status{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--green);font-family:'JetBrains Mono',monospace;margin-left:8px;opacity:0;transition:opacity .3s}.field-status.vis{opacity:1}
+
+/* WELCOME */
+.wh{text-align:center;padding:28px 0 14px}
+.wh img{width:80px;height:80px;border-radius:20px;margin-bottom:14px}
+.wh h1{font-size:26px;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.wh p{color:var(--t3);font-size:15px;margin-top:4px}
+.pc{display:flex;align-items:center;gap:14px;cursor:pointer;padding:14px 16px}
+.pc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.pc-name{font-size:16px;font-weight:600}
+.pc-meta{font-size:13px;color:var(--t3);margin-top:2px}
+.api-row{display:flex;align-items:center;gap:10px;background:var(--bg1);border:1.5px solid var(--bd);border-radius:var(--rs);padding:0 16px}.api-row:focus-within{border-color:var(--hx-red)}
+.api-row .inp{border:none;padding:13px 0;background:none}
+
+/* SETUP */
+.cpick{display:flex;gap:10px}
+.csw{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .12s}
+.csw.active{border-color:#fff;transform:scale(1.1)}
+.sdiv{border-top:1px solid var(--bd);padding-top:16px;margin-top:4px}
+.stitle{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.ssub{font-size:14px;color:var(--t3);margin-top:2px}
+.upzone{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 18px;background:var(--bg2);border:2px dashed var(--bd2);border-radius:var(--r);cursor:pointer;transition:all .2s;text-align:center}
+.upzone:hover{border-color:var(--hx-red);background:rgba(0,0,0,.01)}
+.upzone.busy{pointer-events:none;opacity:.5}
+.up-prog{width:100%;height:4px;background:var(--bd);border-radius:2px;overflow:hidden;display:none}.up-prog.vis{display:block}
+.up-prog-fill{height:100%;border-radius:2px;background:var(--grad);transition:width .5s ease}
+.factions{display:flex;gap:12px;margin-top:4px}
+
+/* DASHBOARD */
+.dh{display:flex;align-items:center;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--bd);margin-bottom:4px}
+.dh .dot{width:14px;height:14px;border-radius:50%}
+.dh h2{font-size:20px;font-weight:700}.dh p{font-size:14px;color:var(--t3)}
+.fi{display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px}
+.fi-name{font-size:15px;font-weight:600}.fi-meta{font-size:13px;color:var(--t4);margin-top:2px}
+
+/* FLOW */
+.fstrip{display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;min-height:20px}
+.fthumb{width:80px;height:104px;border-radius:8px;border:2px solid var(--bd);overflow:hidden;flex-shrink:0;position:relative;cursor:grab;background:var(--bg2);transition:border-color .12s,transform .15s,opacity .15s;user-select:none}
+.fthumb:hover{border-color:var(--bd2)}
+.fthumb.dragging{opacity:.4;transform:scale(.9);border-color:var(--hx-red)}
+.fthumb.drag-over{border-color:var(--hx-red);transform:scale(1.05)}
+.fthumb img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.fthumb-x{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.85);color:#fff;font-size:10px;display:grid;place-items:center;cursor:pointer;opacity:0;transition:opacity .12s;z-index:2}
+.fthumb:hover .fthumb-x{opacity:1}
+.fthumb-n{position:absolute;bottom:3px;left:3px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#fff;background:rgba(0,0,0,.75);padding:2px 6px;border-radius:4px}
+.fthumb-arrows{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;gap:2px;opacity:0;transition:opacity .12s;z-index:2}
+.fthumb:hover .fthumb-arrows{opacity:1}
+.fthumb-arr{width:22px;height:22px;border-radius:4px;background:rgba(0,0,0,.85);color:#fff;font-size:11px;display:grid;place-items:center;cursor:pointer;border:none;padding:0}
+.fthumb-arr:hover{background:var(--hx-red)}
+.fdrop{width:100%;min-height:110px;border:2px dashed var(--bd2);border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;padding:18px;text-align:center}
+.fdrop:hover,.fdrop.dragover{border-color:var(--hx-red);background:rgba(0,0,0,.01)}
+
+/* REVIEW */
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.rc{background:var(--bg2);border:2px solid var(--bd);border-radius:var(--r);padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:all .12s}
+.rc:hover{border-color:var(--bd2);background:var(--bg3)}
+.rc.sel{border-color:var(--hx-red);background:rgba(0,0,0,.02)}
+.rc-icon{font-size:20px}.rc-name{font-size:15px;font-weight:600}.rc-desc{font-size:13px;color:var(--t3);line-height:1.4}
+
+/* ANALYSIS */
+.astep{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-bottom:1px solid var(--bd)}
+.astep:last-child{border-bottom:none}
+.astep.on{background:rgba(0,0,0,.02)}
+.astep.done .ast{color:var(--green)}
+.astep.on .ast{color:var(--t1)}
+.ast{font-size:15px;font-weight:600;color:var(--t4);transition:color .2s}
+.ass{font-size:13px;color:var(--t4);margin-top:2px}
+
+/* RESULTS */
+.sc{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden}
+.sc-top{padding:28px 32px;display:flex;align-items:flex-end;gap:20px;border-bottom:1px solid var(--bd);background:var(--bg1)}
+.sc-num{font-size:60px;font-weight:700;line-height:.85;color:var(--t1)}
+.sc-d{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--t4);margin-bottom:5px}
+.sc-bars{padding:20px 32px;display:flex;flex-direction:column;gap:14px}
+.sb-row{display:grid;grid-template-columns:150px 1fr 36px;align-items:center;gap:12px}
+.sb-nm{font-size:14px;color:var(--t1);font-weight:500}
+.sb-tr{height:6px;background:var(--bd);border-radius:3px;overflow:hidden}
+.sb-fl{height:100%;border-radius:3px;width:0;transition:width .8s cubic-bezier(.16,1,.3,1)}
+.sb-v{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--t1);text-align:right;font-weight:600}
+.cat{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-top:14px}
+.cat-h{display:flex;align-items:center;gap:12px;padding:16px 24px;cursor:pointer;transition:background .1s}.cat-h:hover{background:var(--bg3)}
+.cat-t{font-size:17px;font-weight:700;flex:1;color:var(--t1)}
+.cat-cnt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--err-red);background:var(--red-d);border:1px solid rgba(239,68,68,.15);padding:3px 12px;border-radius:20px;font-weight:600}
+.cat-chev{color:var(--t3);font-size:13px;transition:transform .2s}
+.cat.closed .cat-chev{transform:rotate(-90deg)}
+.cat-b{border-top:1px solid var(--bd);padding:20px 24px;font-size:16px;color:var(--t1);line-height:1.7}.cat.closed .cat-b{display:none}
+.cat-b b,.cat-b strong{color:#171717;font-weight:700}
+.cat-b em{color:var(--t2);font-style:italic}
+/* Issue cards */
+.issue-card{padding:18px 20px;margin:0 -24px;border-bottom:1px solid var(--bd);background:transparent;transition:background .1s}
+.issue-card:last-child{border-bottom:none}
+.issue-card:first-child{margin-top:-20px}
+.issue-card:hover{background:rgba(0,0,0,.01)}
+.issue-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.issue-num{width:28px;height:28px;border-radius:8px;background:var(--bg4);display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--t1);flex-shrink:0}
+.issue-problem{font-size:16px;color:var(--t1);font-weight:600;line-height:1.5}
+.issue-why{font-size:15px;color:var(--t2);margin-top:6px;line-height:1.6}
+.issue-fix{font-size:15px;color:var(--green);margin-top:8px;padding:10px 14px;background:rgba(34,197,94,.05);border-radius:var(--rs);border:1px solid rgba(34,197,94,.08);line-height:1.5}
+.fix-label{font-weight:700;color:var(--green)}
+/* Strength/idea items */
+.res-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04);align-items:flex-start}
+.res-item:last-child{border-bottom:none}
+.res-num{width:28px;height:28px;border-radius:8px;background:var(--bg4);display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--t1);flex-shrink:0}
+.res-dot{color:var(--green);font-weight:700;font-size:18px;line-height:28px;width:28px;text-align:center;flex-shrink:0}
+.res-text{flex:1;font-size:16px;color:var(--t1);line-height:1.6}
+.res-text b{color:#171717}
+.sev{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 12px;border-radius:6px;font-weight:700;letter-spacing:.04em}
+.sev-h{background:rgba(255,77,88,.12);color:#ff4d58;border:1px solid rgba(255,77,88,.18)}
+.sev-m{background:rgba(255,168,68,.1);color:#ffa844;border:1px solid rgba(255,168,68,.15)}
+.sev-l{background:rgba(74,222,128,.08);color:#4ade80;border:1px solid rgba(74,222,128,.12)}
+
+/* BRAND MISMATCH WARNING */
+.mismatch{background:linear-gradient(135deg,rgba(239,68,68,.08),rgba(239,68,68,.04));border:2px solid var(--err-red);border-radius:var(--rl);padding:32px;text-align:center;animation:mismatch-pulse 2s ease-in-out infinite alternate}
+.mismatch-icon{font-size:56px;margin-bottom:12px}
+.mismatch-title{font-size:22px;font-weight:700;color:var(--err-red);letter-spacing:-.02em;margin-bottom:8px}
+.mismatch-body{font-size:15px;color:var(--t2);line-height:1.7;max-width:600px;margin:0 auto}
+.mismatch-body strong{color:var(--t1)}
+.mismatch-detail{margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.mismatch-tag{padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:600}
+.mismatch-tag.expected{background:var(--green-d);color:var(--green);border:1px solid rgba(34,197,94,.15)}
+.mismatch-tag.detected{background:var(--red-d);color:var(--err-red);border:1px solid rgba(239,68,68,.15)}
+.mismatch-action{margin-top:20px;padding:16px;background:var(--bg3);border-radius:var(--rs);font-size:14px;color:var(--hx-orange);font-weight:600}
+@keyframes mismatch-pulse{from{box-shadow:0 0 0 0 rgba(239,68,68,.08)}to{box-shadow:0 0 40px 4px rgba(239,68,68,.10)}}
+
+/* FIGMA IMPORT */
+.figma-url{display:flex;align-items:center;gap:10px;background:var(--bg1);border:1.5px solid var(--bd);border-radius:var(--rs);padding:0 16px;transition:border-color .2s}
+.figma-url:focus-within{border-color:var(--hx-purple)}
+.figma-url .inp{border:none;padding:13px 0;background:none}
+.figma-url .figma-icon{width:20px;height:20px;flex-shrink:0;opacity:.5}
+.figma-status{font-size:13px;color:var(--t3);padding:4px 0;min-height:24px}
+.figma-status.loading{color:var(--hx-orange)}
+.figma-status.error{color:var(--err-red)}
+.figma-status.ok{color:var(--green)}
+.figma-pages{display:flex;flex-direction:column;gap:16px}
+.figma-page{border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.figma-page-hdr{padding:12px 16px;background:var(--bg2);font-size:13px;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:8px;cursor:pointer}
+.figma-page-hdr:hover{background:var(--bg3)}
+.figma-page-hdr .pg-icon{font-size:14px}
+.figma-page-hdr .pg-count{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4)}
+.figma-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:12px}
+.figma-frame{border:2px solid var(--bd);border-radius:var(--rs);overflow:hidden;cursor:pointer;transition:all .15s;position:relative;background:var(--bg3)}
+.figma-frame:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.figma-frame.selected{border-color:var(--hx-red);background:rgba(0,0,0,.02)}
+.figma-frame-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--bg4)}
+.figma-frame-info{padding:8px 10px}
+.figma-frame-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.figma-frame-size{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t4)}
+.figma-frame-check{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:6px;border:2px solid var(--bd2);background:var(--bg2);display:grid;place-items:center;font-size:12px;color:transparent;transition:all .12s}
+.figma-frame.selected .figma-frame-check{border-color:var(--hx-red);background:var(--hx-red);color:#fff}
+.cat-cnt{color:var(--err-red)!important;background:var(--red-d)!important;border-color:rgba(239,68,68,.15)!important}
+.figma-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--bd);margin-top:4px}
+.figma-bar .sel-count{font-size:13px;color:var(--t3)}
+.figma-bar .sel-count strong{color:var(--t1)}
+.figma-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--bd2);border-top-color:var(--hx-red);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.or-divider{display:flex;align-items:center;gap:14px;color:var(--t4);font-size:13px}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .sb{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%)}
+  .sb.open{transform:translateX(0)}
+  .ham{display:flex}
+  .overlay.open{display:block}
+  .ct-hdr{padding-left:60px}
+  .cb{padding:20px 20px 60px}
+  .rgrid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:500px){
+  .rgrid{grid-template-columns:1fr}
+  .factions{flex-direction:column}
+  .ct-hdr{padding:16px 16px 12px;padding-left:56px}
+  .cb{padding:16px 16px 60px}
+  .pt{font-size:18px}
+  .wh h1{font-size:22px}
+  .wh img{width:64px;height:64px}
+}
+</style>
+</head>
+<body>
+<div class="ham" id="ham" onclick="toggleSidebar()">☰</div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<aside class="sb" id="sidebar">
+  <div class="sb-brand"><img class="sb-logo" id="sLogo" src="/humanx-logo.svg" alt="HumanX" style="border-radius:0"/><div><div class="sb-name">HumanX Studio</div><div class="sb-sub">Design Review</div></div></div>
+  <div id="pSelW" style="display:none"><div class="sb-proj" onclick="go('welcome')"><div class="dot" id="sDot"></div><span class="pn" id="sPn">—</span><span style="color:var(--t4);font-size:11px">▾</span></div></div>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Navigation</div>
+    <div class="ni active" data-nav="welcome" onclick="go('welcome')"><span class="ic">🏠</span>Projects</div>
+    <div class="ni" data-nav="dashboard" onclick="if(activeProj())go('dashboard')"><span class="ic">📊</span>Dashboard</div>
+    <div class="ni" data-nav="quickUpload" onclick="if(activeProj())quickReview()"><span class="ic">⚡</span>Quick Review</div>
+  </nav>
+  <div class="sb-foot"><span style="font-size:13px;color:var(--t3);cursor:pointer" onclick="window.top.location.href='/'">← Back to Studio</span></div>
+</aside>
+<main class="ct">
+  <div class="ct-hdr"><button class="bk" id="backBtn" onclick="goBack()">← Back</button><span class="pt" id="pageTitle">Projects</span><span class="badge">REVIEW</span></div>
+  <div class="cb">
+    <div class="err" id="err"><span>⚠</span><span id="errMsg"></span></div>
+
+    <div class="scr active" id="scrWelcome">
+      <div class="wh"><img id="wLogo" src="/humanx-logo.svg" alt="HumanX" style="border-radius:0"/><h1>Design Review</h1><p>AI-powered design reviews for your workflows</p></div>
+      <div id="projList" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn btn-s btn-full" onclick="newProject()">+ New Project</button>
+      <div style="margin-top:14px"><div class="label">Figma Personal Access Token</div>
+      <div class="api-row"><span style="font-size:15px;color:var(--t4)">🎨</span><input class="inp" id="figmaToken" type="password" placeholder="figd_…"/></div>
+      <div style="font-size:12px;color:var(--t4);margin-top:5px;font-style:italic">Generate at figma.com → Settings → Personal Access Tokens. Stored locally in browser.</div></div>
+      <input type="hidden" id="apiKey" value="server-managed"/>
+    </div>
+
+    <div class="scr" id="scrProjSetup">
+      <div><div class="label">Project Name</div><input class="inp" id="pName" placeholder="e.g. Amazon Quick Commerce"/></div>
+      <div><div class="label">Brand / Client</div><input class="inp" id="pBrand" placeholder="e.g. Amazon India"/></div>
+
+      <div class="sdiv"><div class="stitle">Product Brief <span style="color:var(--err-red);font-size:13px">*</span></div><div class="ssub">Help the reviewer understand what this product is about</div></div>
+      <div><div class="label">Core Idea <span style="color:var(--err-red)">*</span></div><textarea id="pCoreIdea" style="min-height:70px" placeholder="What is the core idea of this product? e.g. An online pharmacy that lets users order medicines by uploading prescriptions…"></textarea></div>
+      <div><div class="label">What Are We Building <span style="color:var(--err-red)">*</span></div><textarea id="pBuilding" style="min-height:70px" placeholder="What specific product/feature is being designed? e.g. A prescription upload and verification flow for the mobile app…"></textarea></div>
+      <div><div class="label">What Does The Brand Need <span style="color:var(--err-red)">*</span></div><textarea id="pBrandNeed" style="min-height:70px" placeholder="What outcomes does the brand expect from this design? e.g. Reduce prescription upload drop-off by 40%, build trust with first-time users…"></textarea></div>
+
+      <div><div class="label">Project Color</div><div class="cpick" id="pColors"></div></div>
+      <div class="sdiv"><div class="stitle">Design System</div><div class="ssub">Import from Figma Design System file, upload PDF, or fill manually</div></div>
+      <div style="display:flex;gap:10px">
+        <div class="upzone" id="dsImport" style="flex:1;padding:16px" onclick="openDSImport()"><span style="font-size:22px">🎨</span><span style="font-size:13px;font-weight:600">Import Figma DS</span><span style="font-size:11px;color:var(--t4)">Extracts colors, typography, styles</span></div>
+        <div class="upzone" id="pUpload" style="flex:1;padding:16px"><span style="font-size:22px">📄</span><span style="font-size:13px;font-weight:600">Upload PDF/Image</span><span style="font-size:11px;color:var(--t4)">AI reads brand guidelines</span></div>
+      </div>
+      <input type="file" id="pFile" accept=".pdf,.png,.jpg,.jpeg,.txt" style="display:none"/>
+      <div class="up-prog" id="pUpProg"><div class="up-prog-fill" id="pUpFill" style="width:0%"></div></div>
+      <div id="dsUrlWrap" style="display:none"><div class="label">Figma Design System URL</div>
+      <div class="figma-url"><svg class="figma-icon" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF"/></svg>
+      <input class="inp" id="dsUrl" placeholder="https://www.figma.com/design/…/Design-System"/></div>
+      <button class="btn btn-s btn-full" onclick="extractFigmaDS()" style="margin-top:8px;gap:8px"><span class="figma-spinner" id="dsSpinner" style="display:none"></span>Extract Design System</button>
+      <div class="figma-status" id="dsStatus" style="margin-top:4px"></div></div>
+      <div class="success-banner" id="extractBanner"><span>✓</span><div><strong>Context extracted successfully!</strong><div class="sb-details" id="extractDetails"></div></div></div>
+      <div style="text-align:center;color:var(--t4);font-size:13px;margin-top:4px">— review & edit below —</div>
+      <div><div class="label">Design System & Typography <span class="field-status" id="fsDSystem">✓ EXTRACTED</span></div><textarea id="pDS" placeholder="Typography, colors, grid, spacing, logo variants, icons, components…"></textarea></div>
+      <div><div class="label">Brand Guidelines & Tone <span class="field-status" id="fsBrand">✓ EXTRACTED</span></div><textarea id="pBrandGuide" placeholder="Logo do's/don'ts, tone of voice, mascot rules, trademark requirements, approval processes…"></textarea></div>
+      <div><div class="label">User Research & Personas <span class="field-status" id="fsResearch">✓ EXTRACTED</span></div><textarea id="pResearch" placeholder="User insights, personas, pain points, target audience…"></textarea></div>
+      <div class="factions"><button class="btn btn-g" id="pSave" style="flex:1">Save Project</button><button class="btn btn-s" id="pDelete" style="display:none;color:var(--err-red)">Delete</button></div>
+    </div>
+
+    <div class="scr" id="scrDashboard">
+      <div class="dh"><div class="dot" id="dashDot"></div><div style="flex:1"><h2 id="dashName"></h2><p id="dashBrand"></p></div><button class="btn btn-s" onclick="editProject(D.activeProjectId)" style="padding:9px 18px;font-size:14px">Edit Project</button></div>
+      <div class="label">Flows</div>
+      <div id="flowList" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div class="factions"><button class="btn btn-s" onclick="newFlow()" style="flex:1">+ New Flow</button></div>
+      <div class="sdiv"><div class="stitle">Quick Review</div><div class="ssub">Design system check — fonts, colors, logo, spacing. No UX or edge case analysis.</div></div>
+      <div id="lastQuickReview" style="display:none;margin-bottom:10px"></div>
+      <button class="btn btn-g btn-full" onclick="quickReview()" style="gap:8px">⚡ Quick Design System Check</button>
+    </div>
+
+    <div class="scr" id="scrFlowSetup">
+      <!-- STEP 1: Flow Brief (required) -->
+      <div class="sdiv" style="border:none;padding-top:0"><div class="stitle">Flow Brief <span style="color:var(--err-red);font-size:13px">*</span></div><div class="ssub">What is this flow about? What is the design intent? Upload a BRD or describe manually.</div></div>
+      <div class="upzone" id="brdUpload" style="padding:18px"><span style="font-size:22px">📋</span><span style="font-size:14px;font-weight:600">Upload BRD</span><span style="font-size:12px;color:var(--t4)">PDF or doc — AI will extract and summarize the brief</span></div>
+      <input type="file" id="brdFile" accept=".pdf,.txt,.doc,.docx" style="display:none"/>
+      <div class="up-prog" id="brdProg"><div class="up-prog-fill" id="brdFill" style="width:0%"></div></div>
+      <textarea id="fBrief" placeholder="Describe the flow goal, target users, what this flow achieves, AND the design intent — what approach did the designer choose and why. e.g. 'Single-screen prescription upload for first-time users. Chose progressive disclosure to reduce friction. Trust signals above the fold to build confidence with medical data sharing…'" style="min-height:120px"></textarea>
+
+      <!-- STEP 2: Pain Points -->
+      <div class="sdiv"><div class="stitle">Pain Points</div><div class="ssub">Known problems in the current experience</div></div>
+      <textarea id="fPains" placeholder="e.g. Users abandon at the prescription upload step. 68% drop-off when asked for camera access…" style="min-height:70px"></textarea>
+
+      <!-- STEP 3: Constraints -->
+      <div class="sdiv"><div class="stitle">Constraints</div><div class="ssub">Technical, business, or design limitations the reviewer should know</div></div>
+      <textarea id="fConstraints" placeholder="e.g. Must support Android 8+. No third-party integrations allowed. Max 3 steps in the flow…" style="min-height:70px"></textarea>
+
+      <!-- STEP 4: Benchmarks -->
+      <div class="sdiv"><div class="stitle">Benchmarks</div><div class="ssub">Competitor or reference screens — the AI will use these as design markers</div></div>
+      <div class="fstrip" id="benchStrip"></div>
+      <div class="fdrop" id="benchDrop" style="min-height:80px"><span style="font-size:20px">📊</span><span style="font-size:14px;font-weight:600;color:var(--t2)">Drop benchmark screenshots here</span><span style="font-size:12px;color:var(--t4)">Competitor screens, best-in-class references</span></div>
+      <input type="file" id="benchFile" accept=".png,.jpg,.jpeg,.webp" multiple style="display:none"/>
+      <div style="font-size:12px;color:var(--t4)" id="benchCount">0 benchmarks added</div>
+
+      <!-- STEP 5: Screens to Review (required) -->
+      <div class="sdiv"><div class="stitle">Screens / Flow to Review <span style="color:var(--err-red);font-size:13px">*</span></div><div class="ssub">Import from Figma or upload screenshots</div></div>
+      <div class="fstrip" id="flowStrip"></div>
+      <button class="btn btn-s btn-full" onclick="openFigmaImport('flow')" style="gap:8px"><span>🎨</span> Import from Figma</button>
+      <div class="or-divider">or drop images</div>
+      <div class="fdrop" id="frameDrop"><span style="font-size:20px">🖼️</span><span style="font-size:14px;font-weight:600;color:var(--t2)">Drop screen images here or click to upload</span></div>
+      <input type="file" id="frameFile" accept=".png,.jpg,.jpeg,.webp" multiple style="display:none"/>
+      <div style="font-size:12px;color:var(--t4)" id="flowCount">0 screens added</div>
+
+      <!-- ACTIONS -->
+      <div id="flowValidation" style="display:none;padding:12px 16px;background:var(--red-d);border:1px solid rgba(239,68,68,.15);border-radius:var(--rs);font-size:13px;color:var(--err-red)"></div>
+      <div class="factions"><button class="btn btn-s" id="fSave" style="flex:1">Save Flow</button><button class="btn btn-g" id="fReview" style="flex:1">✦ Review This Flow</button></div>
+    </div>
+
+    <div class="scr" id="scrQuickUpload">
+      <p style="color:var(--t3)">Upload a screen for a quick design system check — fonts, colors, logo, spacing. No UX or flow analysis.</p>
+      <button class="btn btn-s btn-full" onclick="openFigmaImport('quick')" style="gap:8px"><span>🎨</span> Import from Figma</button>
+      <div class="or-divider">or upload an image</div>
+      <div class="fdrop" id="quickDrop"><span style="font-size:28px">🖼️</span><span style="font-size:15px;font-weight:600;color:var(--t2)">Drop a screen image here or click to upload</span></div>
+      <input type="file" id="quickFile" accept=".png,.jpg,.jpeg,.webp" style="display:none"/>
+      <div id="quickPreview" style="display:none;text-align:center"><img id="quickImg" style="max-width:100%;max-height:280px;border-radius:12px;border:1px solid var(--bd)"/><div style="font-size:13px;color:var(--t3);margin-top:8px" id="quickMeta"></div></div>
+      <button class="btn btn-g btn-full" id="quickNext" disabled>⚡ Run Design System Check</button>
+    </div>
+
+    <!-- ═══ FIGMA IMPORT ═══ -->
+    <div class="scr" id="scrFigmaImport">
+      <div><div class="label">Figma File URL</div>
+      <div class="figma-url"><svg class="figma-icon" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF"/></svg>
+      <input class="inp" id="figmaUrl" placeholder="https://www.figma.com/design/FILE_KEY/..." oninput="onFigmaUrlChange()"/></div>
+      <div class="figma-status" id="figmaStatus"></div></div>
+      <div id="figmaContent"></div>
+      <div class="figma-bar" id="figmaBar" style="display:none">
+        <span class="sel-count" id="figmaSelCount">No frames selected</span>
+        <button class="btn btn-g" id="figmaImportBtn" disabled onclick="importFigmaFrames()">Import Selected</button>
+      </div>
+    </div>
+
+    <div class="scr" id="scrReviewType">
+      <div class="rgrid">
+        <div class="rc sel" data-type="audit"><span class="rc-icon">🎨</span><span class="rc-name">Audit UI</span><span class="rc-desc">Visual design, layout, spacing, typography</span></div>
+        <div class="rc" data-type="accessibility"><span class="rc-icon">♿</span><span class="rc-name">Accessibility</span><span class="rc-desc">WCAG compliance, contrast, touch targets</span></div>
+        <div class="rc" data-type="copy"><span class="rc-icon">💬</span><span class="rc-name">Copy Review</span><span class="rc-desc">Microcopy, CTAs, tone, error messages</span></div>
+        <div class="rc" data-type="edge"><span class="rc-icon">🚧</span><span class="rc-name">Edge Cases</span><span class="rc-desc">Missing states, error handling, extremes</span></div>
+        <div class="rc" data-type="ux"><span class="rc-icon">🧠</span><span class="rc-name">UX Critique</span><span class="rc-desc">Task flows, cognitive load, IA</span></div>
+        <div class="rc" data-type="ideas"><span class="rc-icon">💡</span><span class="rc-name">New Ideas</span><span class="rc-desc">Bold improvements, innovation, delight</span></div>
+      </div>
+      <div><div class="label">Additional Context (optional)</div><textarea id="revCtx" style="min-height:60px" placeholder="Anything specific for this review…"></textarea></div>
+      <button class="btn btn-g btn-full" id="btnStartReview">✦ Start Review</button>
+    </div>
+
+    <div class="scr" id="scrAnalysis">
+      <div style="display:flex;align-items:center;justify-content:space-between"><span class="stitle">Analyzing…</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--t4)" id="aTimer">0s</span></div>
+      <div class="up-prog vis"><div class="up-prog-fill" id="aProg" style="width:0%"></div></div>
+      <div class="card" style="padding:0">
+        <div class="astep" id="as1"><div><div class="ast">Prepare frames</div><div class="ass" id="asFC">Loading…</div></div></div>
+        <div class="astep" id="as2"><div><div class="ast">Load project context</div><div class="ass" id="asCtx">Checking brand guidelines…</div></div></div>
+        <div class="astep" id="as3"><div><div class="ast" id="asTL">Analyze</div><div class="ass">Reviewing with Claude</div></div></div>
+        <div class="astep" id="as4"><div><div class="ast">Synthesize report</div><div class="ass">Findings & scores</div></div></div>
+      </div>
+      <button class="btn btn-s" onclick="cancelReview()" style="align-self:flex-start">✕ Cancel</button>
+    </div>
+
+    <div class="scr" id="scrResults">
+      <div id="resTitle" style="font-size:24px;font-weight:700;color:var(--t1);letter-spacing:-.02em">Review Complete</div>
+      <div class="sc" id="scoreCard" style="display:none">
+        <div class="sc-top">
+          <div style="display:flex;align-items:baseline;gap:6px"><span class="sc-num" id="scoreNum">—</span><span class="sc-d">/10</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px;padding-bottom:4px">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3)">Overall Score</span>
+            <span style="font-size:16px;color:var(--t1);line-height:1.5" id="scoreSummary"></span>
+          </div>
+        </div>
+        <div class="sc-bars" id="scoreBars"></div>
+      </div>
+      <div id="resultCats"></div>
+      <button class="btn btn-s" onclick="go('dashboard')" style="align-self:flex-start;margin-top:12px">← Back to Dashboard</button>
+    </div>
+  </div>
+</main>
+<script>
+var LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAasUlEQVR42s2beZhdVZnuf2utPZyx5kqlqlKVVOZAQggmXBDEIAgoCi2iDAqK+IitjTTX1rbbvjaiqLevt+1uW5rW2yjQFxVpFRS4MsiUMBNCyDxWKlWp1HhO1Zn22XuvtfqPc4KgIkkI9q3/qup5Tu3vrff9pvfbQoDtbfR58l1zSG4B3WaRsyQqiiicOo8LM9czFDTjlSeRrstlW/Zx2sAoJc8Bo8l4aX66437+8flbUEKireHN/HKUINaW/3P1XK48eyXF0slIeQIm9kg1pnjpgXU8/cOHMJk0vzz+ZCp+Emvh61v+jSWFvWiVIG80b9u7nf1hiJQC9k5V+ev142QzDtE2sDss1dChe+8e3l6+lTIOKpmibC07mzMYIQCLFJJSVOH8eWewqnMZ2hqkkG9a8EpCrC3nnZjlindqKqUHUHINRifwM0kGN+zkubseRSYdUkHArKlxSm6C2eVh5paGqUiPtBT81dh+hsIQiUBqC0rAD7ZOcHu5QEtWEQ6B3QzBBsk7hx6mOvFT8FtROmJj0jKednG1xQLWWow1fHbllTT4Way1CMRRD14KMBZmNHrc+MkmTBxhacToS3CSjZT6N7Dm5ruxkUVLl041QZecoCx8Tp94kURcptFx+cF0jh/nJ1EINBYJYC0I4LPbhxnIaJIOUIWpLZa3v2A5N38Hw1MbSPlNDAdF1jU6+MZiBUghCHSV7kwHf3rCh7BYpHgTAJBgreDbH2+me4aiEpSA94O/EjH0IE9//06KRQfluPhxxCJ/P3vTHfSURzht/EWEm2RXVOULI/uRgMHWPhfA1BEeK0X8+cAovq8Ai3AElS3wl2vy2N03UnXBae3mES+mJAKUrQWqhGKqWuDcOaexes7JR10KNerDZasb+ODqJOWpEo5cjHU/ijt6P9vu/BEDI214nqFqFMvVXkLfY0u6hw8NPkhbOI1VLtceGCQXRwhEPfw6AADagiME94zk+ddcjhblYLCUpWXpgMNVm7ayZ/hW0ql2hhsyvMgkyWoZI1WdooIgCvjMistoT7dhrUEcBSZIAcbAnBkJvvWxRqpljRAW616DnNzO+P3/wou75uL5gthKOlSOpWIPP5t5CnMrw7xz9Gm8RIZ/yY3zQGEKJWrU57cBqIFQ08SXRkfZFEVkhAQLUwnDX/c7rNp8D/snHibR2MOTMxopFQcRYQUQCAShiWjzG7nmhI9gAXkUcoEQYBHcdFULrY2SKMyDdwFmqpVw7fWs2zKHyCYQ1uBKw39ztrE528u9Hau4ov8eGqVgXbXK9SP7kQiMta8G+JXf2Hoo01pz9egwQggkFg34Bm7cWMXsuY2qmWakez4bsw5+bggdh4BACcV0WGT1rJW8d8GZaGtQb0AKjgRt4Opzmzh7lUtxuozy5qBLZ6Geu46t25oZK3SQUFUi47BIDZARJf7XvA+wcnIrq3LbmFJJrhneR8loRD3G1wQAQGNxEDxeKvLN3CQtysEaS0FZVkxLbti4j/6JH2Ncl/Vz5hDpErY8idUxIJBCUgzLXLX8InoaOuv5QBxR0osNHNub4IYPZygXDEIZTHwB8vlbOLC3xI6hRSRUFW1c2lSeY8Qubus6k8HETC7fex8pN8U3x0d5plT8Heq/nF+A6377h7b+iyeCCqenM/Q5DqGFQApWFgXTYR7hLqa/ayYzpwv05nIEykE5PkIotNVknBR9TbN4oH8tILC/54+/Ju3r2nek4s7PtTNvhqIalZFqJWZdgerwep7b8lYiLUBYhIBVzovsaOjm7xZcxqUD93HW9BYejA3XDA0gBL9D/ddkwEEALFA1hqtHhqkCygLCEgr46o4yX3hsK6kKPDK/l4qMkMEUOiggrEUJSTEqsarjOC5eci7mMKWg6tT/qwtaOOUYj2IxxvGaiDaBHHuOzf0rKBQSuNKgSTDH2QNeyD/MvZTe0gHeO7aWUZXgvw8NElmDtbwm/K/5VAZQQvBiUOEr1UmafYXWFoQkcqosm3ycjz++g10trTzfO4t0JU8cFtDVAoiaFAphkY8eewELW/oOuTSqOvVPWpjmixemKRdinIRED2TwhnczON7D0GAnSS9GG4+snKJH7ebfes5nV7qbSwfuYaaNuW5slK1BGSXEyzX/sACAGm2UgH86MM4DTWWaHIk2FmlciukRztn5K87YPMGvlsxjOp3CreTQQQEblpFIjDU4QvHZVR/DU26d3uIPZnyAtO/w3U80o2yMFWCnHeyuEoUgw7atC3CVBiMAwXy1gYdnnMg9M0/nbWPPc0ZxK3cGmpvHR2u6t39Yen8QgINS0KHh6l0HyC+yOBosFmE9HH8HVz31K9yyy0OLF5LVGhNOo8t5rI6QQlGKKhzbsoCPLr0A8zoJUQmBNoIbLm5h2RxFuWRRCOLtDjaWbNm8iLjq4UpNTIJOZxdDTQ3cNusCGqMpPjD8EGPa8pf7h7DWYu3r553X5aSxNVruHAn44vA4DcsVumoRQKgceoOn+eRjT/BEVw/7OjrJRGV0WECXc2A0jlRMV6e5ZPF7WNFxzGtKoUZ9y9nLM3zmXSnKUwbXl8QDHk4ZBvbOJTfaiutGaOuQkTlUZphbei4i72Y5ffQpjqsO8vnxHIPVoE593jgAUEtISsLNz03yE1mk6ViJDgzSCioJOKf/l5y2eS8/O3YBCS+DiivoYBpTmaLOF4wxXPuWK0i7qVqb/QopSFGbR1qyLjde2UQcxeBYTM5BjEjyuTYGts3FdzXSSiTQ4G/mjt73sjs9l67yfi6eWMvthYCfTUwcEvUPC4DfDEyWv3jgAIM9GneOwIYWrINJFvnU0z+iqD2e6uulFYWNy+ggj60WkUJSiQPmNs7ik8dfjLGvHphqk57g7z/cytyZikoIaIHZq4irDjtfXIywst4VJmhSu3mwdwUvNKxEmZD3jK2hXBzlbw6MIbCvWfLeEADG1h50uBjy2YfH8ZYp4hkGERkimaAz3sWfPfZT7uvto9DYQkaADUvEpRw2qqCUw1S1wHnzzuDUWW95WQoHs/4HT2rgI6clmZrSKFeiBzxUbNi7eTHlfBOOE2OsS8aOsW5WCw/POBuJYXZ5gDMnn+cvRvJMhlWkEIfRcbxGI/SHkqISsHUyYFY6yclL0hRzGrdsqfo+S8Z3MJjs5Mm+RZwyMkHZhpg4BgxSJWs6wnL8jCU8uPcJAl3FAl0tPj+7tgNXGKwEJh3UpGFyoId9Ly3B82M0ikxUZdvMiDvnnYNjFCGCTw3fzSP7t/C9sdxhUf+wGfDbTPjik8NsmwpxF3tEWZChoZRK8KnnbqdkA56d1UWr8hE2xAbT6EoOaaGqQ2am2vjMCZfXM7XgOx9pZ2YjhCHI0IFJS7XYwOD6ZbhObarMxpZd7RnuWPgOsB5lpVhV3II3+iJfOZBHHib1jxgAW29V89WIa584gONYwj4HnQJtFEkqfGrNj3mgZxblVJaMk4C4iq5MoitTKOEwFRY5u+9k3tq5mg+fluJPViWYmo5xHIGZBELF4LPHYwMfR1mSsWGgsYFblq4kEmmk0Xgm4uzRh7hucD8lHcFhUv+IJPBqKQj2FKpkleLtnRnynsQvGiLrMXdqkGGniWfmL2XV2ASB0JioijUa6SSQrks1VKxe0MaV576E1GClwAYSWdSMP38c+R2zcRIR1koEgtuWLmY8lSSlQ/JOinOnn2Hrpl/y41y927NHEv4RMOCVXaIU8LWXxnhhrEomAaVOF5SlmEjykRfvolCd5oWuTpplAkcKTFTClMYgjjFEHH/8vWS9mFiDshIZxpR2z2F60yISfgRW0RBp1s7qZFdzEykdU1Ye3bZA8577+eeRaeQbCP4NAXDwT1ZizWfXDRFrMK6l1O4SK0lSGq564g5+3dlOIZUh5aVRaGwwSZAvMmf+ozS37yCMkghpIQqJDzSQe/J4lLAIKUlqw0g6xX1ze3GNrvUkKsGqsbV8b8dGKrbWQBx5+G8AgJe7RCFYN1ni77eP0+JIqo6l3Kwo+mmWTBjes+E+7l04lzQuvp9ER4Ks2sDslocwOo0QFqxAVxLkH1+FKCZRjkYYhWcEd82fzZTn4RhNUbrMi0fZ8NIvWB+YWv/wRldub3RlVRuYBP+0Y4THJss0K0mgHCqZgH3JZk7cFOKO7+eZ2d004pNIKBbOfJJ4OCAuGISQSAzxA03YbS2opAEjaIgjnp/ZxtNdM8jEBg0kvQTOznu5a2gYKeQbov5RA8DWm93YWD7/0hBFAy6G0HExqQMMuhlOf2wXAzpkMNvBgjlbaWicpDotifZVEUBhExQfHiZb2YcThPhIyq7HHQtnI0xtODdOguZiPw+s/39UD3PB8qYC8EopbC9WuGHnARpdSawtCbdAJrWNUEYsWbuDStNOOudsxLpplJTofExlW5WBey37U1XKMk8iH9BYrnDX/B4Gsml8Y6hKi+/5vPTcjxiqVBBCHNKk90cD4OBGWQn4/r5R7h0v0uw6VI2g2Zkg6+7Fk9OcM/MBtKMQCYlMKJSS7L23QnkkwvqSvam9RHo9O90K98ztJh3HaAx+ooGxPY+zY8dahJDYo+g/HlUj76DD9Dc7hxiPDb6AyDh0xOOc+rYXSLeHCOEhlMVrUUwNKvL9gAqxsUTaSYaTG7npxAVUlYvEIt0EUXmS7Wu+V2/B7NF85KMLgKkbJINBwN/2D5FxFVEgSCwMaV88TVQBKwxO2qE8BWMvCPyECwhCa0lXA9bOO4sNs5aTjipoKXC8BDvWfpdKaeKoUv9NAeA3UhD8fGyCH47kaG2F5hMDdKxq/z9bW30FawwmEPi+g5IOIigxkmrmvuUX4OsQDbjJBg5suZ8DO9cgpDqq1H/TAKDuGEsBX9o7SHhqkUy7xcb1vV8S4qcNLUOSppTAGIHjuCRNxH3LzmesoQNXVxGeT1AYZfvj36v1+W/S3cGbAoCQtcpw4clpZi02VK1FeAJci+0Hnq4ifEGHEigpSMYBe3uW89SSd5IKi8RKgTBM7q/gpefXaPMmWO5vCgBS1FZo89oSfOvCVmxQ8whF2uBoH+fJixByFsYGeELQ5RqMENy98iJC10NYg3Q9cqNTTI8XaFtwEa7fAta8KSAcVQBEfbUthODGS9toTlmC2IAVSD9i/LljMLl5uNk/AdFMJAwdNmDT4tN4qet4MlGA9X2C4jT5XXtQwoDK0Nr3gVro4v9zAA46Otec3spZx/rkyxqFQCYiSlta2fdsF2OqH0UbMnEBrrFMJBq447gLcG2ElRJhYWL9U5jCCFLE6KhMovk4GmeeWmPBUT7BkUeT+rGB47qTfPW9TRTLtWpglcVOw/4HF4DyyesCU3ocqeaREmdx6+Lz2NXYia9DbDJBfvcugrERpClgqzmEMMRxhcae80ikOo66FOTRpL7nSP714nYSrkFrEFYiHU3u4Xbyk91IL0ZYyUQ8hRNNsq3jrdyx5BzSUQmbcIlGJ8jv6kelm7FGY4Mx0GUEMVYlaO27CCnUUZWCPJrU/+LZbZw0z2O6bFDWgi/QmxXRJgUJA6bm5Bo0hSjHjUubKbsSR0oCI5h47AVUYLB+BqHS2KgIwQTCRti4gtOwiNbuM46qFOTRCD42cMrcNF84s4HpksEREhTYgiV8zCHlllFEtblfCLKh5sHeJh7pbiQbx0wl0nxi4/28bfwAlZJAaYX10wjpYytj2HAa0Oi4TKb7HDLZ3joI4r8WAFF3dDK+w00XtdfGVmNrPbEjiNY6yLwhJzuJbAKExTGWad/jthULcTFM+2lO2r+Ry7f9B19oHaA3itDTAdJNgdeAsBbKIzUpWE2Mom3uxbjKe4UA/4sAUPXbva+/p52lXS6lAKQFEha9Q2I2QjWRZL+eg7QWIwSpMOJnx/Wxe0YDykoawxLXPns7ZevSrYa4LrsTUQxQZY1IZNBuFh1OI4NJsFXQATY1mxm97wJr3/Ahljxy6gtiA+8+poFPv62B6aLFlQopJZQF4WMKJWL2mz4CmwKhSUSa3W2N/HLZPNJhTJxMc836/6AvP0jo+hSM4kxvN59KjFCcLGEjRW+2jWYvSVAeQYZTCCLiuEyi4x20Ni+qX6PJPy4ANTPT0pZ2+M7726nGdT0aEJ4kfMpBTmoKbhPDphuHCCsk0hjuPPEYCkkXP9XAxIb7idbdjUo1YLVGAVNG8qepHZwhpyhOFohEgve3deMTEZVHQZdQNqZqDC19HyTppuoTovjjASDq1P/f53cwp9WhEtqaVn3Q/Rb9okAmYCCeg7YKKyBVjXh27iyenN9FCkl5+gB77/kH/nx8gsEoJilrdrZFYm3IddmdzAvL7JiYZtDJck17D2E1hwlyCBOAiQj9mXT1vQ/BkUtBHmnJu2RFM5evyjBZjFEHk1HVUn1c4gpDjmbGzQwcYqSBsq/46VuXAhLh+uz++TehlGfUCq4ZHSYhZW2KxBLg0CvG+XJmNw2FAvdOlGjKtvOZ5haC4hA2nEZSJY5KiNaT6Jxx/BFL4bCcoYM+fk+Tx51XdKPqO3lhQSQgekqgd0gc37AtXkyRDEoKskHIo6cs4pEFc2n0Mow+cSfDj/8QIRXKGraFVWa4LqclUxSNwRVQRnGsM4WxSR4seBxIZvloUxa/muO5SgnP8VEqQYigqXEB1cnnqcbVwz7UPjwAZM3Hv/WSLlZ2exRDi4MEz2KGIXxY4XsxB2wHu8xcPKFxqhY7O8kPznw7WqWIxvaw67YvYrR+eb0lgTWVMu/JZulQDmH9wQIrOMmbYmeY5ddliW5o5vKUolSZZGMUI5WLUD6RytKaaiU3tg4r5GGtzeThUv+Tp7Rw/rI0k2WDEnWzNJZEayXKWiJctus+hLDE2qEtOc0TZ65iyMmQkND/k28QB6VaD3OQQQevU0cOvOpw4mA++NvsHhYHU/x8JM8jqpWPNbVwui0wRxdQcYFYB0RNK+jtPuWwpXBIDDh4q7+kI8kPPzSTKDa1sdfUqK/XCeItAi+h2a5nM2g7kcal2YxiT5/Dtxe+Hd9LMHL/9xl76q7aesuYV3kLjoD+KMKTinelUxSMwREQougQZWY7grunfLZ7WVZkk6zQ0yxUFt9RbIwFUrhkG+ej8y9SDkuHnBRfFwBRp74Ukh9f1sWiFkU5qp+4eGBHIXpE4jqWgk2xPl6Mkorupl0sWVjixlM/zhY3g+x/iV23fqlmaPyexWbtOlXwRFBmdTpLn+MSYFFABcVSJw/W466CIpdt5RQPMkGOJb7LXq0ZMgrrNDEj20lu7Dn0IW6Q5aE0PNrA51a3sXpuknzF4gqQxiKMJXoSiARCGrbq2VTxWNS7mWVdW9ly0hU8kmwlqyvsuf0GTBzWrST7mg5T1Rj+bGT45eBrwFimjOTTqQHexxiPDI/zmNeJk2wkLk3y8YSmU+cIohyV7DHM73kHHKIU5Ou1urGxvKUnzf84vYVCUaOkwGoBPsQbLHqfwPVjxkwze6Iu5nfuoyO7G7Hsan4w8y1YXzDyi5so7tuCkKo+z7/2Wl0JwYagwpcnJmhW6uWTl1qBjPhqtp+ewgHGA02mrY+qUDSWJ7nKj0hUxylU83jd76arseeQ3lmQf6jZAUh4ipsunIGHRVuB0AJcMBOKeJ1CerWP2BT1kc0GzGrbSHPfRaxf9D6ecjV201MM339rXff60MxW4Nu5ce4tl2lWirjOgsAqekSBbzQMsXmgn0A2kGyZTTGOWKBLXOqGRJURJrRk1vxLSCqH2kWjOHwAagdH8OXzWlnZ5TEd1qyvWl6QxE+BrUp8J2Qg6iDnNrGi70mSXW/BP+6T3EYZHRYZuuV6rDWHbGgcvE611nLNyDATxuAfZAeWnFW8LzHOKQzwg+27aW2ahcq2MR0UOV3FvFuVKJX2kUvMYUnfuXUpiMNLggdL3pnHZbjxolamR0A5AmEFIgHxJohfEqiEJTIOz9pjWLp4PW2djbSv+DprHMV3si7FW24gt/HJ16X+70+IMKk1o9rwwYYGSqZ2ZiuAqrWsTpT5v3lANbCgrY1qtUQUFFiRSuJheDoIaWldTrK0k1x5op4P7Osz4OCM35R2uenKNnRZYEXNArbKYPMQvSCwrsAxmp26lzmLt9HT45Bc/j+xXiM3Z30Kz/6KsV//5JCp/zsOU70q/PtUjtsLBVodRWxrhDZIHBvy1ewgd/dvZ6xiSTZ1Yb0kleIk57mGU1WJnZUy3fMvocFL1u9VxesDoOqmxjcva2Fem6I4UasEWIEQED4DlAWO0uRNI8mFo8xfmME57ts0prp52I15vDjK1M03YN6gl2frCv7c6AH6o5iUlDX/EUvRKpY5BT6RHODmHTvwnUaclj5wk1QLI1zuVuk1efplB8fNP/81dwfyd9ZbGt63qpEr35mhMK1RdfYKH+KdArNHIH2LjVxkT46eE3rxF38LlZhBNSpwS2OaA9+/nsrkSI12b8DSMvUHHI0jPj16AEf8prY7WCaM4kPJcRaafn6yay8tyUac1rnEiQbSxRGuZJxyMMFpc85i9azl9Wt1+ftzgKy3tR1NHnd9vhXfMVghsYXam2O2LIgfFfWLDQfjTpNYfQLJhV/DqBSZaolft7fzd4/9O8Wf3ARKwRFQ//flA0cIdoZVPKk4J52h+Ip8EFo4zS9zy5RE2TR9MzqIhCI0mlnBOMZUMQ2dXNaznHv611DV4asPtX9b+/98RQtdbVCNNLJqkQiUo9DrgCKgHGwlj1q1BP/Yr2CNh4jLxKks383vYuL736ibg0fPzNT10vj18TGeCQIapETXi5tG4hPzjYZ97BzZwvBUmWRmBm7TbIKGHt4lpkmMbqApNYOrV1xWe7X3FVJQwHUHs/6VpzfyhQvTFAsWp17zbNUh3iGIXrAIT2LCAuqtS0mccQOYLNpWyeLwiwaXr/3jpzH92+vvuR5dN1cCEZbNUciljU0v5xYBhEhmyojlzjhrCgHtHUtw/BQikUX6WfoklB2PZTOWMFQcZmd+ACkkFouSguuMhb4Ojzuuba3t8w+2DgrspEP1IZCRBBOiTj2J5DnXI+JGrA2QFqJsI1c/egu7f3ELUh1Z1j+00igYiELaHZe3JZOU61KQQAVJq4KWaD9jZEi1zMY6DtLLoIVEuT5GSJa1L+LRwacphmWEEPwnNpoXGxHArW8AAAAASUVORK5CYII=';
+/* Logos set via HTML src attribute */
+
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
+
+var D={projects:[],activeProjectId:null,apiKey:'',figmaToken:''};
+function save(){try{localStorage.setItem('hx_data',JSON.stringify(D));}catch(e){}}
+function load(){try{var s=localStorage.getItem('hx_data');if(s){var p=JSON.parse(s);if(p.projects)D.projects=p.projects;if(p.activeProjectId)D.activeProjectId=p.activeProjectId;if(p.apiKey)D.apiKey=p.apiKey;if(p.figmaToken)D.figmaToken=p.figmaToken;}}catch(e){}if(!D.projects.length)D.projects=[{id:'default',name:'Default Project',brand:'',color:'#E22B31',ds:'',brandGuide:'',research:'',flows:[]}];if(!D.activeProjectId)D.activeProjectId=D.projects[0].id;}
+function getProj(id){for(var i=0;i<D.projects.length;i++){if(D.projects[i].id===id)return D.projects[i];}return null;}
+function activeProj(){return getProj(D.activeProjectId)||D.projects[0]||null;}
+var currentScr='welcome',reviewSource='flow',figmaImportMode='flow';
+var backMap={projSetup:'welcome',flowSetup:'dashboard',quickUpload:'dashboard',figmaImport:function(){return figmaImportMode==='quick'?'quickUpload':'flowSetup';},reviewType:function(){return reviewSource==='quick'?'quickUpload':'dashboard';},results:'dashboard',analysis:'dashboard'};
+var titles={welcome:'Projects',projSetup:'Project Setup',dashboard:'Dashboard',flowSetup:'Flow Builder',quickUpload:'Quick Review',figmaImport:'Import from Figma',reviewType:'Choose Review Type',analysis:'Analyzing…',results:'Review Results'};
+function go(name){
+  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('active');});
+  var el=document.getElementById('scr'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(el){el.classList.add('active');currentScr=name;}
+  hideErr();
+  document.getElementById('pageTitle').textContent=titles[name]||name;
+  var bk=backMap[name];document.getElementById('backBtn').classList.toggle('vis',!!bk);
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.toggle('active',n.dataset.nav===name);});
+  var p=activeProj();
+  if(p){document.getElementById('sDot').style.background=p.color;document.getElementById('sPn').textContent=p.name;document.getElementById('pSelW').style.display='';}
+  if(name==='welcome'){renderWelcome();document.getElementById('pSelW').style.display='none';}
+  if(name==='dashboard')renderDashboard();
+  // close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');
+}
+function goBack(){var b=backMap[currentScr];if(typeof b==='function')b=b();if(b)go(b);}
+
+function renderWelcome(){var list=document.getElementById('projList');list.innerHTML='';D.projects.forEach(function(p){var d=document.createElement('div');d.className='card pc';if(p.id===D.activeProjectId)d.classList.add('active');d.innerHTML='<div class="pc-dot" style="background:'+p.color+'"></div><div style="flex:1"><div class="pc-name">'+esc(p.name)+'</div><div class="pc-meta">'+esc(p.brand||'No brand set')+(p.flows&&p.flows.length?' · '+p.flows.length+' flow'+(p.flows.length>1?'s':''):'')+'</div></div><div style="color:var(--t4)">→</div>';d.onclick=function(){D.activeProjectId=p.id;save();go('dashboard');};list.appendChild(d);});if(D.apiKey)document.getElementById('apiKey').value=D.apiKey;if(D.figmaToken)document.getElementById('figmaToken').value=D.figmaToken;}
+
+var editingProjId=null,editingColor='#E22B31',projColors=['#E22B31','#F28B22','#22C55E','#3B82F6','#C83082','#5A5292'];
+function initCP(){var c=document.getElementById('pColors');c.innerHTML='';projColors.forEach(function(col){var d=document.createElement('div');d.className='csw'+(col===editingColor?' active':'');d.style.background=col;d.onclick=function(){editingColor=col;initCP();};c.appendChild(d);});}
+function newProject(){editingProjId=null;editingColor='#E22B31';['pName','pBrand','pCoreIdea','pBuilding','pBrandNeed','pDS','pBrandGuide','pResearch'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('pDelete').style.display='none';document.getElementById('dsUrlWrap').style.display='none';resetExtractUI();initCP();go('projSetup');}
+function editProject(id){var p=getProj(id);if(!p)return;editingProjId=id;editingColor=p.color||'#E22B31';document.getElementById('pName').value=p.name||'';document.getElementById('pBrand').value=p.brand||'';document.getElementById('pCoreIdea').value=p.coreIdea||'';document.getElementById('pBuilding').value=p.building||'';document.getElementById('pBrandNeed').value=p.brandNeed||'';document.getElementById('pDS').value=p.ds||'';document.getElementById('pBrandGuide').value=p.brandGuide||'';document.getElementById('pResearch').value=p.research||'';document.getElementById('pDelete').style.display=D.projects.length>1?'':'none';resetExtractUI();initCP();go('projSetup');}
+function resetExtractUI(){document.getElementById('extractBanner').classList.remove('vis');['fsDSystem','fsBrand','fsResearch'].forEach(function(id){document.getElementById(id).classList.remove('vis');});}
+document.getElementById('pSave').onclick=function(){
+  // Validate required fields
+  var coreIdea=document.getElementById('pCoreIdea').value.trim();
+  var building=document.getElementById('pBuilding').value.trim();
+  var brandNeed=document.getElementById('pBrandNeed').value.trim();
+  var missing=[];
+  if(!coreIdea)missing.push('Core Idea');
+  if(!building)missing.push('What Are We Building');
+  if(!brandNeed)missing.push('What Does The Brand Need');
+  if(missing.length){showErr('Required: '+missing.join(', '));return;}
+  var name=document.getElementById('pName').value.trim()||'Untitled';
+  var data={name:name,brand:document.getElementById('pBrand').value.trim(),color:editingColor,coreIdea:coreIdea,building:building,brandNeed:brandNeed,ds:document.getElementById('pDS').value.trim(),brandGuide:document.getElementById('pBrandGuide').value.trim(),research:document.getElementById('pResearch').value.trim()};
+  if(editingProjId){var p=getProj(editingProjId);if(p){data.id=p.id;data.flows=p.flows||[];Object.assign(p,data);}}
+  else{data.id='p'+Date.now();data.flows=[];D.projects.push(data);D.activeProjectId=data.id;}
+  save();go('dashboard');
+};
+document.getElementById('pDelete').onclick=function(){if(!editingProjId||D.projects.length<=1)return;D.projects=D.projects.filter(function(p){return p.id!==editingProjId;});if(D.activeProjectId===editingProjId)D.activeProjectId=D.projects[0].id;save();go('welcome');};
+
+document.getElementById('pUpload').onclick=function(){document.getElementById('pFile').click();};
+document.getElementById('pFile').onchange=function(e){if(e.target.files.length)extractContext(e.target.files[0]);e.target.value='';};
+async function extractContext(file){
+  var key=getKey();if(!key){showErr('Set your API key on the Projects screen first.');return;}
+  var zone=document.getElementById('pUpload'),prog=document.getElementById('pUpProg'),fill=document.getElementById('pUpFill');
+  zone.classList.add('busy');prog.classList.add('vis');fill.style.width='20%';resetExtractUI();
+  try{
+    var content=[],ext=file.name.split('.').pop().toLowerCase();
+    if(['png','jpg','jpeg'].indexOf(ext)>=0){
+      var du=await readDU(file);var img=new Image();img.src=du;await new Promise(function(r){img.onload=r;});
+      // Resize if needed
+      var maxD=1568,w=img.width,h=img.height;
+      if(w>maxD||h>maxD){if(w>h){var nw=maxD,nh=Math.round(h*(maxD/w));}else{var nh=maxD,nw=Math.round(w*(maxD/h));}}else{var nw=w,nh=h;}
+      var cv=document.createElement('canvas');cv.width=nw;cv.height=nh;cv.getContext('2d').drawImage(img,0,0,nw,nh);
+      var resizedDU=cv.toDataURL('image/jpeg',0.85);var b64=resizedDU.split(',')[1];
+      content=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Extract all brand/design guidelines from this image.'}];
+    }
+    else if(ext==='pdf'){var b64=await readB64(file);content=[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:'Extract all brand/design guidelines from this document. Be thorough - analyze every page.'}];}
+    else{var txt=await file.text();content=[{type:'text',text:'Extract brand guidelines:\n\n'+txt.substring(0,15000)}];}
+    fill.style.width='50%';
+    var extractSys=[
+'You are extracting brand guidelines into 3 SEPARATE fields for a design review tool.',
+'',
+'Respond with a JSON object containing exactly 3 keys. Each value is a string with \\n for line breaks.',
+'',
+'CRITICAL: You MUST distribute content across ALL 3 fields. Do NOT put everything in one field.',
+'',
+'=== KEY 1: "designSystem" ===',
+'ONLY put factual specifications here — the WHAT:',
+'',
+'— TYPOGRAPHY —',
+'Primary Font: [name]',
+'• [Weight]: [usage rule]',
+'(one line per weight)',
+'Fallback Font: [name]',
+'• [usage details]',
+'',
+'— COLOR PALETTE —',
+'Primary:',
+'• [Name]: #HEX | RGB(r,g,b) | Pantone [code]',
+'(one line per color)',
+'Secondary:',
+'• [Name]: #HEX | RGB(r,g,b) | Pantone [code]',
+'',
+'— LOGO VARIANTS —',
+'• [Variant name]: [when to use, size threshold]',
+'(one line per variant)',
+'',
+'— ICONS & PATTERNS —',
+'• [Asset name]: [brief description]',
+'',
+'=== KEY 2: "brandGuidelines" ===',
+'ONLY put rules, restrictions, dos/donts here — the HOW:',
+'',
+'— LOGO RULES —',
+'DO:',
+'• [each correct usage]',
+'DO NOT:',
+'• [each prohibition]',
+'',
+'— MASCOT/CHARACTER RULES —',
+'(if any mascot or character exists)',
+'Allowed:',
+'• [each permitted use]',
+'Prohibited:',
+'• [each restriction — list ALL of them]',
+'',
+'— BRAND VOICE & TONE —',
+'• Tagline: [exact strapline]',
+'• [voice/personality rules]',
+'',
+'— TRADEMARK & LEGAL —',
+'• [registered mark placement rules]',
+'• [approval process requirements]',
+'',
+'— VISUAL PRINCIPLES —',
+'• [aesthetic direction, photography style, illustration rules]',
+'',
+'=== KEY 3: "research" ===',
+'Any target audience, user personas, or customer insights. Use "" if none found.',
+'',
+'FORMATTING: One fact per line. Use • bullets. Include exact values (hex, Pantone, sizes).',
+'DO NOT dump everything into designSystem. The brandGuidelines field MUST contain the logo dos/donts, mascot rules, trademark rules, and tone of voice.'
+].join('\\n');
+    var r=await fetch('/api/review/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,system:extractSys,messages:[{role:'user',content:content}]})});
+    fill.style.width='80%';
+    if(!r.ok){var ej=await r.json().catch(function(){return{};});var emsg=ej.error&&ej.error.message?ej.error.message:'API returned '+r.status;console.error('Extract API Error:',ej);throw new Error(emsg);}
+    var d=await r.json(),raw='';if(d.content)for(var i=0;i<d.content.length;i++)if(d.content[i].text)raw+=d.content[i].text;
+    var parsed=parseJSON(raw);fill.style.width='100%';
+    if(parsed){
+      console.log('[HX] Parsed fields:','designSystem='+(parsed.designSystem||'').length+'chars','brandGuidelines='+(parsed.brandGuidelines||'').length+'chars','research='+(parsed.research||'').length+'chars');
+      if(!(parsed.brandGuidelines)||parsed.brandGuidelines.length<50)console.warn('[HX] brandGuidelines field is EMPTY or too short — AI likely dumped everything into designSystem');
+      var found=[],details=[];
+      if(parsed.designSystem){document.getElementById('pDS').value=parsed.designSystem;document.getElementById('fsDSystem').classList.add('vis');found.push('Design System & Typography');details.push('Design System: '+parsed.designSystem.length+' chars extracted');}
+      if(parsed.brandGuidelines){document.getElementById('pBrandGuide').value=parsed.brandGuidelines;document.getElementById('fsBrand').classList.add('vis');found.push('Brand Guidelines & Tone');details.push('Brand Guidelines: '+parsed.brandGuidelines.length+' chars extracted');}
+      if(parsed.research){document.getElementById('pResearch').value=parsed.research;document.getElementById('fsResearch').classList.add('vis');found.push('User Research & Personas');details.push('Research: '+parsed.research.length+' chars extracted');}
+      if(found.length){
+        document.getElementById('extractDetails').innerHTML='<strong>Filled '+found.length+' field'+(found.length>1?'s':'')+':</strong> '+found.join(', ')+'.<br><span style="font-size:12px;color:var(--t3)">'+details.join(' · ')+'. Review the fields below and edit as needed.</span>';
+        document.getElementById('extractBanner').classList.add('vis');
+        // Scroll to banner
+        document.getElementById('extractBanner').scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      ['pDS','pBrandGuide','pResearch'].forEach(function(id){var el=document.getElementById(id);if(el.value){el.style.borderColor='var(--green)';autoResize(el);setTimeout(function(){el.style.borderColor='';},3000);}});
+    }else{showErr('Could not parse the AI response. Try again or fill in manually.');}
+  }catch(e){showErr('Upload failed: '+(e.message||'Unknown error'));}
+  zone.classList.remove('busy');setTimeout(function(){prog.classList.remove('vis');fill.style.width='0%';},1500);
+}
+function readB64(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result.split(',')[1]);};r.onerror=rej;r.readAsDataURL(f);});}
+function readDU(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=rej;r.readAsDataURL(f);});}
+function parseJSON(raw){
+  console.log('[HX] parseJSON: raw length='+raw.length+', first 200 chars:',raw.substring(0,200));
+  // Try direct parse first
+  try{return JSON.parse(raw);}catch(e){console.log('[HX] Direct parse failed:',e.message);}
+  // Strip markdown fences
+  var clean=raw.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim();
+  try{return JSON.parse(clean);}catch(e){}
+  // Extract JSON object from surrounding text
+  var a=clean.indexOf('{'),b=clean.lastIndexOf('}');
+  if(a>=0&&b>a)clean=clean.substring(a,b+1);
+  // Fix unescaped newlines inside JSON string values
+  // Replace actual newlines with \\n, but only inside string values
+  try{
+    var fixed=clean.replace(/\r\n/g,'\n');
+    // Strategy: replace newlines that are inside strings with \\n
+    var result='',inString=false,escaped=false;
+    for(var i=0;i<fixed.length;i++){
+      var ch=fixed[i];
+      if(escaped){result+=ch;escaped=false;continue;}
+      if(ch==='\\'){escaped=true;result+=ch;continue;}
+      if(ch==='"'){inString=!inString;result+=ch;continue;}
+      if(inString&&ch==='\n'){result+='\\n';continue;}
+      if(inString&&ch==='\t'){result+='\\t';continue;}
+      result+=ch;
+    }
+    console.log('[HX] Fixed JSON, attempting parse...');
+    return JSON.parse(result);
+  }catch(e){console.log('[HX] Fixed parse failed:',e.message);}
+  // Last resort: try to extract fields manually with regex
+  console.log('[HX] Attempting regex extraction...');
+  try{
+    var ds=extractField(clean,'designSystem');
+    var bg=extractField(clean,'brandGuidelines');
+    var re=extractField(clean,'research');
+    if(ds||bg||re){console.log('[HX] Regex extraction succeeded');return{designSystem:ds,brandGuidelines:bg,research:re};}
+  }catch(e){console.log('[HX] Regex extraction failed:',e.message);}
+  console.error('[HX] All parse methods failed. Raw response:',raw.substring(0,500));
+  return null;
+}
+function extractField(json,key){
+  var pat=new RegExp('"'+key+'"\\s*:\\s*"');
+  var m=pat.exec(json);
+  if(!m)return'';
+  var start=m.index+m[0].length;
+  var depth=0,i=start;
+  while(i<json.length){
+    if(json[i]==='\\'&&i+1<json.length){i+=2;continue;}
+    if(json[i]==='"'&&depth===0){return json.substring(start,i).replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\"/g,'"');}
+    i++;
+  }
+  return'';
+}
+
+function renderDashboard(){var p=activeProj();if(!p)return;document.getElementById('dashDot').style.background=p.color;document.getElementById('dashName').textContent=p.name;document.getElementById('dashBrand').textContent=p.brand||'No brand set';var list=document.getElementById('flowList');list.innerHTML='';
+  (p.flows||[]).forEach(function(f){
+    var d=document.createElement('div');d.className='card fi';
+    var meta=f.frames.length+' screen'+(f.frames.length!==1?'s':'');
+    if(f.brief)meta+=' · Has brief';
+    // Migration: move old lastReview into reviews array if not already there
+    if(f.lastReview&&(!f.reviews||!f.reviews.length)){f.reviews=[f.lastReview];}
+    var reviews=f.reviews||[];
+    var reviewsHtml='';
+    if(reviews.length){
+      reviewsHtml='<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">';
+      reviewsHtml+='<div style="font-size:11px;font-family:\'JetBrains Mono\',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--t4);margin-bottom:2px">Review History ('+reviews.length+')</div>';
+      reviews.forEach(function(r,idx){
+        var ago=timeAgo(r.timestamp);
+        var isLatest=idx===0;
+        var scoreColor=parseFloat(r.score)>=7?'var(--green)':parseFloat(r.score)>=5?'var(--hx-orange)':'var(--err-red)';
+        reviewsHtml+='<div style="padding:9px 12px;background:var(--bg3);border-radius:var(--rs);display:flex;align-items:center;gap:10px;font-size:12px;border-left:3px solid '+(isLatest?'var(--hx-red)':'transparent')+'">'
+          +'<span style="font-weight:700;color:'+scoreColor+';font-family:\'JetBrains Mono\',monospace">'+r.score+'/10</span>'
+          +'<span style="color:var(--t1);font-weight:500">'+esc(r.type)+'</span>'
+          +(isLatest?'<span style="color:var(--hx-red);font-size:10px;font-weight:700;padding:2px 6px;background:rgba(0,0,0,.06);border-radius:4px">LATEST</span>':'')
+          +'<span style="color:var(--t4);margin-left:auto">'+ago+'</span>'
+          +'<span style="color:var(--hx-red);cursor:pointer;font-weight:600" onclick="event.stopPropagation();viewReview(\''+f.id+'\',\''+(r.id||'')+'\','+idx+')">View →</span>'
+          +'</div>';
+      });
+      reviewsHtml+='</div>';
+    }
+    d.innerHTML='<div style="flex:1"><div class="fi-name">'+esc(f.name||'Untitled Flow')+'</div><div class="fi-meta">'+meta+'</div>'+reviewsHtml+'</div><div style="color:var(--t4);align-self:flex-start;margin-top:4px">→</div>';
+    d.onclick=function(){openFlow(f.id);};
+    list.appendChild(d);
+  });
+  // Show quick reviews history
+  var qrDiv=document.getElementById('lastQuickReview');
+  // Migration
+  if(p.lastQuickReview&&(!p.quickReviews||!p.quickReviews.length)){p.quickReviews=[p.lastQuickReview];}
+  var quickReviews=p.quickReviews||[];
+  if(quickReviews.length){
+    qrDiv.style.display='';
+    var qrHtml='<div style="font-size:11px;font-family:\'JetBrains Mono\',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--t4);margin-bottom:6px">Quick Review History ('+quickReviews.length+')</div>';
+    qrHtml+='<div style="display:flex;flex-direction:column;gap:6px">';
+    quickReviews.forEach(function(qr,idx){
+      var isLatest=idx===0;
+      var scoreColor=parseFloat(qr.score)>=7?'var(--green)':parseFloat(qr.score)>=5?'var(--hx-orange)':'var(--hx-red)';
+      qrHtml+='<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);border-left:3px solid '+(isLatest?'var(--hx-red)':'var(--bd)')+'">'
+        +'<span style="font-size:15px">⚡</span>'
+        +'<span style="font-weight:700;color:'+scoreColor+';font-family:\'JetBrains Mono\',monospace;font-size:13px">'+qr.score+'/10</span>'
+        +'<span style="font-size:13px;color:var(--t1);font-weight:500">Quick DS Check</span>'
+        +(isLatest?'<span style="color:var(--hx-red);font-size:10px;font-weight:700;padding:2px 6px;background:rgba(0,0,0,.06);border-radius:4px">LATEST</span>':'')
+        +'<span style="font-size:12px;color:var(--t4);margin-left:auto">'+timeAgo(qr.timestamp)+'</span>'
+        +'<span style="color:var(--hx-red);cursor:pointer;font-weight:600;font-size:13px" onclick="viewQuickReview('+idx+')">View →</span>'
+        +'</div>';
+    });
+    qrHtml+='</div>';
+    qrDiv.innerHTML=qrHtml;
+  }else{qrDiv.style.display='none';}
+}
+function timeAgo(ts){if(!ts)return'';var d=Date.now()-ts;var m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';return Math.floor(h/24)+'d ago';}
+function viewReview(flowId,reviewId,idx){var p=activeProj();if(!p)return;(p.flows||[]).forEach(function(f){if(f.id===flowId){var r=(f.reviews&&f.reviews[idx])||f.lastReview;if(r){go('results');renderResults(r.raw,r.type);}}});}
+function viewLastReview(flowId){viewReview(flowId,null,0);}
+function viewQuickReview(idx){var p=activeProj();if(!p)return;var r=(p.quickReviews&&p.quickReviews[idx])||p.lastQuickReview;if(r){go('results');renderResults(r.raw,r.type);}}
+function viewLastQuickReview(){viewQuickReview(0);}
+
+var editingFlowId=null,flowFrames=[],benchFrames=[];
+function newFlow(){editingFlowId=null;flowFrames=[];benchFrames=[];
+  ['fBrief','fPains','fConstraints'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('flowValidation').style.display='none';
+  renderFS();renderBench();go('flowSetup');}
+function openFlow(id){var p=activeProj();if(!p)return;var f=null;(p.flows||[]).forEach(function(fl){if(fl.id===id)f=fl;});if(!f)return;editingFlowId=id;flowFrames=f.frames?f.frames.slice():[];benchFrames=f.benchmarks?f.benchmarks.slice():[];
+  document.getElementById('fBrief').value=f.brief||'';
+  document.getElementById('fPains').value=f.pains||'';
+  document.getElementById('fConstraints').value=f.constraints||'';
+  document.getElementById('flowValidation').style.display='none';
+  renderFS();renderBench();go('flowSetup');}
+function renderFS(){renderStrip('flowStrip',flowFrames,'flowCount',' screen',' screens',' added',function(){flowFrames=flowFrames;});}
+function renderBench(){renderStrip('benchStrip',benchFrames,'benchCount',' benchmark',' benchmarks',' added',function(){benchFrames=benchFrames;});}
+
+var dragSrcIdx=null,dragTarget=null;
+function renderStrip(stripId,arr,countId,singLabel,plurLabel,suffix,onReorder){
+  var s=document.getElementById(stripId);s.innerHTML='';
+  arr.forEach(function(fr,i){
+    var d=document.createElement('div');d.className='fthumb';d.draggable=true;d.dataset.idx=i;
+    var arrows='<div class="fthumb-arrows">'+(i>0?'<button class="fthumb-arr" data-dir="left" title="Move left">◀</button>':'')+(i<arr.length-1?'<button class="fthumb-arr" data-dir="right" title="Move right">▶</button>':'')+'</div>';
+    d.innerHTML='<img src="data:image/jpeg;base64,'+fr.thumb+'"/>'+arrows+'<div class="fthumb-n">'+(i+1)+'</div><div class="fthumb-x" title="Remove">✕</div>';
+    // Remove
+    d.querySelector('.fthumb-x').onclick=function(e){e.stopPropagation();arr.splice(i,1);renderStrip(stripId,arr,countId,singLabel,plurLabel,suffix,onReorder);};
+    // Arrow buttons
+    d.querySelectorAll('.fthumb-arr').forEach(function(btn){
+      btn.onclick=function(e){
+        e.stopPropagation();
+        var dir=btn.dataset.dir;
+        var newIdx=dir==='left'?i-1:i+1;
+        if(newIdx<0||newIdx>=arr.length)return;
+        var temp=arr[i];arr[i]=arr[newIdx];arr[newIdx]=temp;
+        renderStrip(stripId,arr,countId,singLabel,plurLabel,suffix,onReorder);
+      };
+    });
+    // Drag start
+    d.ondragstart=function(e){
+      dragSrcIdx=i;dragTarget=stripId;
+      d.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',i);
+    };
+    d.ondragend=function(){d.classList.remove('dragging');};
+    // Drag over
+    d.ondragover=function(e){
+      e.preventDefault();
+      if(dragTarget!==stripId)return;
+      e.dataTransfer.dropEffect='move';
+      d.classList.add('drag-over');
+    };
+    d.ondragleave=function(){d.classList.remove('drag-over');};
+    // Drop
+    d.ondrop=function(e){
+      e.preventDefault();d.classList.remove('drag-over');
+      if(dragTarget!==stripId)return;
+      var from=dragSrcIdx;var to=i;
+      if(from===to)return;
+      var item=arr.splice(from,1)[0];
+      arr.splice(to,0,item);
+      renderStrip(stripId,arr,countId,singLabel,plurLabel,suffix,onReorder);
+    };
+    s.appendChild(d);
+  });
+  var count=arr.length;
+  document.getElementById(countId).textContent=count+(count!==1?plurLabel:singLabel)+suffix;
+}
+
+// Benchmark drop zone
+var bd=document.getElementById('benchDrop'),bf=document.getElementById('benchFile');
+bd.onclick=function(){bf.click();};bd.ondragover=function(e){e.preventDefault();bd.classList.add('dragover');};bd.ondragleave=function(){bd.classList.remove('dragover');};
+bd.ondrop=async function(e){e.preventDefault();bd.classList.remove('dragover');for(var i=0;i<e.dataTransfer.files.length;i++){if(e.dataTransfer.files[i].type.startsWith('image/'))benchFrames.push(await addFrame(e.dataTransfer.files[i]));}renderBench();};
+bf.onchange=async function(e){for(var i=0;i<e.target.files.length;i++)benchFrames.push(await addFrame(e.target.files[i]));renderBench();e.target.value='';};
+
+// BRD Upload
+document.getElementById('brdUpload').onclick=function(){document.getElementById('brdFile').click();};
+document.getElementById('brdFile').onchange=function(e){if(e.target.files.length)extractBRD(e.target.files[0]);e.target.value='';};
+async function extractBRD(file){
+  var key=getKey();if(!key){showErr('Set your Anthropic API key first.');return;}
+  var prog=document.getElementById('brdProg'),fill=document.getElementById('brdFill');
+  prog.classList.add('vis');fill.style.width='30%';
+  try{
+    var content=[];var ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='pdf'){var b64=await readB64(file);content=[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:'Summarize this BRD into a clear flow brief.'}];}
+    else{var txt=await file.text();content=[{type:'text',text:'Summarize this BRD into a clear flow brief:\n\n'+txt.substring(0,20000)}];}
+    fill.style.width='60%';
+    var r=await fetch('/api/review/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:'Extract a concise flow brief from this BRD. Output ONLY the brief text — no JSON, no markdown headers. Include: the flow goal, target users, key requirements, success metrics if mentioned. Be concise but complete. 200-400 words.',messages:[{role:'user',content:content}]})});
+    fill.style.width='90%';
+    if(!r.ok)throw new Error('API error '+r.status);
+    var d=await r.json(),txt='';if(d.content)for(var i=0;i<d.content.length;i++)if(d.content[i].text)txt+=d.content[i].text;
+    if(txt){document.getElementById('fBrief').value=txt;autoResize(document.getElementById('fBrief'));document.getElementById('fBrief').style.borderColor='var(--green)';setTimeout(function(){document.getElementById('fBrief').style.borderColor='';},3000);}
+  }catch(e){showErr('BRD extraction failed: '+e.message);}
+  setTimeout(function(){prog.classList.remove('vis');fill.style.width='0%';},1000);
+}
+
+// Flow validation
+function validateFlow(){
+  var errors=[];
+  if(!document.getElementById('fBrief').value.trim())errors.push('Flow Brief is required');
+  if(!flowFrames.length)errors.push('At least one screen is required');
+  var el=document.getElementById('flowValidation');
+  if(errors.length){el.textContent='⚠ '+errors.join(' · ');el.style.display='';return false;}
+  el.style.display='none';return true;
+}
+
+// Save flow with all new fields
+function saveFlowData(){
+  var p=activeProj();if(!p)return;if(!p.flows)p.flows=[];
+  var data={brief:document.getElementById('fBrief').value.trim(),pains:document.getElementById('fPains').value.trim(),constraints:document.getElementById('fConstraints').value.trim(),frames:flowFrames.slice(),benchmarks:benchFrames.slice()};
+  if(editingFlowId){p.flows.forEach(function(f){if(f.id===editingFlowId){f.name=f.name||'Untitled';Object.assign(f,data);}});}
+  else{data.id='f'+Date.now();data.name='Flow '+(p.flows.length+1);p.flows.push(data);editingFlowId=data.id;}
+  save();
+}
+
+document.getElementById('fSave').onclick=function(){saveFlowData();go('dashboard');};
+document.getElementById('fReview').onclick=function(){if(!validateFlow())return;saveFlowData();reviewSource='flow';go('reviewType');};
+
+// addFrame utility
+async function addFrame(file){
+  var du=await readDU(file);var img=new Image();img.src=du;await new Promise(function(r){img.onload=r;});
+  var maxDim=1568,w=img.width,h=img.height,fw=w,fh=h;
+  if(w>maxDim||h>maxDim){if(w>h){fw=maxDim;fh=Math.round(h*(maxDim/w));}else{fh=maxDim;fw=Math.round(w*(maxDim/h));}}
+  var fc=document.createElement('canvas');fc.width=fw;fc.height=fh;
+  var ctx=fc.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,fw,fh);ctx.drawImage(img,0,0,fw,fh);
+  var b64,quality=0.82;
+  for(var q=0;q<4;q++){b64=fc.toDataURL('image/jpeg',quality).split(',')[1];if(b64.length<4500000)break;quality-=0.15;}
+  var tc=document.createElement('canvas'),sc=.2;tc.width=fw*sc;tc.height=fh*sc;
+  var tctx=tc.getContext('2d');tctx.fillStyle='#FFF';tctx.fillRect(0,0,tc.width,tc.height);tctx.drawImage(img,0,0,tc.width,tc.height);
+  return{id:'fr_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),name:file.name.replace(/\.[^.]+$/,''),width:fw,height:fh,scale:1,base64:b64,mediaType:'image/jpeg',thumb:tc.toDataURL('image/jpeg',0.5).split(',')[1]};
+}
+// Screen drop zone
+var fd=document.getElementById('frameDrop'),ff=document.getElementById('frameFile');
+fd.onclick=function(){ff.click();};fd.ondragover=function(e){e.preventDefault();fd.classList.add('dragover');};fd.ondragleave=function(){fd.classList.remove('dragover');};
+fd.ondrop=async function(e){e.preventDefault();fd.classList.remove('dragover');for(var i=0;i<e.dataTransfer.files.length;i++){if(e.dataTransfer.files[i].type.startsWith('image/'))flowFrames.push(await addFrame(e.dataTransfer.files[i]));}renderFS();};
+ff.onchange=async function(e){for(var i=0;i<e.target.files.length;i++)flowFrames.push(await addFrame(e.target.files[i]));renderFS();e.target.value='';};
+
+// Figma Design System extraction
+function openDSImport(){document.getElementById('dsUrlWrap').style.display='';}
+async function extractFigmaDS(){
+  var token=getFigmaToken();if(!token){showErr('Set your Figma token first.');return;}
+  var apiKey=getKey();if(!apiKey){showErr('Set your Anthropic API key first.');return;}
+  var url=document.getElementById('dsUrl').value.trim();
+  var parsed=parseFigmaUrl(url);if(!parsed){document.getElementById('dsStatus').textContent='Invalid Figma URL';document.getElementById('dsStatus').className='figma-status error';return;}
+  document.getElementById('dsSpinner').style.display='';document.getElementById('dsStatus').innerHTML='<span class="figma-spinner"></span>Loading design system file…';document.getElementById('dsStatus').className='figma-status loading';
+  try{
+    var fileData=await fetchFigmaFile(parsed.fileKey,token);
+    console.log('[HX] DS file:',fileData.name);
+    // Step 1: Try API styles
+    var styles=fileData.styles||{};var styleIds=Object.keys(styles);
+    var apiColors=[],apiText=[];
+    if(styleIds.length){
+      document.getElementById('dsStatus').innerHTML='<span class="figma-spinner"></span>Reading '+styleIds.length+' published styles…';
+      try{
+        var enc=styleIds.map(function(id){return encodeURIComponent(id);}).join(',');
+        var nr=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'/nodes?ids='+enc,{headers:{'X-Figma-Token':token}});
+        if(nr.ok){var nd=await nr.json();styleIds.forEach(function(sid){var m=styles[sid],nw=nd.nodes[sid];if(!nw||!nw.document)return;var n=nw.document;if(m.style_type==='FILL'&&n.fills&&n.fills.length){var f=n.fills[0];if(f.color){var c=f.color;var h='#'+[c.r,c.g,c.b].map(function(v){return Math.round(v*255).toString(16).padStart(2,'0');}).join('');apiColors.push(m.name+': '+h.toUpperCase()+' | RGB('+Math.round(c.r*255)+','+Math.round(c.g*255)+','+Math.round(c.b*255)+')');}}if(m.style_type==='TEXT'&&n.style){var t=n.style;apiText.push(m.name+': '+t.fontFamily+' '+t.fontWeight+' / '+(t.fontSize||'?')+'px'+(t.lineHeightPx?' / LH:'+Math.round(t.lineHeightPx)+'px':''));}});}
+      }catch(e){console.warn('[HX] Style nodes failed:',e);}
+    }
+    console.log('[HX] API:',apiText.length,'text,',apiColors.length,'colors');
+    // Step 2: Export frames as images for visual extraction
+    var pages=fileData.document.children;var frameNodes=[];
+    pages.forEach(function(pg){(pg.children||[]).forEach(function(n){if(n.type==='FRAME'||n.type==='COMPONENT'||n.type==='COMPONENT_SET')frameNodes.push({id:n.id,name:n.name,page:pg.name});});});
+    var sel=frameNodes;
+    if(parsed.nodeId){var t=frameNodes.filter(function(f){return f.id===parsed.nodeId;});sel=t.concat(frameNodes.filter(function(f){return f.id!==parsed.nodeId;}));}
+    sel=sel.slice(0,8);
+    document.getElementById('dsStatus').innerHTML='<span class="figma-spinner"></span>Exporting '+sel.length+' frames for AI analysis…';
+    var content=[];
+    if(sel.length){
+      var fids=sel.map(function(f){return f.id;});
+      var imgs=await fetchFigmaImages(parsed.fileKey,fids,token,1);
+      for(var i=0;i<sel.length;i++){
+        var iurl=imgs[sel[i].id];if(!iurl)continue;
+        try{var idata=await fetchImageAsBase64(iurl);content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:idata.base64}});content.push({type:'text',text:'Frame: "'+sel[i].name+'" (Page: '+sel[i].page+')'});}catch(e){console.warn('[HX] Frame img fail:',sel[i].name);}
+      }
+    }
+    var apiCtx='';
+    if(apiText.length)apiCtx+='API-extracted text styles:\n'+apiText.map(function(s){return '• '+s;}).join('\n')+'\n\n';
+    if(apiColors.length)apiCtx+='API-extracted colors:\n'+apiColors.map(function(s){return '• '+s;}).join('\n')+'\n\n';
+    if(apiCtx)content.unshift({type:'text',text:apiCtx+'Also analyze frames below for logos, icons, spacing, components, brand rules, tone not captured above:'});
+    else content.unshift({type:'text',text:'Analyze these design system frames. Extract ALL: typography (fonts, weights, sizes with hex), colors (with hex), logos, icons, spacing, components, brand rules, tone of voice.'});
+    // Step 3: Claude extraction
+    document.getElementById('dsStatus').innerHTML='<span class="figma-spinner"></span>AI analyzing design system… (15-30s)';
+    var extractSys='Extract design system info from visual frames. Output JSON with 3 string keys, use \\n for line breaks.\n\n"designSystem": Use sections:\n— TYPOGRAPHY —\n• [Font] [Weight] / [Size]px / [Usage]\n— COLOR PALETTE —\nPrimary:\n• [Name]: #HEX | RGB\nSecondary:\n• [Name]: #HEX\n— LOGO —\n• [variants and rules]\n— ICONS & ASSETS —\n— SPACING & GRID —\n\n"brandGuidelines": Use sections:\n— LOGO RULES —\nDO:\nDO NOT:\n— TONE & VOICE —\n\n"research": "" if none found.\n\nBe exhaustive. One fact per line. Include exact hex values.';
+    var r=await fetch('/api/review/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4096,system:extractSys,messages:[{role:'user',content:content}]})});
+    if(!r.ok){var ej=await r.json().catch(function(){return{};});throw new Error(ej.error&&ej.error.message?ej.error.message:'API '+r.status);}
+    var d=await r.json(),raw='';if(d.content)for(var ci=0;ci<d.content.length;ci++)if(d.content[ci].text)raw+=d.content[ci].text;
+    var ex=parseJSON(raw);
+    if(ex){
+      var filled=[];
+      if(ex.designSystem){document.getElementById('pDS').value=ex.designSystem;document.getElementById('fsDSystem').classList.add('vis');autoResize(document.getElementById('pDS'));filled.push('Design System');}
+      if(ex.brandGuidelines){document.getElementById('pBrandGuide').value=ex.brandGuidelines;document.getElementById('fsBrand').classList.add('vis');autoResize(document.getElementById('pBrandGuide'));filled.push('Brand Guidelines');}
+      if(ex.research){document.getElementById('pResearch').value=ex.research;document.getElementById('fsResearch').classList.add('vis');autoResize(document.getElementById('pResearch'));filled.push('Research');}
+      ['pDS','pBrandGuide','pResearch'].forEach(function(id){var el=document.getElementById(id);if(el.value){el.style.borderColor='var(--green)';setTimeout(function(){el.style.borderColor='';},3000);}});
+      document.getElementById('extractBanner').classList.add('vis');
+      document.getElementById('extractDetails').innerHTML='<b>Extracted from '+esc(fileData.name)+':</b> '+filled.join(', ')+'<br><span style="font-size:12px;color:var(--t3)">'+sel.length+' frames analyzed'+(apiText.length?', '+apiText.length+' text styles':'')+(apiColors.length?', '+apiColors.length+' colors':'')+' from API</span>';
+      document.getElementById('dsStatus').textContent='✓ Done — '+filled.length+' fields filled';document.getElementById('dsStatus').className='figma-status ok';
+    }else{document.getElementById('dsStatus').textContent='Could not parse AI response. Try again.';document.getElementById('dsStatus').className='figma-status error';}
+  }catch(e){
+    console.error('[HX] DS extraction error:',e);
+    if(e.message==='Failed to fetch')document.getElementById('dsStatus').innerHTML='<span style="color:var(--err-red)">Network error — check your connection and try again.</span>';
+    else{document.getElementById('dsStatus').textContent='Error: '+e.message;document.getElementById('dsStatus').className='figma-status error';}
+  }
+  document.getElementById('dsSpinner').style.display='none';
+}
+
+var quickFrame=null;
+function quickReview(){quickFrame=null;benchFrames=[];document.getElementById('quickPreview').style.display='none';document.getElementById('quickDrop').style.display='';document.getElementById('quickNext').disabled=true;reviewSource='quick';go('quickUpload');}
+var qd=document.getElementById('quickDrop'),qf=document.getElementById('quickFile');
+qd.onclick=function(){qf.click();};
+qd.ondragover=function(e){e.preventDefault();qd.classList.add('dragover');};
+qd.ondragleave=function(){qd.classList.remove('dragover');};
+qd.ondrop=async function(e){e.preventDefault();qd.classList.remove('dragover');var f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))await loadQF(f);};
+qf.onchange=async function(e){if(e.target.files[0])await loadQF(e.target.files[0]);e.target.value='';};
+async function loadQF(file){
+  quickFrame=await addFrame(file);
+  document.getElementById('quickImg').src='data:image/jpeg;base64,'+quickFrame.base64;
+  document.getElementById('quickMeta').textContent=quickFrame.name+' · '+quickFrame.width+'×'+quickFrame.height+'px';
+  document.getElementById('quickPreview').style.display='';
+  document.getElementById('quickDrop').style.display='none';
+  document.getElementById('quickNext').disabled=false;
+}
+document.getElementById('quickNext').onclick=function(){
+  if(!quickFrame)return;
+  flowFrames=[quickFrame];
+  editingFlowId=null;
+  reviewSource='quick';
+  reviewType='quickds';
+  // Skip review type picker — go straight to analysis
+  var key=getKey();
+  if(!key){showErr('Set your Anthropic API key first.');return;}
+  go('analysis');startTimer();setAS(1);setAP(10);
+  setTimeout(function(){setAS(2);setAP(40);setTimeout(function(){setAS(3);setAP(55);runReview(flowFrames);},500);},500);
+};
+
+var reviewType='audit',reviewCancelled=false,reviewInterval=null;
+document.querySelectorAll('.rc').forEach(function(c){c.onclick=function(){document.querySelectorAll('.rc').forEach(function(x){x.classList.remove('sel');});c.classList.add('sel');reviewType=c.dataset.type;};});
+document.getElementById('btnStartReview').onclick=function(){
+  var key=getKey();
+  if(!key){showErr('Set your API key on the Projects screen first.');return;}
+  hideErr();
+  if(!flowFrames.length){showErr('No screens to review.');return;}
+  go('analysis');startTimer();setAS(1);setAP(10);
+  setTimeout(function(){setAS(2);setAP(40);setTimeout(function(){setAS(3);setAP(55);runReview(flowFrames);},500);},500);
+};
+function startTimer(){var t=0;clearInterval(reviewInterval);reviewInterval=setInterval(function(){t++;document.getElementById('aTimer').textContent=t+'s';},1000);}
+function setAS(n){for(var i=1;i<=4;i++)document.getElementById('as'+i).className='astep'+(i===n?' on':i<n?' done':'');}
+function setAP(p){document.getElementById('aProg').style.width=p+'%';}
+function cancelReview(){clearInterval(reviewInterval);reviewCancelled=true;go('dashboard');}
+async function runReview(frames){
+  var key=getKey(),p=activeProj(),pc='';
+  if(p){
+    // Product brief
+    if(p.coreIdea||p.building||p.brandNeed){
+      pc+='\n\n=== PRODUCT BRIEF ===';
+      if(p.coreIdea)pc+='\nCore Idea: '+p.coreIdea;
+      if(p.building)pc+='\nWhat We Are Building: '+p.building;
+      if(p.brandNeed)pc+='\nWhat The Brand Needs: '+p.brandNeed;
+    }
+    if(p.ds)pc+='\n\n=== DESIGN SYSTEM ===\n'+p.ds;
+    if(p.brandGuide)pc+='\n\n=== BRAND GUIDELINES & RULES ===\n'+p.brandGuide;
+    if(p.research)pc+='\n\n=== USER RESEARCH ===\n'+p.research;
+  }
+  var fc='';
+  if(editingFlowId&&p){(p.flows||[]).forEach(function(f){if(f.id===editingFlowId){
+    if(f.brief)fc+='\n\nFLOW BRIEF (includes design intent): '+f.brief;
+    if(f.pains)fc+='\n\nKNOWN PAIN POINTS: '+f.pains;
+    if(f.constraints)fc+='\n\nCONSTRAINTS: '+f.constraints;
+  }});}
+  var ac=document.getElementById('revCtx').value.trim();
+  var tl={quickds:'Quick DS Check',audit:'Full UI Audit',ux:'UX Critique',accessibility:'Accessibility Review',copy:'Copy Review',ideas:'Innovation Ideas',edge:'Edge Case Analysis'};
+  document.getElementById('asTL').textContent=tl[reviewType]||'Analyze';
+  document.getElementById('asFC').textContent=frames.length+' screen'+(frames.length!==1?'s':'');
+  var ctxEl=document.getElementById('asCtx');
+  console.log('[HX] ====== REVIEW DEBUG ======');
+  console.log('[HX] Brand context:',pc?pc.length+' chars':'EMPTY');
+  console.log('[HX] Flow context:',fc?fc.length+' chars':'EMPTY');
+  console.log('[HX] Benchmarks:',benchFrames.length);
+  if(pc)console.log('[HX] Brand preview:',pc.substring(0,400));
+  console.log('[HX] ============================');
+  if(pc){ctxEl.textContent='✓ Brand context loaded ('+pc.length+' chars)';ctxEl.style.color='var(--green)';}
+  else{ctxEl.textContent='⚠ No brand context';ctxEl.style.color='var(--hx-orange)';}
+  // System prompt = role + structure only (keep it short)
+  var sys=buildPrompt(reviewType,!!pc,benchFrames.length>0,!!fc);
+  // User message = brand context FIRST (as text), then images
+  var content=[];
+  if(pc){
+    content.push({type:'text',text:'══════════════════════════════════════\nMANDATORY BRAND CONTEXT\n══════════════════════════════════════\nYou MUST cross-reference every screen against these brand guidelines.\nAny deviation from these rules is a HIGH severity issue.\nCite the SPECIFIC rule being violated for each issue.\n'+pc+'\n══════════════════════════════════════\nEND BRAND CONTEXT\n══════════════════════════════════════'});
+  }
+  if(fc){content.push({type:'text',text:'══════════════════════════════════════\nFLOW CONTEXT (you MUST evaluate the design against ALL of this)\n══════════════════════════════════════'+fc+'\n\nINSTRUCTION: Check if the design addresses each pain point. Check if it respects each constraint. Assess if the execution matches the stated design intent.\n══════════════════════════════════════'});}
+
+  // REVIEW SCREENS FIRST — these are the ONLY screens to evaluate for brand compliance
+  content.push({type:'text',text:'══════════════════════════════════════\nSCREENS TO REVIEW — Apply brand compliance ONLY to these screens\n══════════════════════════════════════'});
+  frames.forEach(function(fr,i){content.push({type:'image',source:{type:'base64',media_type:fr.mediaType||'image/jpeg',data:fr.base64}});content.push({type:'text',text:'REVIEW Screen '+(i+1)+': "'+fr.name+'" ('+fr.width+'x'+fr.height+'px) — This is the screen you are reviewing.'});});
+  content.push({type:'text',text:'══════════════════════════════════════\nEND OF REVIEW SCREENS\n══════════════════════════════════════'});
+
+  // BENCHMARKS AFTER review screens — clearly separated and labeled as competitor/external
+  if(benchFrames.length){
+    content.push({type:'text',text:'══════════════════════════════════════\nCOMPETITOR BENCHMARKS (for quality comparison ONLY)\n══════════════════════════════════════\nThe following '+benchFrames.length+' images are from COMPETITOR BRANDS.\nThey are NOT part of this brand. Do NOT apply brand rules to them.\nDo NOT flag them as brand mismatches.\nUse them ONLY to compare: does the review screen above meet or exceed\nthe quality, information density, trust signals, and UX patterns shown here?'});
+    benchFrames.forEach(function(fr,i){content.push({type:'image',source:{type:'base64',media_type:fr.mediaType||'image/jpeg',data:fr.base64}});content.push({type:'text',text:'COMPETITOR REF #'+(i+1)+': "'+fr.name+'" (from a different brand — reference only)'});});
+    content.push({type:'text',text:'══════════════════════════════════════\nEND COMPETITOR BENCHMARKS\n══════════════════════════════════════'});
+  }
+  var finalInstr='══════════════════════════════════════\nREVIEW INSTRUCTION\n══════════════════════════════════════\n';
+  finalInstr+='Review '+(frames.length>1?'this flow of '+frames.length+' screens':'this screen')+'. Your review MUST be grounded in the context provided above.\n';
+  if(pc)finalInstr+='\n✓ BRAND: Cross-check every font, color, logo, icon, and copy tone against the brand context. Any mismatch = [HIGH] with rule cited.';
+  if(fc)finalInstr+='\n✓ FLOW: Evaluate if the design addresses each pain point, respects each constraint, and achieves the stated design intent. Reference them by name.';
+  if(benchFrames.length)finalInstr+='\n✓ BENCHMARKS: Compare against the '+benchFrames.length+' benchmark screens. Call out where the design is weaker or stronger. Reference specific benchmarks by number.';
+  finalInstr+='\n\nDo NOT give a generic review. Every strength and issue must connect to the provided context.';
+  if(ac)finalInstr+='\n\nAdditional context: '+ac;
+  content.push({type:'text',text:finalInstr});
+  reviewCancelled=false;
+  console.log('[HX] Sending: sys='+sys.length+'chars, parts='+content.length+', texts='+content.filter(function(c){return c.type==='text';}).length);
+  var bodyObj={model:'claude-sonnet-4-20250514',max_tokens:4000,system:sys,messages:[{role:'user',content:content}]};
+  console.log('[HX] Total:',(JSON.stringify(bodyObj).length/1024/1024).toFixed(2)+'MB');
+
+  try{
+    var r=await fetch('/api/review/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(bodyObj)});
+    if(reviewCancelled)return;
+    if(!r.ok){var ej=await r.json().catch(function(){return{};});var emsg=ej.error&&ej.error.message?ej.error.message:'API returned '+r.status;console.error('[HX] API Error:',JSON.stringify(ej));throw new Error(emsg);}
+    var d=await r.json();setAS(4);setAP(90);
+    setTimeout(function(){setAP(100);clearInterval(reviewInterval);setTimeout(function(){var text='';if(d.content)for(var i=0;i<d.content.length;i++)if(d.content[i].text)text+=d.content[i].text;
+      // Save last review to flow
+      var scoreMatch=text.match(/\*\*Overall\*\*[:\s]+(\d+(?:\.\d+)?)/i);
+      var reviewLabel=tl[reviewType]||'Review';
+      if(editingFlowId&&p){(p.flows||[]).forEach(function(fl){if(fl.id===editingFlowId){
+        if(!fl.reviews)fl.reviews=[];
+        // Migration: move old lastReview into reviews array
+        if(fl.lastReview&&!fl.reviews.length){fl.reviews.push(fl.lastReview);}
+        var newReview={id:'r'+Date.now(),raw:text,type:reviewLabel,reviewType:reviewType,score:scoreMatch?scoreMatch[1]:'—',timestamp:Date.now()};
+        fl.reviews.unshift(newReview);
+        if(fl.reviews.length>20)fl.reviews=fl.reviews.slice(0,20);
+        fl.lastReview=newReview;// keep for backward compat
+      }});save();}
+      else if(reviewSource==='quick'){
+        if(!p.quickReviews)p.quickReviews=[];
+        if(p.lastQuickReview&&!p.quickReviews.length){p.quickReviews.push(p.lastQuickReview);}
+        var newQR={id:'qr'+Date.now(),raw:text,type:'Quick DS Check',reviewType:'quickds',score:scoreMatch?scoreMatch[1]:'—',timestamp:Date.now()};
+        p.quickReviews.unshift(newQR);
+        if(p.quickReviews.length>20)p.quickReviews=p.quickReviews.slice(0,20);
+        p.lastQuickReview=newQR;
+        save();
+      }
+      go('results');renderResults(text,reviewLabel);},400);},500);
+  }catch(e){clearInterval(reviewInterval);if(reviewCancelled)return;console.error('[HX] Review failed:',e.message);showErr('Review failed: '+e.message);setAS(0);setAP(0);document.getElementById('aTimer').textContent='Failed';}
+}
+function buildPrompt(type,hasBrand,hasBench,hasFlowCtx){
+  // Per-type focus and dimensions (separate from structure)
+  var dims={
+    quickds:['Typography Compliance','Color Compliance','Logo Usage','Spacing & Grid','Component Consistency'],
+    audit:[hasBrand?'Brand Compliance':'Visual Design','Visual Hierarchy','Layout & Spacing','Typography & Color','Component Consistency'],
+    ux:['Task Efficiency','Learnability','Error Prevention','Information Architecture',hasBrand?'Brand Alignment':'Interaction Design'],
+    accessibility:['Color Contrast','Touch Targets','Text Readability','Semantic Structure','Inclusive Design'],
+    copy:[hasBrand?'Brand Voice Match':'Clarity','Tone Consistency','CTA Effectiveness','Error Messaging','Scannability'],
+    ideas:['Innovation','Engagement','Memorability','Delight Factor','Differentiation'],
+    edge:['Empty States','Error Handling','Loading States','Content Extremes','Cross-Screen Consistency']
+  };
+  var focusDesc={
+    quickds:'Focus: DESIGN SYSTEM COMPLIANCE ONLY. Check typography, colors, logo, spacing, components. Do NOT review UX, edge cases, copy, or interactions.',
+    audit:'Focus: visual design, layout, spacing, typography, color, and component consistency. Do NOT deep-dive into accessibility, copy, or edge cases (those are separate review types).',
+    ux:'Focus: task flows, cognitive load, IA, interaction patterns, error prevention.',
+    accessibility:'Focus: WCAG 2.1 AA, contrast ratios, touch targets, text sizing, semantic structure.',
+    copy:'Focus: microcopy clarity, CTA effectiveness, error messages, terminology.',
+    ideas:'Focus: innovation, unconventional approaches, delight moments.',
+    edge:'Focus: empty states, error states, loading states, content extremes, cross-screen consistency.'
+  };
+  var selectedDims=dims[type]||dims.audit;
+  var selectedFocus=focusDesc[type]||focusDesc.audit;
+
+  var b='You are a senior design reviewer at a strategic design agency. Your reviews are thorough, specific, and grounded in the context provided. You never give generic feedback — every observation must reference concrete details from the screens AND the context documents provided.';
+  b+='\n\nCONTEXT USAGE RULES (mandatory):';
+  b+='\nThe user message may contain up to 4 types of context. You MUST actively reference ALL provided context in your review:';
+
+  if(hasBrand){
+    b+='\n\n• BRAND CONTEXT: Contains the design system and brand rules. EVERY review screen element must be cross-referenced against these specs. Wrong font/color/logo = [HIGH] severity. Cite the exact rule.';
+    b+='\n  → Brand mismatch check applies ONLY to the "SCREENS TO REVIEW" section, NOT to benchmark/competitor images.';
+    b+='\n  → Benchmark images are intentionally from other brands — they are quality references, not errors.';
+    b+='\n  → If the REVIEW SCREENS belong to a different brand, add a ### ⚠️ BRAND WARNING section noting the mismatch, then STILL COMPLETE THE FULL REVIEW below it.';
+  }
+  if(hasFlowCtx){
+    b+='\n\n• FLOW CONTEXT: Contains the flow brief (which includes design intent), pain points, and constraints.';
+    b+='\n  → Evaluate whether the design ADDRESSES the stated pain points.';
+    b+='\n  → Check if the design RESPECTS the stated constraints.';
+    b+='\n  → Assess whether the design ACHIEVES the stated intent from the brief.';
+    b+='\n  → Reference specific pain points and constraints by name in your issues.';
+  }
+  if(hasBench){
+    b+='\n\n• BENCHMARKS: Competitor/reference screens provided as design quality markers.';
+    b+='\n  → Compare the review screens against benchmarks for information density, trust signals, visual hierarchy, interaction patterns, and UX maturity.';
+    b+='\n  → Reference specific benchmarks by number.';
+  }
+
+  b+='\n\n'+selectedFocus;
+
+  // Structure with EXPLICIT dimension names for this review type
+  var structure='\n\nResponse format (follow EXACTLY):';
+  structure+='\n\n### ✅ Strengths\nFive specific wins. Each must reference a concrete element in the design.';
+  if(hasBrand)structure+=' At least 2 must cite brand guideline compliance.';
+  if(hasBench)structure+=' At least 1 must compare favorably against a benchmark.';
+  if(hasFlowCtx)structure+=' At least 1 must address how the design handles a stated pain point or achieves the design intent.';
+
+  structure+='\n\n### 🚨 Issues\nNumbered list (up to 10), ordered by severity. Each: **Severity**: [HIGH]/[MEDIUM]/[LOW] · what is wrong · why it matters · how to fix it.';
+  if(hasBrand)structure+='\nBrand violations = [HIGH], listed first. Cite the exact brand rule.';
+  if(hasFlowCtx)structure+='\nConstraint violations and unaddressed pain points = [HIGH].';
+
+  // Inject explicit dimension names — Claude MUST use these exact labels
+  structure+='\n\n### 🎯 Score\n- **Overall**: X/10\n- **Breakdown**:';
+  selectedDims.forEach(function(d){structure+='\n  - '+d+': X/10';});
+  structure+='\nOne sentence summary focused ONLY on '+selectedFocus.replace(/^Focus:\s*/,'').split('.')[0]+'.';
+
+  structure+='\n\n### 💡 Redesign Ideas\n2-3 actionable improvements specific to '+type.toUpperCase()+' review scope.';
+  if(hasBench)structure+=' Reference benchmark patterns that could be adopted.';
+  if(hasFlowCtx)structure+=' Align suggestions with the stated design intent and constraints.';
+
+  structure+='\n\nIMPORTANT: This is a '+type.toUpperCase()+' review ONLY. Do not include findings outside this scope (e.g., do not include accessibility findings in a UI audit — those belong in a separate accessibility review).';
+  structure+='\nReference screens by number. Be specific — cite exact elements, colors, fonts, positions.';
+
+  return b+structure;
+}
+
+function renderResults(text,label){
+  document.getElementById('resTitle').textContent=label+' Complete';
+  var cats=document.getElementById('resultCats');cats.innerHTML='';
+  document.getElementById('scoreCard').style.display='none';
+
+  // CHECK FOR BRAND MISMATCH — show as warning, not blocker
+  var mismatchRaw=extract(text,'### ⚠️ BRAND WARNING',['### ✅','### 🚨','### 🎯','### 💡']);
+  if(!mismatchRaw)mismatchRaw=extract(text,'### 🚫 BRAND MISMATCH',['### ✅','### 🚨','### 🎯','### 💡']);
+  if(mismatchRaw){
+    var expectedMatch=mismatchRaw.match(/\*\*What was expected:\*\*\s*(.+)/i);
+    var detectedMatch=mismatchRaw.match(/\*\*What was detected:\*\*\s*(.+)/i);
+    var warnHtml='<div class="mismatch" style="animation:none;margin-bottom:16px">';
+    warnHtml+='<div class="mismatch-icon" style="font-size:36px;margin-bottom:8px">⚠️</div>';
+    warnHtml+='<div class="mismatch-title" style="font-size:18px">Brand Mismatch Detected</div>';
+    warnHtml+='<div class="mismatch-body" style="font-size:14px">The screens being reviewed may not match the project\'s brand guidelines. Review results are shown below but brand compliance findings may not apply.</div>';
+    if(expectedMatch||detectedMatch){
+      warnHtml+='<div class="mismatch-detail">';
+      if(expectedMatch)warnHtml+='<div class="mismatch-tag expected">Expected: '+esc(expectedMatch[1].trim().substring(0,80))+'</div>';
+      if(detectedMatch)warnHtml+='<div class="mismatch-tag detected">Detected: '+esc(detectedMatch[1].trim().substring(0,80))+'</div>';
+      warnHtml+='</div>';
+    }
+    warnHtml+='</div>';
+    cats.innerHTML=warnHtml;
+    // Don't return — fall through to render the full review below the warning
+  }
+
+  // NORMAL REVIEW RENDERING
+  parseScore(text);
+  addCat(cats,text,'str','✅','Strengths','### ✅ Strengths',['### 🚨','### 🎯','### 💡']);
+  addCat(cats,text,'iss','🚨','Issues','### 🚨 Issues',['### 🎯','### 💡','### ✅']);
+  addCat(cats,text,'red','💡','Redesign Ideas','### 💡 Redesign',['### 🎯','### ✅','### 🚨']);
+}
+function extract(t,s,ends){var si=t.indexOf(s);if(si<0)return'';var ei=t.length;ends.forEach(function(e){var i=t.indexOf(e,si+s.length);if(i>=0&&i<ei)ei=i;});return t.slice(si+s.length,ei).trim();}
+function addCat(ct,text,id,icon,title,start,ends){var raw=extract(text,start,ends);if(!raw)return;var d=document.createElement('div');d.className='cat';var cnt='';if(id==='iss'){var m=raw.match(/^\d+\./gm);if(m)cnt='<span class="cat-cnt">'+m.length+' issues</span>';}d.innerHTML='<div class="cat-h" onclick="this.parentElement.classList.toggle(\'closed\')"><span style="font-size:18px">'+icon+'</span><span class="cat-t">'+title+'</span>'+cnt+'<span class="cat-chev">▾</span></div><div class="cat-b">'+md2html(raw,id==='iss'?'issues':'items')+'</div>';ct.appendChild(d);}
+function parseScore(text){var s=extract(text,'### 🎯 Score',['### 💡','### ✅','### 🚨']);if(!s)return;var ov=s.match(/\*\*Overall\*\*[:\s]+(\d+(?:\.\d+)?)/i);document.getElementById('scoreCard').style.display='';if(ov)document.getElementById('scoreNum').textContent=ov[1];var lines=s.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&l.indexOf('-')!==0&&l.indexOf('*')!==0;});if(lines.length)document.getElementById('scoreSummary').textContent=lines[lines.length-1].replace(/\*/g,'');var rx=/[-*]\s+\*?\*?([^:*]+?)\*?\*?\s*:\s*(\d+(?:\.\d+)?)\//gi;var bars=document.getElementById('scoreBars');bars.innerHTML='';var m;while((m=rx.exec(s))!==null){var nm=m[1].trim(),v=parseFloat(m[2]);if(nm.toLowerCase()==='overall')continue;var c=v>=7?'var(--green)':v>=5?'var(--hx-orange)':'var(--err-red)';bars.innerHTML+='<div class="sb-row"><span class="sb-nm">'+nm+'</span><div class="sb-tr"><div class="sb-fl" data-pct="'+(v*10)+'" style="background:'+c+'"></div></div><span class="sb-v">'+v+'</span></div>';}requestAnimationFrame(function(){requestAnimationFrame(function(){document.querySelectorAll('.sb-fl').forEach(function(el){el.style.width=el.dataset.pct+'%';});});});}
+function md2html(md,mode){
+  // Severity badges
+  md=md.replace(/\*\*\[HIGH\]\*\*/g,'[HIGH]').replace(/\*\*\[MEDIUM\]\*\*/g,'[MEDIUM]').replace(/\*\*\[LOW\]\*\*/g,'[LOW]');
+  // Bold
+  md=md.replace(/\*\*Severity\*\*:\s*/gi,'');
+  md=md.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  // Italic
+  md=md.replace(/\*(.+?)\*/g,'<em>$1</em>');
+
+  var lines=md.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  var html='';
+
+  if(mode==='issues'){
+    // Parse numbered issues into cards with severity badges
+    var current=null;
+    lines.forEach(function(line){
+      var numMatch=line.match(/^(\d+)\.\s*(.*)/);
+      if(numMatch){
+        if(current)html+=renderIssueCard(current);
+        current={num:numMatch[1],text:numMatch[2],continuation:[]};
+      }else if(current){
+        current.continuation.push(line);
+      }else{
+        html+='<div style="margin:8px 0;color:var(--t1)">'+line+'</div>';
+      }
+    });
+    if(current)html+=renderIssueCard(current);
+  }else{
+    // Strengths, ideas, generic — clean bullet cards
+    lines.forEach(function(line){
+      var bullet=line.match(/^[-•]\s*(.*)/);
+      var num=line.match(/^(\d+)\.\s*(.*)/);
+      if(num){
+        html+='<div class="res-item"><span class="res-num">'+num[1]+'</span><div class="res-text">'+num[2]+'</div></div>';
+      }else if(bullet){
+        html+='<div class="res-item"><span class="res-dot">→</span><div class="res-text">'+bullet[1]+'</div></div>';
+      }else{
+        html+='<div style="margin:8px 0;color:var(--t1)">'+line+'</div>';
+      }
+    });
+  }
+  return html;
+}
+function renderIssueCard(issue){
+  var full=issue.text+(issue.continuation.length?'\n'+issue.continuation.join('\n'):'');
+  // Extract severity
+  var sev='';
+  full=full.replace(/\[HIGH\]/g,function(){sev='<span class="sev sev-h">HIGH</span>';return '';});
+  full=full.replace(/\[MEDIUM\]/g,function(){sev='<span class="sev sev-m">MEDIUM</span>';return '';});
+  full=full.replace(/\[LOW\]/g,function(){sev='<span class="sev sev-l">LOW</span>';return '';});
+  // Try to split on · delimiter (our prompt format: severity · problem · why · fix)
+  var parts=full.split(/\s*·\s*/);
+  var html='<div class="issue-card">';
+  html+='<div class="issue-hdr"><span class="issue-num">'+issue.num+'</span>'+sev+'</div>';
+  if(parts.length>=3){
+    html+='<div class="issue-problem">'+parts[0].trim()+'</div>';
+    html+='<div class="issue-why">'+parts[1].trim()+'</div>';
+    if(parts[2])html+='<div class="issue-fix"><span class="fix-label">Fix:</span> '+parts.slice(2).join(' · ').trim()+'</div>';
+  }else{
+    html+='<div class="issue-problem">'+full.trim()+'</div>';
+  }
+  html+='</div>';
+  return html;
+}
+function showErr(m){document.getElementById('errMsg').textContent=m;document.getElementById('err').classList.add('vis');}
+function hideErr(){document.getElementById('err').classList.remove('vis');}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,400)+'px';}
+function getKey(){return 'server-managed';}
+function getFigmaToken(){var inp=document.getElementById('figmaToken');if(inp){var v=inp.value.trim();if(v.length>10){D.figmaToken=v;save();return v;}}if(D.figmaToken&&D.figmaToken.length>10)return D.figmaToken;return '';}
+
+/* ═══ FIGMA API ═══ */
+function parseFigmaUrl(url){
+  url=url.trim();
+  // Handle: figma.com/design/KEY/Name?node-id=X-Y or figma.com/file/KEY/...
+  var m=url.match(/figma\.com\/(?:design|file|proto)\/([a-zA-Z0-9]+)/);
+  if(!m){if(/^[a-zA-Z0-9]{20,}$/.test(url))return{fileKey:url,nodeId:null};return null;}
+  var fileKey=m[1];
+  var nodeMatch=url.match(/node-id=([^&]+)/);
+  var nodeId=nodeMatch?decodeURIComponent(nodeMatch[1]).replace(/-/g,':'):null;
+  return{fileKey:fileKey,nodeId:nodeId};
+}
+async function fetchFigmaFile(fileKey,token){
+  console.log('[HX] Fetching Figma file:',fileKey);
+  var r=await fetch('https://api.figma.com/v1/files/'+fileKey+'?depth=2',{headers:{'X-Figma-Token':token}});
+  if(!r.ok){var e=await r.json().catch(function(){return{};});throw new Error(e.message||e.err||'Figma API error '+r.status);}
+  return await r.json();
+}
+async function fetchFigmaImages(fileKey,nodeIds,token,scale){
+  console.log('[HX] Fetching Figma images:',nodeIds.length,'nodes at',scale+'x');
+  // URL-encode node IDs (they contain colons like "123:456")
+  var encodedIds=nodeIds.map(function(id){return encodeURIComponent(id);}).join(',');
+  // Batch if too many (URL length limit ~2000 chars)
+  if(encodedIds.length>1500){
+    var allImages={};
+    for(var i=0;i<nodeIds.length;i+=20){
+      var batch=nodeIds.slice(i,i+20);
+      var batchEncoded=batch.map(function(id){return encodeURIComponent(id);}).join(',');
+      var url='https://api.figma.com/v1/images/'+fileKey+'?ids='+batchEncoded+'&scale='+scale+'&format=png';
+      console.log('[HX] Batch '+(Math.floor(i/20)+1)+':',batch.length,'nodes, URL length:',url.length);
+      var r=await fetch(url,{headers:{'X-Figma-Token':token}});
+      if(!r.ok){var ej=await r.json().catch(function(){return{};});console.error('[HX] Image batch error:',ej);throw new Error('Figma image export failed: '+r.status+(ej.err?' — '+ej.err:''));}
+      var d=await r.json();
+      if(d.err)throw new Error('Figma: '+d.err);
+      if(d.images)Object.keys(d.images).forEach(function(k){allImages[k]=d.images[k];});
+    }
+    return allImages;
+  }
+  var url='https://api.figma.com/v1/images/'+fileKey+'?ids='+encodedIds+'&scale='+scale+'&format=png';
+  console.log('[HX] Image URL:',url.substring(0,120)+'...');
+  var r=await fetch(url,{headers:{'X-Figma-Token':token}});
+  if(!r.ok){var ej=await r.json().catch(function(){return{};});console.error('[HX] Image error:',ej);throw new Error('Figma image export failed: '+r.status+(ej.err?' — '+ej.err:''));}
+  var d=await r.json();
+  if(d.err)throw new Error('Figma: '+d.err);
+  console.log('[HX] Got',Object.keys(d.images||{}).length,'image URLs');
+  return d.images;
+}
+async function fetchImageAsBase64(url){
+  var r=await fetch(url);
+  if(!r.ok)throw new Error('Failed to fetch image');
+  var blob=await r.blob();
+  return new Promise(function(res,rej){
+    var reader=new FileReader();
+    reader.onload=function(){
+      var du=reader.result;
+      // Re-encode through canvas for consistent JPEG + size control
+      var img=new Image();img.crossOrigin='anonymous';img.src=du;
+      img.onload=function(){
+        var maxDim=1568,w=img.width,h=img.height,fw=w,fh=h;
+        if(w>maxDim||h>maxDim){if(w>h){fw=maxDim;fh=Math.round(h*(maxDim/w));}else{fh=maxDim;fw=Math.round(w*(maxDim/h));}}
+        var c=document.createElement('canvas');c.width=fw;c.height=fh;
+        var ctx=c.getContext('2d');ctx.fillStyle='#FFF';ctx.fillRect(0,0,fw,fh);ctx.drawImage(img,0,0,fw,fh);
+        var b64,q=0.85;
+        for(var i=0;i<4;i++){b64=c.toDataURL('image/jpeg',q).split(',')[1];if(b64.length<4500000)break;q-=0.15;}
+        // Thumbnail
+        var tc=document.createElement('canvas'),sc=.18;tc.width=fw*sc;tc.height=fh*sc;
+        var tctx=tc.getContext('2d');tctx.fillStyle='#FFF';tctx.fillRect(0,0,tc.width,tc.height);tctx.drawImage(img,0,0,tc.width,tc.height);
+        res({base64:b64,thumb:tc.toDataURL('image/jpeg',0.5).split(',')[1],width:fw,height:fh});
+      };
+      img.onerror=function(){rej(new Error('Image decode failed'));};
+    };
+    reader.onerror=rej;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/* ═══ FIGMA IMPORT UI ═══ */
+var figmaFileData=null,figmaSelectedNodes=new Set(),figmaParsed=null;
+
+function openFigmaImport(mode){
+  figmaImportMode=mode;
+  figmaFileData=null;figmaSelectedNodes.clear();
+  document.getElementById('figmaUrl').value='';
+  document.getElementById('figmaStatus').textContent='';document.getElementById('figmaStatus').className='figma-status';
+  document.getElementById('figmaContent').innerHTML='';
+  document.getElementById('figmaBar').style.display='none';
+  go('figmaImport');
+}
+
+var figmaDebounce=null;
+function onFigmaUrlChange(){
+  clearTimeout(figmaDebounce);
+  var url=document.getElementById('figmaUrl').value.trim();
+  if(url.length<15)return;
+  figmaDebounce=setTimeout(function(){loadFigmaFile(url);},600);
+}
+
+async function loadFigmaFile(url){
+  var token=getFigmaToken();
+  if(!token){setFigmaStatus('Set your Figma token on the Projects screen first.','error');return;}
+  var parsed=parseFigmaUrl(url);
+  if(!parsed){setFigmaStatus('Invalid Figma URL. Paste a link like figma.com/design/FILEKEY/...','error');return;}
+  figmaParsed=parsed;
+  setFigmaStatus('<span class="figma-spinner"></span>Loading file structure…','loading');
+  document.getElementById('figmaContent').innerHTML='';
+  document.getElementById('figmaBar').style.display='none';
+  figmaSelectedNodes.clear();
+
+  try{
+    var data,targetFrames=null;
+
+    if(parsed.nodeId){
+      // URL has a specific node — fetch ONLY that node and its children
+      console.log('[HX] Fetching specific node:',parsed.nodeId);
+      setFigmaStatus('<span class="figma-spinner"></span>Loading specific frame…','loading');
+      var nodeResp=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'/nodes?ids='+encodeURIComponent(parsed.nodeId),{headers:{'X-Figma-Token':token}});
+      if(!nodeResp.ok){var ej=await nodeResp.json().catch(function(){return{};});throw new Error(ej.message||ej.err||'Figma node fetch failed: '+nodeResp.status);}
+      var nodeData=await nodeResp.json();
+      var nodeWrap=nodeData.nodes[parsed.nodeId];
+      if(!nodeWrap||!nodeWrap.document)throw new Error('Node not found in file');
+      var targetNode=nodeWrap.document;
+      console.log('[HX] Target node:',targetNode.name,'type:',targetNode.type,'children:',(targetNode.children||[]).length);
+
+      // If the node IS a frame, show its child frames sorted by position
+      targetFrames=[];
+      if(targetNode.type==='FRAME'||targetNode.type==='COMPONENT'||targetNode.type==='SECTION'){
+        // Collect direct children that are frames — skip the parent itself
+        var children=(targetNode.children||[]).filter(function(child){
+          return child.type==='FRAME'||child.type==='COMPONENT'||child.type==='GROUP'||child.type==='SECTION'||child.type==='INSTANCE';
+        });
+        // Sort by x-position (left to right), then y-position (top to bottom) for spatial order
+        children.sort(function(a,b){
+          var ax=a.absoluteBoundingBox?a.absoluteBoundingBox.x:0;
+          var bx=b.absoluteBoundingBox?b.absoluteBoundingBox.x:0;
+          var ay=a.absoluteBoundingBox?a.absoluteBoundingBox.y:0;
+          var by=b.absoluteBoundingBox?b.absoluteBoundingBox.y:0;
+          // Group by rows (within 100px y-range = same row)
+          var rowA=Math.floor(ay/100);
+          var rowB=Math.floor(by/100);
+          if(rowA!==rowB)return rowA-rowB;
+          return ax-bx;
+        });
+        children.forEach(function(child,idx){
+          var cbb=child.absoluteBoundingBox;
+          if(cbb)targetFrames.push({id:child.id,name:child.name,page:targetNode.name,w:Math.round(cbb.width),h:Math.round(cbb.height),order:idx});
+        });
+        // If no children found, add the node itself as a single frame
+        if(!targetFrames.length){
+          var bb=targetNode.absoluteBoundingBox;
+          if(bb)targetFrames.push({id:parsed.nodeId,name:targetNode.name,page:'Selected',w:Math.round(bb.width),h:Math.round(bb.height),order:0});
+        }
+      }
+      // Also fetch file name for display
+      try{var fileMeta=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'?depth=1',{headers:{'X-Figma-Token':token}});if(fileMeta.ok){var fm=await fileMeta.json();data={name:fm.name,document:{children:[{name:targetNode.name,children:[]}]}};} else{data={name:'Figma File',document:{children:[]}};}}catch(e){data={name:'Figma File',document:{children:[]}};}
+
+      if(!targetFrames.length)throw new Error('No frames found in this node. Try pasting the parent frame URL.');
+      console.log('[HX] Found',targetFrames.length,'frames in target node');
+    }else{
+      // No node ID — load entire file structure
+      data=await fetchFigmaFile(parsed.fileKey,token);
+      console.log('[HX] Full file loaded:',data.name,data.document.children.length,'pages');
+    }
+
+    figmaFileData=data;
+    setFigmaStatus('✓ '+esc(data.name)+(targetFrames?' — showing "'+esc(targetFrames[0].page)+'" ('+targetFrames.length+' frames)':''),'ok');
+    renderFigmaPages(data,parsed.nodeId,targetFrames);
+  }catch(e){
+    console.error('[HX] Figma load error:',e);
+    if(e.message==='Failed to fetch'){
+      setFigmaStatus('','error');
+      document.getElementById('figmaContent').innerHTML='<div class="card" style="text-align:center;padding:24px"><div style="font-size:28px;margin-bottom:12px">🔒</div><div style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px">Sandbox Restriction</div><div style="font-size:14px;color:var(--t2);line-height:1.6;max-width:500px;margin:0 auto">Figma API calls are blocked inside this preview iframe. To test Figma import:<br><br><strong>1.</strong> Download this HTML file<br><strong>2.</strong> Open it directly in Chrome<br><strong>3.</strong> Figma import will work perfectly<br><br><span style="color:var(--t3)">This limitation only affects this preview — your production dashboard won\'t have this restriction.</span></div></div>';
+    }else{
+      setFigmaStatus('Error: '+e.message,'error');
+    }
+  }
+}
+
+function setFigmaStatus(html,cls){var el=document.getElementById('figmaStatus');el.innerHTML=html;el.className='figma-status'+(cls?' '+cls:'');}
+
+function renderFigmaPages(data,preSelectNodeId,targetFrames){
+  var container=document.getElementById('figmaContent');container.innerHTML='';
+  var allFrameNodes;
+
+  if(targetFrames&&targetFrames.length){
+    // Use pre-filtered frames from specific node
+    allFrameNodes=targetFrames;
+  }else{
+    // Scan all pages for top-level frames
+    var pages=data.document.children;
+    allFrameNodes=[];
+    pages.forEach(function(page){
+      (page.children||[]).forEach(function(node){
+        if(node.type==='FRAME'||node.type==='COMPONENT'||node.type==='COMPONENT_SET')
+          allFrameNodes.push({id:node.id,name:node.name,page:page.name,w:Math.round(node.absoluteBoundingBox?node.absoluteBoundingBox.width:0),h:Math.round(node.absoluteBoundingBox?node.absoluteBoundingBox.height:0)});
+      });
+    });
+  }
+  if(!allFrameNodes.length){setFigmaStatus('No frames found in this file.','error');return;}
+
+  var token=getFigmaToken();
+  // Group by page
+  var byPage={};
+  allFrameNodes.forEach(function(n){if(!byPage[n.page])byPage[n.page]=[];byPage[n.page].push(n);});
+
+  // Render all frames IMMEDIATELY with placeholders, then load thumbnails progressively
+  setFigmaStatus('✓ '+esc(data.name)+' — '+allFrameNodes.length+' frames found. Loading previews…','ok');
+
+  Object.keys(byPage).forEach(function(pageName){
+    var frames=byPage[pageName];
+    var pageDiv=document.createElement('div');pageDiv.className='figma-page';
+    pageDiv.innerHTML='<div class="figma-page-hdr"><span class="pg-icon">📄</span>'+esc(pageName)+'<span class="pg-count">'+frames.length+' frames</span></div>';
+    var grid=document.createElement('div');grid.className='figma-grid';
+
+    frames.forEach(function(fr){
+      var card=document.createElement('div');card.className='figma-frame';card.dataset.nodeId=fr.id;
+      card.innerHTML='<div class="figma-frame-img" id="fimg_'+fr.id.replace(/:/g,'_')+'" style="display:grid;place-items:center;color:var(--t4);font-size:11px">'+esc(fr.name.substring(0,20))+'</div><div class="figma-frame-info"><div class="figma-frame-name" title="'+esc(fr.name)+'">'+esc(fr.name)+'</div><div class="figma-frame-size">'+fr.w+'×'+fr.h+'</div></div><div class="figma-frame-check">✓</div>';
+      if(preSelectNodeId&&fr.id===preSelectNodeId){card.classList.add('selected');figmaSelectedNodes.add(fr.id);}
+      card.onclick=function(){
+        if(figmaSelectedNodes.has(fr.id)){figmaSelectedNodes.delete(fr.id);card.classList.remove('selected');}
+        else{figmaSelectedNodes.add(fr.id);card.classList.add('selected');}
+        updateFigmaBar();
+      };
+      grid.appendChild(card);
+    });
+    pageDiv.appendChild(grid);
+    container.appendChild(pageDiv);
+  });
+
+  document.getElementById('figmaBar').style.display='';
+  updateFigmaBar();
+
+  // Now load thumbnails in small batches (4 at a time, scale 0.75 for clarity)
+  (async function(){
+    var allIds=allFrameNodes.map(function(n){return n.id;});
+    var batchSize=4;
+    var loaded=0;
+    for(var i=0;i<allIds.length;i+=batchSize){
+      var batch=allIds.slice(i,i+batchSize);
+      try{
+        var images=await fetchFigmaImages(figmaParsed.fileKey,batch,token,0.75);
+        batch.forEach(function(nid){
+          if(images[nid]){
+            var el=document.getElementById('fimg_'+nid.replace(/:/g,'_'));
+            if(el){
+              var img=document.createElement('img');img.className='figma-frame-img';img.src=images[nid];img.loading='lazy';
+              el.replaceWith(img);
+            }
+          }
+        });
+        loaded+=batch.length;
+        setFigmaStatus('✓ '+esc(data.name)+' — '+allFrameNodes.length+' frames ('+loaded+' previews loaded)','ok');
+      }catch(e){console.warn('[HX] Thumbnail batch failed, skipping:',e.message);}
+    }
+    setFigmaStatus('✓ '+esc(data.name)+' — '+allFrameNodes.length+' frames ready','ok');
+  })();
+}
+
+function updateFigmaBar(){
+  var n=figmaSelectedNodes.size;
+  document.getElementById('figmaSelCount').innerHTML=n?'<strong>'+n+'</strong> frame'+(n>1?'s':'')+' selected':'No frames selected';
+  document.getElementById('figmaImportBtn').disabled=!n;
+}
+
+async function importFigmaFrames(){
+  var token=getFigmaToken();
+  if(!token||!figmaParsed)return;
+  var nodeIds=Array.from(figmaSelectedNodes);
+  var btn=document.getElementById('figmaImportBtn');
+  btn.disabled=true;btn.innerHTML='<span class="figma-spinner"></span>Exporting at 2x…';
+  setFigmaStatus('<span class="figma-spinner"></span>Exporting '+nodeIds.length+' frames at 2x scale…','loading');
+
+  try{
+    var images=await fetchFigmaImages(figmaParsed.fileKey,nodeIds,token,2);
+    var allNodes=[];
+    if(figmaFileData){figmaFileData.document.children.forEach(function(page){(page.children||[]).forEach(function(n){allNodes.push(n);});});}
+    var imported=0;
+    for(var i=0;i<nodeIds.length;i++){
+      var nid=nodeIds[i];
+      var imgUrl=images[nid];
+      if(!imgUrl){console.warn('[HX] No image for node',nid);continue;}
+      setFigmaStatus('<span class="figma-spinner"></span>Downloading frame '+(i+1)+'/'+nodeIds.length+'…','loading');
+      var imgData=await fetchImageAsBase64(imgUrl);
+      var nodeName=nid;
+      allNodes.forEach(function(n){if(n.id===nid)nodeName=n.name;});
+      var frame={id:'fig_'+nid.replace(/:/g,'_'),name:nodeName,width:imgData.width,height:imgData.height,scale:2,base64:imgData.base64,mediaType:'image/jpeg',thumb:imgData.thumb};
+      console.log('[HX] Imported Figma frame:',frame.name,frame.width+'x'+frame.height);
+
+      if(figmaImportMode==='quick'){
+        flowFrames=[frame];editingFlowId=null;reviewSource='quick';reviewType='quickds';
+        setFigmaStatus('✓ Imported — running DS check…','ok');
+        var qkey=getKey();
+        if(!qkey){showErr('Set your Anthropic API key first.');return;}
+        setTimeout(function(){go('analysis');startTimer();setAS(1);setAP(10);setTimeout(function(){setAS(2);setAP(40);setTimeout(function(){setAS(3);setAP(55);runReview(flowFrames);},500);},500);},300);
+        return;
+      }else{
+        flowFrames.push(frame);imported++;
+      }
+    }
+    setFigmaStatus('✓ Imported '+imported+' frames','ok');
+    btn.innerHTML='Import Selected';btn.disabled=false;
+    // Go back to flow setup
+    setTimeout(function(){renderFS();go('flowSetup');},400);
+  }catch(e){
+    console.error('[HX] Figma import error:',e);
+    setFigmaStatus('Import failed: '+e.message,'error');
+    btn.innerHTML='Import Selected';btn.disabled=false;
+  }
+}
+
+load();renderWelcome();
+</script>
+</body></html>

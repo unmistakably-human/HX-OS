@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRef } from "react";
-import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X } from "lucide-react";
+import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -243,12 +243,21 @@ export default function DashboardPage() {
               <p className="text-xs text-content-tertiary">AI Design Workflow</p>
             </div>
           </a>
-          <Button
-            onClick={() => setShowNewProduct(true)}
-          >
-            <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
-            New Product
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/review")}
+            >
+              <ClipboardCheck className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+              New Review
+            </Button>
+            <Button
+              onClick={() => setShowNewProduct(true)}
+            >
+              <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+              New Product
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -391,8 +400,6 @@ export default function DashboardPage() {
                         <StepDot done={f.phase_concepts === "complete"} label="Visuals" />
                         <span className="text-content-muted">&gt;</span>
                         <StepDot done={f.phase_hifi === "complete"} label="High Fidelity" />
-                        <span className="text-content-muted">&gt;</span>
-                        <StepDot done={f.phase_review === "complete"} label="Review" />
                       </div>
                     </div>
                   ))}

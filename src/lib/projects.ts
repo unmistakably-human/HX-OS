@@ -163,7 +163,7 @@ export async function saveChatMessages(featureId: string, messages: ChatMessage[
 }
 
 export async function saveHifiDesigns(featureId: string, designs: HifiDesign[]): Promise<void> {
-  await updateFeature(featureId, { hifi_designs: designs, phase_hifi: "complete", phase_review: "active" });
+  await updateFeature(featureId, { hifi_designs: designs, phase_hifi: "complete" });
 }
 
 export async function saveHifiChatMessages(featureId: string, messages: ChatMessage[]): Promise<void> {

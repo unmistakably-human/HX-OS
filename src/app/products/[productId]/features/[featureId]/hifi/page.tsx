@@ -231,7 +231,7 @@ export default function HifiPage() {
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chosen_hifi: designName, phase_hifi: "complete", phase_review: "active" }),
+        body: JSON.stringify({ chosen_hifi: designName, phase_hifi: "complete" }),
       });
     },
     [productId, featureId]
@@ -260,9 +260,9 @@ export default function HifiPage() {
                 await fetch(`/api/products/${productId}/features/${featureId}`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ phase_hifi: "complete", phase_review: "active" }),
+                  body: JSON.stringify({ phase_hifi: "complete" }),
                 });
-                router.push(`/products/${productId}/features/${featureId}/review`);
+                router.push("/review");
               }}
               className="text-xs h-8"
             >
