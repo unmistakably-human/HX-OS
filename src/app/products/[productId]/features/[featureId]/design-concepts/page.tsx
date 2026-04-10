@@ -165,8 +165,7 @@ export default function DesignConceptsPage() {
       {designConcepts.length > 0 && !generating && (
         <>
           <div className="px-5 pt-5 pb-3">
-            <h2 className="text-h1 font-bold text-content-heading">Design Concepts</h2>
-            <p className="text-body-sm text-content-secondary mt-1">
+            <p className="text-body-sm text-content-secondary">
               {designConcepts.length} concepts generated. Select up to 3 for visual variations.
             </p>
           </div>
