@@ -285,6 +285,7 @@ textarea:focus,.inp:focus{border-color:var(--hx-red);box-shadow:0 0 0 2px rgba(0
     <div class="scr" id="scrProjSetup">
       <div><div class="label">Project Name</div><input class="inp" id="pName" placeholder="e.g. Amazon Quick Commerce"/></div>
       <div><div class="label">Brand / Client</div><input class="inp" id="pBrand" placeholder="e.g. Amazon India"/></div>
+      <button class="btn btn-s btn-full" id="quickFillBtn" onclick="quickFillProject()" style="gap:8px;margin-top:4px"><span id="qfIcon">✦</span><span id="qfText">Quick Fill with AI</span></button>
 
       <div class="sdiv"><div class="stitle">Product Brief <span style="color:var(--err-red);font-size:13px">*</span></div><div class="ssub">Help the reviewer understand what this product is about</div></div>
       <div><div class="label">Core Idea <span style="color:var(--err-red)">*</span></div><textarea id="pCoreIdea" style="min-height:70px" placeholder="What is the core idea of this product? e.g. An online pharmacy that lets users order medicines by uploading prescriptions…"></textarea></div>
@@ -461,6 +462,36 @@ var editingProjId=null,editingColor='#E22B31',projColors=['#E22B31','#F28B22','#
 function initCP(){var c=document.getElementById('pColors');c.innerHTML='';projColors.forEach(function(col){var d=document.createElement('div');d.className='csw'+(col===editingColor?' active':'');d.style.background=col;d.onclick=function(){editingColor=col;initCP();};c.appendChild(d);});}
 function newProject(){editingProjId=null;editingColor='#E22B31';['pName','pBrand','pCoreIdea','pBuilding','pBrandNeed','pDS','pBrandGuide','pResearch'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('pDelete').style.display='none';document.getElementById('dsUrlWrap').style.display='none';resetExtractUI();initCP();go('projSetup');}
 function editProject(id){var p=getProj(id);if(!p)return;editingProjId=id;editingColor=p.color||'#E22B31';document.getElementById('pName').value=p.name||'';document.getElementById('pBrand').value=p.brand||'';document.getElementById('pCoreIdea').value=p.coreIdea||'';document.getElementById('pBuilding').value=p.building||'';document.getElementById('pBrandNeed').value=p.brandNeed||'';document.getElementById('pDS').value=p.ds||'';document.getElementById('pBrandGuide').value=p.brandGuide||'';document.getElementById('pResearch').value=p.research||'';document.getElementById('pDelete').style.display=D.projects.length>1?'':'none';resetExtractUI();initCP();go('projSetup');}
+
+async function quickFillProject(){
+  var name=document.getElementById('pName').value.trim();
+  var brand=document.getElementById('pBrand').value.trim();
+  if(!name){showErr('Enter a Project Name first so AI knows what to fill.');return;}
+  var btn=document.getElementById('quickFillBtn');
+  btn.disabled=true;document.getElementById('qfIcon').innerHTML='<span class="figma-spinner" style="margin:0"></span>';document.getElementById('qfText').textContent='Filling…';
+  try{
+    var prompt='You are a senior product strategist. Given a product name'+(brand?' and brand/client':'') +', generate a concise product brief for a design review tool.\n\nProduct: '+name+(brand?'\nBrand/Client: '+brand:'')+'\n\nRespond with a JSON object containing exactly these 5 string keys:\n\n"coreIdea": 1-2 sentences describing the core idea of this product. What problem does it solve?\n"building": 1-2 sentences about what specific product/feature is being designed.\n"brandNeed": 1-2 sentences about what outcomes the brand expects from the design.\n"research": 2-3 bullet points (use • prefix) about the target audience, user personas, or known pain points.\n"brandGuide": 2-3 bullet points about expected brand tone, voice, and visual direction.\n\nBe specific and realistic. Do not be generic. Base your response on real-world knowledge of this product/brand if it exists, otherwise make intelligent assumptions.';
+    var r=await fetch('/api/review/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
+    if(!r.ok)throw new Error('API error '+r.status);
+    var d=await r.json(),raw='';if(d.content)for(var i=0;i<d.content.length;i++)if(d.content[i].text)raw+=d.content[i].text;
+    var parsed=parseJSON(raw);
+    if(parsed){
+      var filled=[];
+      if(parsed.coreIdea&&!document.getElementById('pCoreIdea').value.trim()){document.getElementById('pCoreIdea').value=parsed.coreIdea;autoResize(document.getElementById('pCoreIdea'));filled.push('Core Idea');}
+      if(parsed.building&&!document.getElementById('pBuilding').value.trim()){document.getElementById('pBuilding').value=parsed.building;autoResize(document.getElementById('pBuilding'));filled.push('What Are We Building');}
+      if(parsed.brandNeed&&!document.getElementById('pBrandNeed').value.trim()){document.getElementById('pBrandNeed').value=parsed.brandNeed;autoResize(document.getElementById('pBrandNeed'));filled.push('What The Brand Needs');}
+      if(parsed.research&&!document.getElementById('pResearch').value.trim()){document.getElementById('pResearch').value=parsed.research;autoResize(document.getElementById('pResearch'));filled.push('Research');}
+      if(parsed.brandGuide&&!document.getElementById('pBrandGuide').value.trim()){document.getElementById('pBrandGuide').value=parsed.brandGuide;autoResize(document.getElementById('pBrandGuide'));filled.push('Brand Guidelines');}
+      if(filled.length){
+        ['pCoreIdea','pBuilding','pBrandNeed','pResearch','pBrandGuide'].forEach(function(id){var el=document.getElementById(id);if(el.value){el.style.borderColor='var(--green)';setTimeout(function(){el.style.borderColor='';},3000);}});
+        document.getElementById('qfText').textContent='Filled '+filled.length+' fields';
+        setTimeout(function(){document.getElementById('qfIcon').textContent='✦';document.getElementById('qfText').textContent='Quick Fill with AI';},3000);
+      }else{document.getElementById('qfText').textContent='Fields already filled';}
+    }else{showErr('Could not parse AI response. Try again.');}
+  }catch(e){showErr('Quick Fill failed: '+e.message);}
+  btn.disabled=false;document.getElementById('qfIcon').textContent='✦';
+  setTimeout(function(){document.getElementById('qfText').textContent='Quick Fill with AI';},3000);
+}
 function resetExtractUI(){document.getElementById('extractBanner').classList.remove('vis');['fsDSystem','fsBrand','fsResearch'].forEach(function(id){document.getElementById(id).classList.remove('vis');});}
 document.getElementById('pSave').onclick=function(){
   // Validate required fields

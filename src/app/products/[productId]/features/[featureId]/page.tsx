@@ -184,7 +184,7 @@ export default function FeatureBriefPage() {
             {saving ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" strokeWidth={1.5} />Researching...</>
             ) : (
-              <>Research Insights <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} /></>
+              <>Get Insights <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} /></>
             )}
           </Button>
         }
