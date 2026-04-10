@@ -25,6 +25,13 @@ const PRODUCT_PHASES = [
     subtitle: "Research & insights",
     href: (pid: string) => `/products/${pid}/discovery`,
   },
+  {
+    key: "review",
+    num: "03",
+    label: "Review",
+    subtitle: "Design audit",
+    href: (pid: string) => `/products/${pid}/review`,
+  },
 ];
 
 function getFeaturePhases(pid: string, fid: string) {
@@ -60,6 +67,22 @@ function getFeaturePhases(pid: string, fid: string) {
       subtitle: "Wireframes & chat",
       href: `/products/${pid}/features/${fid}/concepts`,
       phaseField: "phase_concepts" as const,
+    },
+    {
+      key: "hifi",
+      num: "05",
+      label: "High Fidelity",
+      subtitle: "Polished designs",
+      href: `/products/${pid}/features/${fid}/hifi`,
+      phaseField: "phase_hifi" as const,
+    },
+    {
+      key: "review",
+      num: "06",
+      label: "Review",
+      subtitle: "Design audit",
+      href: `/products/${pid}/features/${fid}/review`,
+      phaseField: "phase_review" as const,
     },
   ];
 }
@@ -99,7 +122,9 @@ export function Sidebar({ product, productId }: SidebarProps) {
                 const state =
                   phase.key === "context"
                     ? product.phase_context
-                    : product.phase_discovery;
+                    : phase.key === "review"
+                      ? "active"
+                      : product.phase_discovery;
                 // Also check if discovery_insights exist (covers stale phase field)
                 const isComplete = state === "complete" || (phase.key === "discovery" && !!product.discovery_insights);
 
@@ -183,7 +208,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
             const state =
               phase.key === "context"
                 ? product.phase_context
-                : phase.key === "knowledge"
+                : phase.key === "review"
                   ? "active"
                   : product.phase_discovery;
             const isActive = pathname.includes(phase.href(productId));

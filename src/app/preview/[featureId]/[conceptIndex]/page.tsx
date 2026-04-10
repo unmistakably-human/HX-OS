@@ -6,12 +6,13 @@ export default async function WireframePreviewPage({
   searchParams,
 }: {
   params: Promise<{ featureId: string; conceptIndex: string }>;
-  searchParams: Promise<{ capture?: string }>;
+  searchParams: Promise<{ capture?: string; type?: string }>;
 }) {
   const { featureId, conceptIndex } = await params;
-  const { capture } = await searchParams;
+  const { capture, type } = await searchParams;
   const idx = parseInt(conceptIndex, 10);
   const injectCapture = capture === "true";
+  const isHifi = type === "hifi";
 
   let feature;
   try {
@@ -24,19 +25,23 @@ export default async function WireframePreviewPage({
     );
   }
 
-  const concept = feature.concepts?.[idx];
-  if (!concept) {
+  // Support both concept wireframes and HiFi designs
+  const item = isHifi ? feature.hifi_designs?.[idx] : feature.concepts?.[idx];
+  if (!item) {
     return (
       <div style={{ padding: 40, fontFamily: "Inter, system-ui, sans-serif", color: "#999" }}>
-        Concept not found
+        {isHifi ? "Design" : "Concept"} not found
       </div>
     );
   }
 
+  const html = isHifi ? (item as { htmlContent: string }).htmlContent : (item as { wireframeHtml: string }).wireframeHtml;
+  const name = item.name;
+
   return (
     <PreviewClient
-      wireframeHtml={concept.wireframeHtml}
-      conceptName={concept.name}
+      wireframeHtml={html}
+      conceptName={name}
       featureName={feature.name}
       injectCapture={injectCapture}
     />

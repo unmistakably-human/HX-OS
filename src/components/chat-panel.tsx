@@ -15,6 +15,7 @@ interface ChatPanelProps {
   placeholder?: string;
   actions?: ReactNode;
   streamingText?: string;
+  suggestions?: string[];
 }
 
 export function ChatPanel({
@@ -24,6 +25,7 @@ export function ChatPanel({
   placeholder = "Type your message...",
   actions,
   streamingText,
+  suggestions,
 }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,25 @@ export function ChatPanel({
       {/* Messages */}
       <ScrollArea className="flex-1" ref={scrollRef} onScrollCapture={handleScroll}>
         <div className="p-4 space-y-4">
+          {/* Quick suggestion pills when chat is empty */}
+          {messages.length === 0 && !streamingText && suggestions && suggestions.length > 0 && (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <p className="text-xs text-content-muted mb-1">Quick suggestions</p>
+              <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onSend(s)}
+                    disabled={loading}
+                    className="px-3 py-1.5 text-xs text-content-secondary bg-surface-subtle border border-divider rounded-full hover:bg-surface-card hover:text-content-heading hover:border-divider-card-hover transition-colors duration-fast"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {messages.map((msg, i) => (
             <div
               key={i}

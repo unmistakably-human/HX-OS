@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Product, Feature, ProductContext, Concept, ChatMessage } from "./types";
+import type { Product, Feature, ProductContext, Concept, ChatMessage, HifiDesign } from "./types";
 
 // ═══ PRODUCTS ═══
 
@@ -160,6 +160,14 @@ export async function saveConcepts(featureId: string, concepts: Concept[]): Prom
 
 export async function saveChatMessages(featureId: string, messages: ChatMessage[]): Promise<void> {
   await updateFeature(featureId, { chat_messages: messages });
+}
+
+export async function saveHifiDesigns(featureId: string, designs: HifiDesign[]): Promise<void> {
+  await updateFeature(featureId, { hifi_designs: designs, phase_hifi: "complete" });
+}
+
+export async function saveHifiChatMessages(featureId: string, messages: ChatMessage[]): Promise<void> {
+  await updateFeature(featureId, { hifi_chat_messages: messages });
 }
 
 export async function selectConcept(featureId: string, conceptName: string): Promise<void> {

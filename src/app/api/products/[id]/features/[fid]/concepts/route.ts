@@ -14,7 +14,13 @@ Tracks: A (2 concepts, grounded), B (3 concepts, wild rethinks using games/stori
 JSON schema per concept:
 {"name":"3-5 word name","track":"A"|"B"|"outside","coreIdea":"One sentence metaphor","wireframeHtml":"<div style='font-family:sans-serif;padding:20px;background:#F5F5F5;min-height:300px'>SIMPLE greyscale HTML wireframe. Use divs with inline styles. Colors: bg #F5F5F5, cards #FFF, text #333, secondary #888, borders #E0E0E0. Keep under 500 chars. Use real brand names from the brief. For outside track, describe the solution in text instead.</div>","principles":["Principle 1","Principle 2"],"pros":["Pro 1","Pro 2"],"cons":["Con 1"],"delightMoment":"What the user feels and where","stakeholderQuestion":"Uncomfortable decision question"}
 
-CRITICAL: wireframeHtml must be SHORT (under 500 chars each). Use simple nested divs, not complex layouts. Escape all quotes inside HTML attributes with &quot; since this is inside JSON strings.`;
+AUTO-LAYOUT RULES (MANDATORY — HTML will be imported into Figma):
+- EVERY container must use display:flex; flex-direction:column (or row)
+- Use gap, padding, margin for spacing — NEVER position:absolute or position:fixed
+- All widths use width:100% or flex — no fixed px widths exceeding parent
+- Root element must be a single flex column container
+
+CRITICAL: wireframeHtml must be SHORT (under 800 chars each). Use flexbox layout throughout. Escape all quotes inside HTML attributes with &quot; since this is inside JSON strings.`;
 
 function extractJSON(text: string): string {
   const trimmed = text.trim();

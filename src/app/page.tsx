@@ -388,9 +388,9 @@ export default function DashboardPage() {
                         <span className="text-content-muted">&gt;</span>
                         <StepDot done={f.phase_concepts === "complete"} label="Visuals" />
                         <span className="text-content-muted">&gt;</span>
-                        <StepDot done={false} label="High Fidelity" />
+                        <StepDot done={f.phase_hifi === "complete"} label="High Fidelity" />
                         <span className="text-content-muted">&gt;</span>
-                        <StepDot done={false} label="Review" />
+                        <StepDot done={f.phase_review === "complete"} label="Review" />
                       </div>
                     </div>
                   ))}

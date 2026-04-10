@@ -74,6 +74,8 @@ export interface FeatureSummary {
   phase_discovery: string;
   phase_design_concepts: string;
   phase_concepts: string;
+  phase_hifi: string;
+  phase_review: string;
   chosen_concept: string | null;
   updated_at: string;
 }
@@ -144,6 +146,17 @@ export interface Feature {
   chosen_concept: string | null;
   chat_messages: ChatMessage[];
 
+  // High fidelity designs
+  hifi_designs: HifiDesign[] | null;
+  hifi_chat_messages: ChatMessage[];
+  chosen_hifi: string | null;
+  phase_hifi: "locked" | "active" | "complete";
+
+  // Design review
+  review_result: ReviewResult | null;
+  review_chat_messages: ChatMessage[];
+  phase_review: "locked" | "active" | "complete";
+
   // Phases
   phase_brief: "locked" | "active" | "complete";
   phase_discovery: "locked" | "active" | "complete";
@@ -163,6 +176,40 @@ export interface Concept {
   cons: string[];
   delightMoment: string;
   stakeholderQuestion: string;
+}
+
+export interface HifiDesign {
+  name: string;
+  description: string;
+  htmlContent: string;
+  priorities: string;
+  tradeoffs: string;
+}
+
+// ═══ Design Review ═══
+
+export interface ReviewIssue {
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  problem: string;
+  why: string;
+  fix: string;
+}
+
+export interface ReviewDimension {
+  name: string;
+  score: number;
+}
+
+export interface ReviewResult {
+  overallScore: number;
+  summary: string;
+  dimensions: ReviewDimension[];
+  strengths: string[];
+  issues: ReviewIssue[];
+  ideas: string[];
+  raw: string;
+  type: string;
+  timestamp: number;
 }
 
 export interface KnowledgeEntry {

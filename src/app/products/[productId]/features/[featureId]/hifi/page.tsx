@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Button } from "@/components/ui/button";
@@ -11,30 +11,24 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Loader2, Check, HelpCircle, Copy, ArrowRight } from "lucide-react";
-import type { Concept, ChatMessage, Feature } from "@/lib/types";
+import { Loader2, Check, Copy } from "lucide-react";
+import type { HifiDesign, ChatMessage, Feature } from "@/lib/types";
 
-const trackStyles: Record<string, { bg: string; text: string; label: string }> = {
-  A: { bg: "var(--accent-green-light)", text: "var(--accent-green-dark)", label: "Track A" },
-  B: { bg: "var(--accent-purple-10)", text: "var(--accent-purple)", label: "Track B" },
-  outside: { bg: "var(--feedback-warning-bg)", text: "var(--feedback-warning-text)", label: "Outside" },
-};
-
-export default function ConceptsPage() {
+export default function HifiPage() {
   const params = useParams<{ productId: string; featureId: string }>();
-  const router = useRouter();
   const productId = params.productId;
   const featureId = params.featureId;
 
-  const [concepts, setConcepts] = useState<Concept[]>([]);
+  const [designs, setDesigns] = useState<HifiDesign[]>([]);
   const [activeTab, setActiveTab] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [feature, setFeature] = useState<Feature | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatStreamText, setChatStreamText] = useState("");
-  const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
+  const [selectedDesign, setSelectedDesign] = useState<string | null>(null);
   const [loadingState, setLoadingState] = useState<"loading" | "ready">("loading");
+  const [platform, setPlatform] = useState<string>("responsive");
   const [copyingToFigma, setCopyingToFigma] = useState(false);
   const [copyResult, setCopyResult] = useState<{ success: boolean; message: string } | null>(null);
   const [chatWidth, setChatWidth] = useState(400);
@@ -115,36 +109,30 @@ export default function ConceptsPage() {
         if (fRes.ok) {
           const feat: Feature = await fRes.json();
           setFeature(feat);
-          setChatMessages(feat.chat_messages || []);
-          setSelectedConcepts(feat.chosen_concept ? feat.chosen_concept.split("|||") : []);
-          if (Array.isArray(feat.concepts) && feat.concepts.length > 0) {
-            setConcepts(feat.concepts);
-            // Fix stale phase data if concepts exist but phase not marked complete
-            if (feat.phase_concepts !== "complete") {
-              fetch(`/api/products/${productId}/features/${featureId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ phase_visual: "complete", phase_concepts: "complete" }),
-              }).catch(() => {});
-            }
+          setChatMessages(feat.hifi_chat_messages || []);
+          setSelectedDesign(feat.chosen_hifi || null);
+          if (Array.isArray(feat.hifi_designs) && feat.hifi_designs.length > 0) {
+            setDesigns(feat.hifi_designs);
           } else {
-            // Auto-trigger visual variation generation
+            // Auto-trigger hifi design generation
             setGenerating(true);
             try {
               const genRes = await fetch(
-                `/api/products/${productId}/features/${featureId}/concepts`,
+                `/api/products/${productId}/features/${featureId}/hifi`,
                 { method: "POST" }
               );
               if (genRes.ok) {
                 const data = await genRes.json();
-                if (Array.isArray(data)) setConcepts(data);
+                if (Array.isArray(data)) setDesigns(data);
               }
             } catch { /* ignore */ }
             setGenerating(false);
           }
         }
-        // product data loaded if needed
-        if (pRes.ok) await pRes.json();
+        if (pRes.ok) {
+          const prod = await pRes.json();
+          if (prod.product_context?.platform) setPlatform(prod.product_context.platform);
+        }
       } catch {
         // ignore
       }
@@ -153,11 +141,11 @@ export default function ConceptsPage() {
     load();
   }, [productId, featureId]);
 
-  const generateConcepts = useCallback(async () => {
+  const generateDesigns = useCallback(async () => {
     setGenerating(true);
     try {
       const res = await fetch(
-        `/api/products/${productId}/features/${featureId}/concepts`,
+        `/api/products/${productId}/features/${featureId}/hifi`,
         { method: "POST" }
       );
       if (!res.ok) {
@@ -166,11 +154,11 @@ export default function ConceptsPage() {
       }
       const data = await res.json();
       if (Array.isArray(data)) {
-        setConcepts(data);
+        setDesigns(data);
         setActiveTab(0);
       }
     } catch (err) {
-      console.error("Concept generation failed:", err);
+      console.error("HiFi design generation failed:", err);
     }
     setGenerating(false);
   }, [productId, featureId]);
@@ -230,7 +218,7 @@ export default function ConceptsPage() {
         await fetch(`/api/products/${productId}/features/${featureId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_messages: finalMessages }),
+          body: JSON.stringify({ hifi_chat_messages: finalMessages }),
         });
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
@@ -242,25 +230,16 @@ export default function ConceptsPage() {
     [chatMessages, productId, featureId]
   );
 
-  const toggleSelectConcept = useCallback(
-    async (conceptName: string) => {
-      const updated = selectedConcepts.includes(conceptName)
-        ? selectedConcepts.filter((n) => n !== conceptName)
-        : selectedConcepts.length >= 3
-          ? selectedConcepts
-          : [...selectedConcepts, conceptName];
-      setSelectedConcepts(updated);
+  const handleSelectDesign = useCallback(
+    async (designName: string) => {
+      setSelectedDesign(designName);
       await fetch(`/api/products/${productId}/features/${featureId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chosen_concept: updated.join("|||"),
-          phase_concepts: updated.length > 0 ? "complete" : "active",
-          ...(updated.length > 0 ? { phase_hifi: "active" } : {}),
-        }),
+        body: JSON.stringify({ chosen_hifi: designName, phase_hifi: "complete" }),
       });
     },
-    [productId, featureId, selectedConcepts]
+    [productId, featureId]
   );
 
   if (loadingState === "loading") {
@@ -271,30 +250,29 @@ export default function ConceptsPage() {
     );
   }
 
-  const currentConcept = concepts[activeTab];
+  const currentDesign = designs[activeTab];
 
   return (
     <div className="flex flex-col h-full">
       <PhaseHeader
-        title="Visual Variations"
-        subtitle={feature?.name || "Concepts"}
+        title="High Fidelity"
+        subtitle={feature?.name || "HiFi Designs"}
       />
 
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT PANEL — fills remaining space */}
         <div className="flex-1 min-w-[400px] flex flex-col overflow-hidden border-r border-divider">
-          {concepts.length === 0 ? (
+          {designs.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
-              <p className="text-sm text-content-secondary">Sketching visual variations...</p>
+              <p className="text-sm text-content-secondary">Generating high-fidelity designs...</p>
               <p className="text-xs text-content-muted">This takes 30-60 seconds</p>
             </div>
           ) : (
             <>
-              {/* Tab bar + selection counter */}
-              <div className="flex flex-wrap items-end gap-1 px-4 pt-3 pb-0 border-b border-divider">
-                {concepts.map((concept, i) => {
-                  const track = trackStyles[concept.track] || trackStyles.A;
+              {/* Tab bar */}
+              <div className="flex flex-wrap gap-1 px-4 pt-3 pb-0 border-b border-divider">
+                {designs.map((design, i) => {
                   const isActive = i === activeTab;
                   return (
                     <button
@@ -304,27 +282,18 @@ export default function ConceptsPage() {
                         isActive ? "font-semibold text-content-heading" : "text-content-tertiary hover:text-content-secondary"
                       }`}
                     >
-                      {concept.name}
-                      <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium"
-                        style={{ backgroundColor: track.bg, color: track.text }}
-                      >
-                        {track.label}
-                      </span>
+                      {design.name}
                       {isActive && <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-action-primary-bg" />}
                     </button>
                   );
                 })}
-                <span className="ml-auto text-xs text-content-muted pb-2 shrink-0">
-                  {selectedConcepts.length}/3 selected
-                </span>
               </div>
 
-              {/* Concept content */}
+              {/* Design content */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {currentConcept && (
+                {currentDesign && (
                   <>
-                    {/* Compact action bar above wireframe */}
+                    {/* Compact Figma copy button — top right */}
                     <div className="flex items-center justify-end gap-2">
                       {copyResult && (
                         <span className={`text-xs mr-auto ${copyResult.success ? "text-green-600" : "text-red-500"}`}>
@@ -346,26 +315,23 @@ export default function ConceptsPage() {
                           <><Copy className="w-3 h-3 mr-1" strokeWidth={1.5} />Figma</>
                         )}
                       </Button>
-                      <Button
-                        variant={selectedConcepts.includes(currentConcept.name) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleSelectConcept(currentConcept.name)}
-                        disabled={!selectedConcepts.includes(currentConcept.name) && selectedConcepts.length >= 3}
-                        className="text-xs h-7 rounded-md"
-                      >
-                        {selectedConcepts.includes(currentConcept.name) ? (
-                          <><Check className="w-3 h-3 mr-1" strokeWidth={1.5} />Selected</>
-                        ) : (
-                          "Select"
-                        )}
-                      </Button>
                     </div>
 
+                    {/* Adaptive frame — mobile (375px centered) or desktop (full width), hugs content */}
                     <div
                       id="wireframe-render"
-                      className="border border-divider rounded-lg overflow-hidden"
-                      style={{ minHeight: 300, padding: 16, background: "#F5F5F5", fontFamily: "system-ui, -apple-system, sans-serif", color: "#333" }}
-                      dangerouslySetInnerHTML={{ __html: currentConcept.wireframeHtml }}
+                      className={`border border-divider rounded-lg overflow-x-hidden ${
+                        ["ios", "android", "iosAndroid", "mobile"].includes(platform)
+                          ? "mx-auto"
+                          : ""
+                      }`}
+                      style={{
+                        fontFamily: "system-ui, -apple-system, sans-serif",
+                        ...(["ios", "android", "iosAndroid", "mobile"].includes(platform)
+                          ? { width: 375, maxWidth: 375 }
+                          : {}),
+                      }}
+                      dangerouslySetInnerHTML={{ __html: currentDesign.htmlContent }}
                     />
 
                     <Accordion>
@@ -374,65 +340,21 @@ export default function ConceptsPage() {
                         <AccordionContent>
                           <div className="space-y-4 pt-2">
                             <div>
-                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Core Idea</p>
-                              <p className="text-sm text-content-secondary">{currentConcept.coreIdea}</p>
+                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Description</p>
+                              <p className="text-sm text-content-secondary">{currentDesign.description}</p>
                             </div>
                             <div>
-                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Design Principles</p>
-                              <ul className="space-y-1">
-                                {currentConcept.principles.map((p, i) => (
-                                  <li key={i} className="text-body-sm text-content-secondary flex items-start gap-2">
-                                    <span className="text-content-muted mt-0.5">•</span>{p}
-                                  </li>
-                                ))}
-                              </ul>
+                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Priorities</p>
+                              <p className="text-sm text-content-secondary">{currentDesign.priorities}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs font-semibold text-hx-green-dark uppercase tracking-wide mb-1">Pros</p>
-                                <ul className="space-y-1">
-                                  {currentConcept.pros.map((p, i) => (
-                                    <li key={i} className="text-body-sm text-hx-green-dark bg-hx-green-light rounded px-2 py-1">{p}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                              <div>
-                                <p className="text-xs font-semibold text-feedback-error-text uppercase tracking-wide mb-1">Cons</p>
-                                <ul className="space-y-1">
-                                  {currentConcept.cons.map((c, i) => (
-                                    <li key={i} className="text-body-sm text-feedback-error-text bg-feedback-error-bg rounded px-2 py-1">{c}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                            <div className="border-l-2 border-action-primary-bg pl-3">
-                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Delight Moment</p>
-                              <p className="text-body-sm text-content-secondary italic">{currentConcept.delightMoment}</p>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <HelpCircle className="w-4 h-4 text-content-secondary mt-0.5 shrink-0" strokeWidth={1.5} />
-                              <div>
-                                <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Stakeholder Question</p>
-                                <p className="text-body-sm text-content-heading font-semibold">{currentConcept.stakeholderQuestion}</p>
-                              </div>
+                            <div>
+                              <p className="text-xs font-semibold text-content-secondary uppercase tracking-wide mb-1">Tradeoffs</p>
+                              <p className="text-sm text-content-secondary">{currentDesign.tradeoffs}</p>
                             </div>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
                     </Accordion>
-
-                    {/* Continue CTA */}
-                    {selectedConcepts.length > 0 && (
-                      <div className="pb-4">
-                        <Button
-                          onClick={() => router.push(`/products/${productId}/features/${featureId}/hifi`)}
-                          className="w-full gap-1.5"
-                        >
-                          Design High-Fidelity
-                          <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
-                        </Button>
-                      </div>
-                    )}
                   </>
                 )}
               </div>
@@ -450,7 +372,7 @@ export default function ConceptsPage() {
         <div className="flex flex-col bg-surface-page-alt shrink-0" style={{ width: chatWidth, minWidth: 280 }}>
           <div className="px-4 py-2.5 border-b border-divider bg-surface-card">
             <h2 className="text-body-sm font-semibold text-content-heading">Design Chat</h2>
-            <p className="text-overline text-content-muted">Discuss concepts with the AI designer</p>
+            <p className="text-overline text-content-muted">Discuss designs with the AI designer</p>
           </div>
           <div className="flex-1 overflow-hidden">
             <ChatPanel
@@ -458,13 +380,14 @@ export default function ConceptsPage() {
               onSend={handleChatSend}
               loading={chatLoading}
               streamingText={chatStreamText}
-              placeholder="Ask about a concept or request changes..."
+              placeholder="Ask about a design or request changes..."
               suggestions={[
-                "Compare Track A vs Track B",
-                "Which concept fits mobile best?",
-                "Simplify this wireframe",
-                "Add a delight moment",
-                "What are the accessibility gaps?",
+                "Improve visual hierarchy",
+                "Make it more brand-aligned",
+                "Increase information density",
+                "Simplify the layout",
+                "Add micro-interactions",
+                "Optimize for mobile",
               ]}
             />
           </div>
