@@ -131,9 +131,17 @@ export default function FeatureBriefPage() {
         title="Feature Brief"
         subtitle="Define what screen or flow to design"
         actions={
-          <Button variant="outline" size="sm" className="text-xs text-content-secondary" onClick={fillDemo}>
-            <Sparkles className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-            Fill demo data
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={!name || !problem || !mustHave || saving}
+            className="text-xs h-8"
+          >
+            {saving ? (
+              <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" strokeWidth={1.5} />Researching...</>
+            ) : (
+              <><Search className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />Research Insights</>
+            )}
           </Button>
         }
       />
@@ -175,17 +183,13 @@ export default function FeatureBriefPage() {
             <Textarea value={context} onChange={(e) => setContext(e.target.value)} rows={3} placeholder="Any other relevant context..." className="mt-1" />
           </div>
           <div className="pt-3">
-            <Button
-              onClick={handleSubmit}
-              disabled={!name || !problem || !mustHave || saving}
-              className="gap-1.5"
+            <button
+              onClick={fillDemo}
+              className="text-xs text-content-muted hover:text-content-secondary transition-colors flex items-center gap-1"
             >
-              {saving ? (
-                <><Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />Researching Insights...</>
-              ) : (
-                <><Search className="w-3.5 h-3.5" strokeWidth={1.5} />Research Insights</>
-              )}
-            </Button>
+              <Sparkles className="w-3 h-3" strokeWidth={1.5} />
+              Fill demo data
+            </button>
           </div>
         </div>
       </div>

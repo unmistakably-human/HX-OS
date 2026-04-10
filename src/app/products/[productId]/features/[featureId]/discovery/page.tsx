@@ -55,9 +55,11 @@ export default function FeatureInsightsPage() {
           if (feat.insights?.length) {
             setInsights(feat.insights);
             if (feat.hmw_statements?.length && feat.selected_hmws?.length) {
-              // HMWs already selected — discovery is done, redirect to concepts
-              router.replace(`/products/${productId}/features/${featureId}/design-concepts`);
-              return;
+              // HMWs already selected — show completed state (step 2 with selections)
+              setSelectedInsights(feat.selected_insights || []);
+              setHmwStatements(feat.hmw_statements);
+              setSelectedHmws(feat.selected_hmws);
+              setStep(2);
             } else if (feat.hmw_statements?.length) {
               setSelectedInsights(feat.selected_insights || []);
               setHmwStatements(feat.hmw_statements);
