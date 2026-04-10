@@ -274,10 +274,8 @@ function AudienceMultiSelect({
   function toggleCountry(country: string) {
     const existing = value.find((e) => e.country === country);
     if (existing) {
-      // Remove country
       onChange(value.filter((e) => e.country !== country));
     } else {
-      // Add country with empty tiers
       onChange([...value, { country, tiers: [] }]);
     }
   }
@@ -301,20 +299,11 @@ function AudienceMultiSelect({
         const entry = value.find((e) => e.country === c.value);
         return (
           <div key={c.value}>
-            <button
-              type="button"
-              onClick={() => toggleCountry(c.value)}
-              className={`w-full flex items-start gap-3 text-left border rounded-lg px-3 py-[9px] transition-colors ${
-                isSelected ? "border-[#3b82f6] bg-[#eff6ff]" : "border-[#e5e7eb] bg-white hover:border-[#d1d5db]"
-              }`}
-            >
-              <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                isSelected ? "border-[#3b82f6]" : "border-[#d1d5db]"
-              }`}>
-                {isSelected && <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />}
-              </span>
-              <span className="text-[14px] font-medium text-[#111827]">{c.label}</span>
-            </button>
+            <CheckCard
+              checked={isSelected}
+              onToggle={() => toggleCountry(c.value)}
+              label={c.label}
+            />
             {isSelected && entry && (
               <div className="flex gap-2 ml-7 mt-1.5 mb-1">
                 {CITY_TIERS.map((tier) => (
@@ -324,8 +313,8 @@ function AudienceMultiSelect({
                     onClick={() => toggleTier(c.value, tier.value)}
                     className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
                       entry.tiers.includes(tier.value)
-                        ? "border-[#3b82f6] bg-[#eff6ff] text-[#1d4ed8]"
-                        : "border-[#e5e7eb] text-[#6b7280] hover:border-[#d1d5db]"
+                        ? "border-action-primary-bg bg-surface-subtle text-content-heading"
+                        : "border-divider text-content-secondary hover:border-divider"
                     }`}
                   >
                     {tier.label}
