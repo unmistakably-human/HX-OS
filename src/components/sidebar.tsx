@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Check, ArrowLeft, Plus } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { Check, ArrowLeft, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createFeature } from "@/lib/projects";
 import type { Product } from "@/lib/types";
 
 interface SidebarProps {
@@ -67,6 +70,24 @@ function getFeaturePhases(pid: string, fid: string) {
 
 export function Sidebar({ product, productId }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [showNewFeature, setShowNewFeature] = useState(false);
+  const [newFeatureName, setNewFeatureName] = useState("");
+  const [creatingFeature, setCreatingFeature] = useState(false);
+
+  async function handleCreateFeature() {
+    if (!newFeatureName.trim() || creatingFeature) return;
+    setCreatingFeature(true);
+    try {
+      const feature = await createFeature(productId, newFeatureName.trim(), "screen");
+      setShowNewFeature(false);
+      setNewFeatureName("");
+      router.push(`/products/${productId}/features/${feature.id}`);
+    } catch (err) {
+      console.error("Failed to create feature:", err);
+    }
+    setCreatingFeature(false);
+  }
 
   // Detect if we're in a feature-level route
   const featureMatch = pathname.match(/\/products\/[^/]+\/features\/([^/]+)/);
@@ -235,12 +256,26 @@ export function Sidebar({ product, productId }: SidebarProps) {
               <div className="text-overline font-medium text-content-section-label uppercase tracking-wider px-2 mb-2">
                 Features
               </div>
-              <Link href={`/?newFeature=${productId}`} className="block mx-1 mb-2">
-                <Button variant="outline" size="sm" className="w-full text-xs">
+              {showNewFeature ? (
+                <div className="mx-1 mb-2 flex gap-1">
+                  <Input
+                    value={newFeatureName}
+                    onChange={(e) => setNewFeatureName(e.target.value)}
+                    placeholder="Feature name"
+                    className="h-7 text-xs"
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateFeature()}
+                  />
+                  <Button size="sm" onClick={handleCreateFeature} disabled={!newFeatureName.trim() || creatingFeature} className="h-7 text-xs px-2 shrink-0">
+                    {creatingFeature ? <Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} /> : <Plus className="w-3 h-3" strokeWidth={1.5} />}
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" className="w-full text-xs mx-1 mb-2" onClick={() => setShowNewFeature(true)}>
                   <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                   New Feature
                 </Button>
-              </Link>
+              )}
               {(product.features || []).map((f) => (
                 <Link key={f.id} href={`/products/${productId}/features/${f.id}`}>
                   <div className="flex items-center gap-2 px-2 py-1.5 rounded text-overline text-nav-item-text-default hover:bg-nav-item-hover-bg hover:text-nav-item-text-active transition-colors duration-fast cursor-pointer">

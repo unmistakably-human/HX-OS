@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck } from "lucide-react";
+import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SignalFeed } from "@/components/signal-feed";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -61,6 +62,7 @@ function StepDot({ done, label }: { done: boolean; label: string }) {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [view, setView] = useState<"signals" | "projects">("signals");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -234,34 +236,62 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-surface-page-alt">
       {/* Header */}
       <div className="bg-surface-card border-b border-divider">
-        <div className="max-w-[1100px] mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3">
-            <img src="/humanx-logo.svg" alt="" className="h-8 w-auto shrink-0" />
-            <div>
-              <h1 className="text-h3 font-bold text-content-heading leading-tight">HumanX Labs</h1>
-              <p className="text-xs text-content-tertiary">AI Design Workflow</p>
-            </div>
+        <div className="max-w-[1320px] mx-auto px-6 py-3 flex items-center justify-between">
+          {/* Left — Logo */}
+          <a href="/" className="flex items-center gap-3 shrink-0">
+            <img src="/humanx-logo.svg" alt="" className="h-7 w-auto shrink-0" />
+            <span className="text-sm font-bold text-content-heading leading-tight">HumanX Labs</span>
           </a>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/review")}
+
+          {/* Center — Tab switcher */}
+          <div className="flex items-center bg-surface-subtle rounded-full p-0.5">
+            <button
+              onClick={() => setView("signals")}
+              className={`px-5 py-1.5 text-sm font-medium rounded-full transition-colors duration-fast ${
+                view === "signals"
+                  ? "bg-action-primary-bg text-action-primary-text"
+                  : "text-content-tertiary hover:text-content-heading"
+              }`}
             >
-              <ClipboardCheck className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
-              New Review
+              Signals
+            </button>
+            <button
+              onClick={() => setView("projects")}
+              className={`px-5 py-1.5 text-sm font-medium rounded-full transition-colors duration-fast ${
+                view === "projects"
+                  ? "bg-action-primary-bg text-action-primary-text"
+                  : "text-content-tertiary hover:text-content-heading"
+              }`}
+            >
+              Projects
+            </button>
+          </div>
+
+          {/* Right — Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            {view === "signals" && (
+              <span className="flex items-center gap-1.5 text-xs text-content-muted mr-2">
+                <span className="w-1.5 h-1.5 bg-hx-green rounded-full animate-pulse" />
+                Updated today
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={() => router.push("/review")} className="text-xs h-8">
+              <ClipboardCheck className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+              Review
             </Button>
-            <Button
-              onClick={() => setShowNewProduct(true)}
-            >
-              <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+            <Button size="sm" onClick={() => setShowNewProduct(true)} className="text-xs h-8">
+              <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
               New Product
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-[1100px] mx-auto px-6 py-6 space-y-4">
+      {/* Signals view */}
+      {view === "signals" && <SignalFeed />}
+
+      {/* Projects view */}
+      {view === "projects" && (<div className="max-w-[1100px] mx-auto px-6 py-6 space-y-4">
         {products.length === 0 && (
           <div className="text-center py-20">
             <div className="w-16 h-16 rounded-full bg-surface-card flex items-center justify-center mx-auto mb-4 border border-divider">
@@ -407,7 +437,7 @@ export default function DashboardPage() {
             </div>
           );
         })}
-      </div>
+      </div>)}
 
       {/* New Product Modal */}
       {showNewProduct && (
