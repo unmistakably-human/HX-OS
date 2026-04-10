@@ -1073,8 +1073,53 @@ async function runReview(frames){
         p.lastQuickReview=newQR;
         save();
       }
+      // Persist to Supabase
+      var flowName=null;
+      if(editingFlowId&&p){(p.flows||[]).forEach(function(fl){if(fl.id===editingFlowId)flowName=fl.name||'Untitled';});}
+      saveReviewToSupabase(p,flowName,reviewType,reviewLabel,text,scoreMatch?scoreMatch[1]:null,frames.length);
       go('results');renderResults(text,reviewLabel);},400);},500);
   }catch(e){clearInterval(reviewInterval);if(reviewCancelled)return;console.error('[HX] Review failed:',e.message);showErr('Review failed: '+e.message);setAS(0);setAP(0);document.getElementById('aTimer').textContent='Failed';}
+}
+function saveReviewToSupabase(proj,flowName,rType,rLabel,rawText,score,frameCount){
+  try{
+    // Parse structured data from raw text
+    var strengthsRaw=extract(rawText,'### ✅ Strengths',['### 🚨','### 🎯','### 💡']);
+    var issuesRaw=extract(rawText,'### 🚨 Issues',['### 🎯','### 💡','### ✅']);
+    var ideasRaw=extract(rawText,'### 💡 Redesign',['### 🎯','### ✅','### 🚨']);
+    var scoreSection=extract(rawText,'### 🎯 Score',['### 💡','### ✅','### 🚨']);
+    var summaryLine='';var dims=[];
+    if(scoreSection){
+      var lines=scoreSection.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+      if(lines.length)summaryLine=lines[lines.length-1].replace(/\*/g,'');
+      var rx=/[-*]\s+\*?\*?([^:*]+?)\*?\*?\s*:\s*(\d+(?:\.\d+)?)\//gi;var m;
+      while((m=rx.exec(scoreSection))!==null){var nm=m[1].trim();if(nm.toLowerCase()!=='overall')dims.push({name:nm,score:parseFloat(m[2])});}
+    }
+    var strengths=strengthsRaw?strengthsRaw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&(l.match(/^\d+\./)||l.match(/^[-•]/));}).map(function(l){return l.replace(/^\d+\.\s*/,'').replace(/^[-•]\s*/,'');}):[];
+    var ideas=ideasRaw?ideasRaw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l&&(l.match(/^\d+\./)||l.match(/^[-•]/));}).map(function(l){return l.replace(/^\d+\.\s*/,'').replace(/^[-•]\s*/,'');}):[];
+    // Parse issues
+    var issuesList=[];
+    if(issuesRaw){var issueLines=issuesRaw.split('\n').map(function(l){return l.trim();}).filter(Boolean);var cur=null;
+      issueLines.forEach(function(line){var nm=line.match(/^(\d+)\.\s*(.*)/);if(nm){if(cur)issuesList.push(cur);cur={problem:nm[2],severity:'MEDIUM',why:'',fix:''};}else if(cur){cur.problem+=' '+line;}});
+      if(cur)issuesList.push(cur);
+      issuesList.forEach(function(iss){if(iss.problem.indexOf('[HIGH]')>=0){iss.severity='HIGH';iss.problem=iss.problem.replace(/\[HIGH\]/g,'');}if(iss.problem.indexOf('[LOW]')>=0){iss.severity='LOW';iss.problem=iss.problem.replace(/\[LOW\]/g,'');}iss.problem=iss.problem.replace(/\[MEDIUM\]/g,'').replace(/\*\*/g,'').trim();var parts=iss.problem.split(/\s*·\s*/);if(parts.length>=3){iss.problem=parts[0].trim();iss.why=parts[1].trim();iss.fix=parts.slice(2).join(' · ').trim();}});
+    }
+    fetch('/api/review/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      project_name:proj?proj.name:'Unknown',
+      project_brand:proj?proj.brand:null,
+      flow_name:flowName,
+      review_type:rLabel||rType,
+      overall_score:score?parseFloat(score):null,
+      summary:summaryLine||null,
+      dimensions:dims.length?dims:null,
+      strengths:strengths.length?strengths:null,
+      issues:issuesList.length?issuesList:null,
+      ideas:ideas.length?ideas:null,
+      raw_response:rawText,
+      frames_count:frameCount||0
+    })}).then(function(r){return r.json();}).then(function(d){
+      console.log('[HX] Review saved to Supabase:',d.id);
+    }).catch(function(e){console.warn('[HX] Failed to save review to Supabase:',e.message);});
+  }catch(e){console.warn('[HX] Review save error:',e);}
 }
 function buildPrompt(type,hasBrand,hasBench,hasFlowCtx){
   // Per-type focus and dimensions (separate from structure)
