@@ -271,77 +271,71 @@ function AudienceMultiSelect({
   value: AudienceEntry[];
   onChange: (entries: AudienceEntry[]) => void;
 }) {
-  const [newCountry, setNewCountry] = useState("");
-  const [newTiers, setNewTiers] = useState<string[]>([]);
-
-  function addEntry() {
-    if (!newCountry) return;
-    onChange([...value, { country: newCountry, tiers: newTiers }]);
-    setNewCountry("");
-    setNewTiers([]);
+  function toggleCountry(country: string) {
+    const existing = value.find((e) => e.country === country);
+    if (existing) {
+      // Remove country
+      onChange(value.filter((e) => e.country !== country));
+    } else {
+      // Add country with empty tiers
+      onChange([...value, { country, tiers: [] }]);
+    }
   }
 
-  function removeEntry(idx: number) {
-    onChange(value.filter((_, i) => i !== idx));
-  }
-
-  function toggleTier(tier: string) {
-    setNewTiers((prev) =>
-      prev.includes(tier) ? prev.filter((t) => t !== tier) : [...prev, tier]
+  function toggleTier(country: string, tier: string) {
+    onChange(
+      value.map((e) => {
+        if (e.country !== country) return e;
+        const hasTier = e.tiers.includes(tier);
+        return { ...e, tiers: hasTier ? e.tiers.filter((t) => t !== tier) : [...e.tiers, tier] };
+      })
     );
   }
 
+  const selectedCountries = new Set(value.map((e) => e.country));
+
   return (
-    <div className="space-y-3 mt-1">
-      {value.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2 bg-surface-subtle rounded-md px-3 py-2">
-          <span className="text-sm text-content-heading font-medium">
-            {COUNTRIES.find((c) => c.value === entry.country)?.label || entry.country}
-          </span>
-          {entry.tiers.length > 0 && (
-            <span className="text-xs text-content-secondary">
-              ({entry.tiers.map((t) => CITY_TIERS.find((ct) => ct.value === t)?.label || t).join(", ")})
-            </span>
-          )}
-          <button onClick={() => removeEntry(i)} className="ml-auto text-content-muted hover:text-content-heading transition-colors">
-            <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
-        </div>
-      ))}
-      <div className="border border-divider rounded-md p-3 space-y-3">
-        <div>
-          <Label className="text-xs text-content-secondary mb-1 block">Country / Region</Label>
-          <div className="space-y-1.5">
-            {COUNTRIES.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                onClick={() => setNewCountry(c.value === newCountry ? "" : c.value)}
-                className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  newCountry === c.value
-                    ? "bg-action-primary-bg text-action-primary-text"
-                    : "hover:bg-surface-subtle text-content-heading"
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
+    <div className="space-y-2 mt-1">
+      {COUNTRIES.map((c) => {
+        const isSelected = selectedCountries.has(c.value);
+        const entry = value.find((e) => e.country === c.value);
+        return (
+          <div key={c.value}>
+            <button
+              type="button"
+              onClick={() => toggleCountry(c.value)}
+              className={`w-full flex items-start gap-3 text-left border rounded-lg px-3 py-[9px] transition-colors ${
+                isSelected ? "border-[#3b82f6] bg-[#eff6ff]" : "border-[#e5e7eb] bg-white hover:border-[#d1d5db]"
+              }`}
+            >
+              <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                isSelected ? "border-[#3b82f6]" : "border-[#d1d5db]"
+              }`}>
+                {isSelected && <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />}
+              </span>
+              <span className="text-[14px] font-medium text-[#111827]">{c.label}</span>
+            </button>
+            {isSelected && entry && (
+              <div className="flex gap-2 ml-7 mt-1.5 mb-1">
+                {CITY_TIERS.map((tier) => (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => toggleTier(c.value, tier.value)}
+                    className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+                      entry.tiers.includes(tier.value)
+                        ? "border-[#3b82f6] bg-[#eff6ff] text-[#1d4ed8]"
+                        : "border-[#e5e7eb] text-[#6b7280] hover:border-[#d1d5db]"
+                    }`}
+                  >
+                    {tier.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-        {newCountry && (
-          <div>
-            <Label className="text-xs text-content-secondary mb-1 block">City tiers (optional)</Label>
-            <div className="flex gap-2">
-              {CITY_TIERS.map((tier) => (
-                <CheckCard key={tier.value} checked={newTiers.includes(tier.value)} onToggle={() => toggleTier(tier.value)} label={tier.label} />
-              ))}
-            </div>
-          </div>
-        )}
-        <Button variant="outline" size="sm" onClick={addEntry} disabled={!newCountry}>
-          Add market
-        </Button>
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -496,13 +490,24 @@ export default function ContextPage() {
         throw new Error(data.error || `API error ${res.status}`);
       }
       const generated = await res.json();
+      // Migrate string audience to AudienceEntry[] format
+      let audience = generated.audience;
+      if (typeof audience === "string" && audience) {
+        const MIGRATION: Record<string, AudienceEntry[]> = {
+          tier1: [{ country: "india", tiers: ["tier1"] }],
+          tier2: [{ country: "india", tiers: ["tier2"] }],
+          allIndia: [{ country: "india", tiers: ["tier1", "tier2", "tier3"] }],
+          global: [{ country: "global", tiers: [] }],
+          other: [{ country: "other", tiers: [] }],
+        };
+        audience = MIGRATION[audience] || [{ country: audience, tiers: [] }];
+      }
       setCtx((prev) => ({
         ...prev,
         ...generated,
         productName: prev.productName,
         company: prev.company,
-        // Preserve audience as-is if it's already structured
-        audience: generated.audience || prev.audience,
+        audience: audience || prev.audience,
       }));
     } catch (err) {
       console.error("Autofill failed:", err);
@@ -632,7 +637,7 @@ export default function ContextPage() {
   const isStepValid = useCallback((s: number): boolean => {
     switch (s) {
       case 0:
-        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && ctx.platform);
+        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && (Array.isArray(ctx.audience) ? ctx.audience.length > 0 : !!ctx.audience) && ctx.platform);
       case 1:
         return !!(ctx.explain && ctx.briefWhy && ctx.valueProp && ctx.notThis);
       case 2:
@@ -705,7 +710,7 @@ export default function ContextPage() {
               </div>
             </div>
             <div>
-              <FieldLabel>Target audience / Market</FieldLabel>
+              <FieldLabel required>Target audience / Market</FieldLabel>
               <AudienceMultiSelect
                 value={Array.isArray(ctx.audience) ? ctx.audience : []}
                 onChange={(entries) => set("audience", entries as unknown as ProductContext["audience"])}
