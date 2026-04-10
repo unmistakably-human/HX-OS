@@ -337,9 +337,26 @@ export default function FeatureInsightsPage() {
                   <span className="text-h2 font-bold text-content-heading">{selectedInsights.length}</span>
                   <span className="text-body-sm text-content-muted ml-1.5">/ {MAX_INSIGHTS} insights</span>
                 </div>
-                <Button onClick={generateHmws} disabled={selectedInsights.length === 0} className="bg-action-primary-bg hover:bg-action-primary-hover text-content-on-dark">
-                  Generate HMWs <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
-                </Button>
+                {selectedInsights.length >= MAX_INSIGHTS && catPage === CATEGORY_CONFIG.length - 1 ? (
+                  <Button onClick={generateHmws} className="bg-action-primary-bg hover:bg-action-primary-hover text-content-on-dark">
+                    Write HMWs <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (catPage < CATEGORY_CONFIG.length - 1) {
+                        setCatPage(catPage + 1);
+                      }
+                    }}
+                    disabled={catPage === CATEGORY_CONFIG.length - 1 && selectedInsights.length < MAX_INSIGHTS}
+                  >
+                    {catPage === CATEGORY_CONFIG.length - 1
+                      ? `Select ${MAX_INSIGHTS - selectedInsights.length} more`
+                      : "Next"}
+                    <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
+                  </Button>
+                )}
               </div>
             </div>
           )}
