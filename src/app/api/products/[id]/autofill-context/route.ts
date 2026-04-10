@@ -3,45 +3,17 @@ import { getProduct } from "@/lib/projects";
 import { getKnowledgeForContext } from "@/lib/knowledge";
 import { callClaude } from "@/lib/claude";
 
-const AUTOFILL_SYSTEM = `You are a senior product strategist helping fill out a product context questionnaire.
-Given a product name, company, and any available knowledge base entries, generate realistic and specific product context data.
+const AUTOFILL_SYSTEM = `Generate realistic product context as JSON. Be specific and opinionated. Keep each string value under 200 chars. No markdown fences. No newlines inside string values.
 
-IMPORTANT RULES:
-1. Research the actual brand/company if possible. Use real, accurate information.
-2. If the brand is unknown, invent plausible, detailed context that feels authentic.
-3. Every field must be specific and opinionated — no generic filler.
-4. User segments should have real behavioural insights, not generic demographics.
-5. Competitors should be real companies in the space.
-6. Flows should be concrete user journeys (verb-first, 3-5 flows).
-7. Visual direction should reference 2-3 real products whose style applies.
-8. Be varied — if called multiple times for the same product, produce different angles.
+ENUM VALUES (use exactly):
+productType: b2b | consumer | internal | marketplace | ecommerce | api | other
+stage: idea | prelaunch | early | growth | mature
+audience: tier1 | tier2 | allIndia | global | other
+platform: desktop | mobile | responsive | ios | android | iosAndroid
+industries: pick from ["Advertising & Marketing","Finance, Banking & Insurance","E-commerce & Retail","Healthcare & Wellness","Education & Learning","Food & Delivery","Enterprise Software & Productivity","Media & Entertainment","Travel & Hospitality","Real Estate & Property","AI & Machine Learning","Logistics & Supply Chain","Other"]
 
-Return ONLY valid JSON — no markdown fences, no explanation. Match this exact schema:
-{
-  "productType": "b2b" | "consumer" | "internal" | "marketplace" | "ecommerce" | "api" | "other",
-  "stage": "idea" | "prelaunch" | "early" | "growth" | "mature",
-  "industries": ["Industry 1", "Industry 2"],
-  "audience": "tier1" | "tier2" | "allIndia" | "global" | "other",
-  "platform": "desktop" | "mobile" | "responsive" | "ios" | "android" | "iosAndroid",
-  "explain": "Plain language explanation a 10-year-old would understand",
-  "briefWhy": "Why this design brief exists — the core business need",
-  "valueProp": "Why people choose this over alternatives",
-  "notThis": "2-3 things people confuse this with but it is NOT",
-  "clientBrief": "Paste-style client brief with data points",
-  "seg1": { "name": "...", "age": "...", "gender": "...", "loc": "...", "income": "...", "behaviour": "..." },
-  "seg2": { "name": "...", "age": "...", "gender": "...", "loc": "...", "income": "...", "behaviour": "..." },
-  "behInsights": "Quantitative and qualitative user behaviour insights",
-  "competitors": "Direct and indirect competitors with UX notes",
-  "flows": "3-5 key user flows, each starting with a verb",
-  "ia": "Information architecture / sitemap overview",
-  "upcoming": "Features coming in next 1-3 months",
-  "dsChoice": "describe",
-  "vibe": "Visual direction referencing 2-3 real products",
-  "colors": "Specific hex colors with roles",
-  "fonts": "Specific font choices with roles"
-}
-
-Industries must be from: "Advertising & Marketing", "Finance, Banking & Insurance", "E-commerce & Retail", "Healthcare & Wellness", "Education & Learning", "Food & Delivery", "Enterprise Software & Productivity", "Media & Entertainment", "Travel & Hospitality", "Real Estate & Property", "AI & Machine Learning", "Logistics & Supply Chain", "Other"`;
+Return ONLY this JSON:
+{"productType":"...","stage":"...","industries":["..."],"audience":"...","platform":"...","explain":"...","briefWhy":"...","valueProp":"...","notThis":"...","clientBrief":"...","seg1":{"name":"...","age":"...","gender":"...","loc":"...","income":"...","behaviour":"..."},"seg2":{"name":"...","age":"...","gender":"...","loc":"...","income":"...","behaviour":"..."},"behInsights":"...","competitors":"...","flows":"...","ia":"...","upcoming":"...","dsChoice":"describe","vibe":"...","colors":"...","fonts":"..."}`;
 
 export async function POST(
   req: NextRequest,
@@ -74,8 +46,7 @@ export async function POST(
     const response = await callClaude({
       system: AUTOFILL_SYSTEM,
       messages: [{ role: "user", content: userMessage }],
-      maxTokens: 2500,
-      model: "claude-haiku-4-5",
+      maxTokens: 4096,
     });
 
     const cleaned = response
