@@ -33,7 +33,9 @@ export function buildExportHtml(data: DiscoveryDeck): string {
   const d = data;
   const cr = d.conversion_retention || { first_purchase: [], retention: [], takeaway: "" };
   const fb = d.feature_benchmark || { local: { brands: [], features: [] }, global: { brands: [], features: [] }, takeaway: "" };
-  const gl = d.glossary || { platforms: [], patterns: [] };
+  const gl = Array.isArray(d.glossary)
+    ? d.glossary
+    : (d.glossary as unknown as { platforms?: typeof d.glossary })?.platforms || [];
 
   let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(d.title || "Insights Deck")}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,-apple-system,sans-serif;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto;font-size:14px;line-height:1.5}@media print{body{padding:20px}}</style></head><body>`;
 
@@ -95,12 +97,10 @@ export function buildExportHtml(data: DiscoveryDeck): string {
 
   // Glossary
   let gb = "";
-  (gl.platforms || []).forEach(x => {
-    gb += crd(x.name + " (" + x.market + ")", (x.url || "") + " — " + (x.why || ""), `<b>Screenshot:</b> ${esc(x.screenshot)}`);
+  gl.forEach(x => {
+    gb += crd(x.name + " (" + x.market + ")", (x.url || "") + " — " + (x.why || ""), "");
   });
-  gb += `<div style="font-size:16px;font-weight:500;margin:20px 0 12px">Patterns to reference</div>`;
-  gb += tbl(["Pattern", "Best example", "Why"], (gl.patterns || []).map(p => [p.name, p.example, p.why]));
-  html += sec("Global glossary", "Platforms and patterns", gb);
+  html += sec("Global glossary", "Platforms to study", gb);
 
   html += "</body></html>";
   return html;

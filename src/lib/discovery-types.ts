@@ -25,6 +25,13 @@ export interface UxBenchmark {
   gap: string;
 }
 
+export interface UxPattern {
+  name: string;
+  example: string;
+  how: string;
+  applicability: string;
+}
+
 export interface FirstPurchase {
   platform: string;
   market: string;
@@ -77,18 +84,6 @@ export interface GlossaryPlatform {
   market: string;
   url: string;
   why: string;
-  screenshot: string;
-}
-
-export interface GlossaryPattern {
-  name: string;
-  example: string;
-  why: string;
-}
-
-export interface Glossary {
-  platforms: GlossaryPlatform[];
-  patterns: GlossaryPattern[];
 }
 
 export interface DiscoveryDeck {
@@ -98,11 +93,12 @@ export interface DiscoveryDeck {
   category_insights: CategoryInsight[];
   audience_insights: AudienceInsight[];
   ux_benchmarks: UxBenchmark[];
+  ux_patterns: UxPattern[];
   conversion_retention: ConversionRetention;
   feature_benchmark: FeatureBenchmark;
   cross_category: CrossCategory[];
   opportunities: Opportunity[];
-  glossary: Glossary;
+  glossary: GlossaryPlatform[];
 }
 
 /** Parse potentially malformed LLM JSON output into a DiscoveryDeck. */
@@ -112,11 +108,9 @@ export function fixJSON(raw: string): DiscoveryDeck {
   if (si > 0) s = s.slice(si);
   if (si < 0) throw new Error("No JSON object found in response");
 
-  // Try direct parse first
   try {
     return JSON.parse(s);
   } catch {
-    // Find balanced closing brace
     let depth = 0;
     let inStr = false;
     let esc = false;
@@ -135,7 +129,6 @@ export function fixJSON(raw: string): DiscoveryDeck {
     if (end > 0) {
       try { return JSON.parse(s.slice(0, end)); } catch { /* continue */ }
     }
-    // Fix trailing commas and unbalanced brackets
     let r = s.replace(/,\s*([}\]])/g, "$1");
     const ob = (r.match(/{/g) || []).length - (r.match(/}/g) || []).length;
     const osq = (r.match(/\[/g) || []).length - (r.match(/]/g) || []).length;

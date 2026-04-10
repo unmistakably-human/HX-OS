@@ -16,29 +16,32 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
   const d = data;
   const cr = d.conversion_retention || { first_purchase: [], retention: [], takeaway: "" };
   const fb = d.feature_benchmark || { local: { brands: [], features: [] }, global: { brands: [], features: [] }, takeaway: "" };
-  const gl = d.glossary || { platforms: [], patterns: [] };
+  // Support both old { platforms, patterns } and new flat array glossary format
+  const glossary = Array.isArray(d.glossary)
+    ? d.glossary
+    : (d.glossary as unknown as { platforms?: typeof d.glossary })?.platforms || [];
 
   const pages: ReactNode[] = [];
 
-  // 1. Cover
+  // 1. Cover — overview with metrics
   pages.push(
     <div key="cover">
-      <DeckLabel t="Cover" />
-      <div className="text-h1 font-medium text-content-heading mb-2.5 leading-snug">
+      <DeckLabel t="Insights deck" />
+      <div className="text-[28px] font-medium text-content-heading mb-3 leading-snug tracking-tight">
         {d.title || "Insights Deck"}
       </div>
-      <div className="text-sm text-content-secondary mb-4 leading-relaxed">
+      <div className="text-sm text-content-secondary mb-5 leading-relaxed">
         {d.subtitle}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
         {(d.metrics || []).map((m, i) => (
-          <div key={i} className="bg-surface-subtle rounded-lg px-3 py-2.5">
-            <div className="text-overline text-content-muted">{m.label}</div>
-            <div className="text-h3 font-medium text-content-heading">{m.value}</div>
+          <div key={i} className="bg-surface-subtle rounded-lg px-3.5 py-3">
+            <div className="text-overline text-content-muted mb-1">{m.label}</div>
+            <div className="text-lg font-medium text-content-heading tracking-tight">{m.value}</div>
           </div>
         ))}
       </div>
-      <p className="text-xs text-content-muted">Tap cards to expand. Use arrows to navigate.</p>
+      <p className="text-xs text-content-muted">Tap cards to expand. Use arrows or keyboard to navigate.</p>
     </div>
   );
 
@@ -76,7 +79,7 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
   (d.ux_benchmarks || []).forEach((x, i) => {
     pages.push(
       <div key={`ux${i}`}>
-        <DeckLabel t="UX benchmarking" />
+        <DeckLabel t={`UX benchmarking · ${i + 1} of ${(d.ux_benchmarks || []).length}`} />
         <DeckHeading t={x.attribute} />
         <Chips label="Dominant" items={x.dominant?.players || []} />
         <p className="text-xs text-content-secondary leading-relaxed mb-2.5">
@@ -98,11 +101,68 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
     );
   });
 
-  // 8. Conversion & Retention
+  // 8. UX Patterns to Reference (NEW)
+  if (d.ux_patterns && d.ux_patterns.length > 0) {
+    pages.push(
+      <div key="uxpat">
+        <DeckLabel t="UX patterns to reference" />
+        <DeckHeading t={`${d.ux_patterns.length} patterns designers can reference from best-in-class`} />
+        {d.ux_patterns.map((p, i) => (
+          <ExpandableCard key={i} label={p.name} title={`Best: ${p.example}`}>
+            <B>How it works:</B> {p.how}
+            <br /><br />
+            <B>Applicability:</B> {p.applicability}
+          </ExpandableCard>
+        ))}
+      </div>
+    );
+  }
+
+  // 9. Feature Benchmark
+  pages.push(
+    <div key="fb">
+      <DeckLabel t="Feature benchmark" />
+      <DeckHeading t="Key features: local vs. global" />
+      <DeckSubheading t="Local brands" />
+      <DataTable
+        heads={["Feature", ...(fb.local?.brands || [])]}
+        rows={(fb.local?.features || []).map((f) => [
+          f.name,
+          ...f.values.map((v, i) => <StrengthValue key={i} value={v} />),
+        ])}
+      />
+      <DeckSubheading t="Global brands" />
+      <DataTable
+        heads={["Feature", ...(fb.global?.brands || [])]}
+        rows={(fb.global?.features || []).map((f) => [
+          f.name,
+          ...f.values.map((v, i) => <StrengthValue key={i} value={v} />),
+        ])}
+      />
+      {fb.takeaway && <Surface title="Key takeaway">{fb.takeaway}</Surface>}
+    </div>
+  );
+
+  // 10. Cross-Category
+  pages.push(
+    <div key="xc">
+      <DeckLabel t="Patterns outside the category" />
+      <DeckHeading t="5 cross-category references worth borrowing" />
+      {(d.cross_category || []).map((x, i) => (
+        <ExpandableCard key={i} label={`${x.platform} — ${x.industry}`} title={x.pattern}>
+          <B>Transferable:</B> {x.transferable}
+          <br /><br />
+          <B>Study:</B> {x.study}
+        </ExpandableCard>
+      ))}
+    </div>
+  );
+
+  // 11. Conversion & Retention
   pages.push(
     <div key="cr">
       <DeckLabel t="Conversion & retention" />
-      <DeckHeading t="How competitors convert and retain" />
+      <DeckHeading t="How platforms drive first purchase and retention" />
       <DeckSubheading t="First-purchase triggers" />
       <DataTable
         heads={["Platform", "Market", "Trigger"]}
@@ -130,51 +190,11 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
     </div>
   );
 
-  // 9. Feature Benchmark
-  pages.push(
-    <div key="fb">
-      <DeckLabel t="Feature benchmark: local vs. global" />
-      <DeckHeading t="Key features across local and global brands" />
-      <DeckSubheading t="Local brands" />
-      <DataTable
-        heads={["Feature", ...(fb.local?.brands || [])]}
-        rows={(fb.local?.features || []).map((f) => [
-          f.name,
-          ...f.values.map((v, i) => <StrengthValue key={i} value={v} />),
-        ])}
-      />
-      <DeckSubheading t="Global brands" />
-      <DataTable
-        heads={["Feature", ...(fb.global?.brands || [])]}
-        rows={(fb.global?.features || []).map((f) => [
-          f.name,
-          ...f.values.map((v, i) => <StrengthValue key={i} value={v} />),
-        ])}
-      />
-      {fb.takeaway && <Surface title="Key takeaway">{fb.takeaway}</Surface>}
-    </div>
-  );
-
-  // 10. Cross-Category
-  pages.push(
-    <div key="xc">
-      <DeckLabel t="Cross-category inspiration" />
-      <DeckHeading t="Patterns from outside the category" />
-      {(d.cross_category || []).map((x, i) => (
-        <ExpandableCard key={i} label={`${x.platform} — ${x.industry}`} title={x.pattern}>
-          <B>Transferable:</B> {x.transferable}
-          <br /><br />
-          <B>Study:</B> {x.study}
-        </ExpandableCard>
-      ))}
-    </div>
-  );
-
-  // 11. Opportunity Areas
+  // 12. Opportunity Areas
   pages.push(
     <div key="op">
       <DeckLabel t="Opportunity areas" />
-      <DeckHeading t="Ranked by impact" />
+      <DeckHeading t="5 opportunities ranked by impact" />
       {(d.opportunities || []).map((x, i) => (
         <Surface key={i}>
           <div className="flex gap-2.5">
@@ -202,34 +222,24 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
     </div>
   );
 
-  // 12. Glossary: Platforms
-  pages.push(
-    <div key="gp">
-      <DeckLabel t="Global glossary: platforms" />
-      <DeckHeading t="Platforms to explore" />
-      {(gl.platforms || []).map((x, i) => (
-        <ExpandableCard
-          key={i}
-          label={x.name}
-          title={x.why || ""}
-        >
-          {null}
-        </ExpandableCard>
-      ))}
-    </div>
-  );
-
-  // 13. Patterns to Reference
-  pages.push(
-    <div key="gpa">
-      <DeckLabel t="Patterns to reference" />
-      <DeckHeading t="Key UX patterns" />
-      <DataTable
-        heads={["Pattern", "Best example", "Why"]}
-        rows={(gl.patterns || []).map((p) => [p.name, p.example, p.why])}
-      />
-    </div>
-  );
+  // 13. Global Glossary (single slide — platforms table)
+  if (glossary.length > 0) {
+    pages.push(
+      <div key="gl">
+        <DeckLabel t="Global glossary" />
+        <DeckHeading t={`${glossary.length} platforms to explore and study`} />
+        <DataTable
+          heads={["Platform", "Market", "URL", "Why study it"]}
+          rows={glossary.map((p) => [
+            p.name,
+            <Pill key="m" colorIndex={3}>{p.market}</Pill>,
+            p.url,
+            p.why,
+          ])}
+        />
+      </div>
+    );
+  }
 
   return pages;
 }
