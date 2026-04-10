@@ -23,20 +23,23 @@ export function buildDeckPages(data: DiscoveryDeck): ReactNode[] {
 
   const pages: ReactNode[] = [];
 
-  // 1. Cover — overview with metrics
+  // 1. Cover — overview with metrics + HumanX branding
   pages.push(
     <div key="cover">
-      <DeckLabel t="Insights deck" />
-      <div className="text-[28px] font-medium text-content-heading mb-3 leading-snug tracking-tight">
+      <div className="flex items-center gap-2.5 mb-6">
+        <img src="/humanx-logo.svg" alt="" className="h-6 w-auto" />
+        <span className="text-xs tracking-widest uppercase text-content-muted font-medium">Discovery Agent</span>
+      </div>
+      <div className="text-2xl font-medium text-content-heading mb-3 leading-snug tracking-tight">
         {d.title || "Insights Deck"}
       </div>
       <div className="text-sm text-content-secondary mb-5 leading-relaxed">
         {d.subtitle}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
         {(d.metrics || []).map((m, i) => (
           <div key={i} className="bg-surface-subtle rounded-lg px-3.5 py-3">
-            <div className="text-overline text-content-muted mb-1">{m.label}</div>
+            <div className="text-xs text-content-muted mb-1">{m.label}</div>
             <div className="text-lg font-medium text-content-heading tracking-tight">{m.value}</div>
           </div>
         ))}
