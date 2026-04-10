@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getProduct, getFeature } from "@/lib/projects";
+import { getProduct, getFeature, saveReview } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 import { getKnowledgeForContext } from "@/lib/knowledge";
 import { buildProductContext } from "@/lib/context-utils";
@@ -479,6 +479,22 @@ export async function POST(
       type,
       timestamp: Date.now(),
     };
+
+    // Persist to reviews table
+    saveReview({
+      projectName: product.name,
+      projectBrand: product.company || "",
+      flowName: feature?.name || "Quick Review",
+      reviewType: type,
+      overallScore: result.overallScore,
+      summary: result.summary,
+      dimensions: result.dimensions,
+      strengths: result.strengths,
+      issues: result.issues,
+      ideas: result.ideas,
+      rawResponse: raw,
+      framesCount: frames.length,
+    }).catch(console.error);
 
     return Response.json(result);
   } catch (err) {

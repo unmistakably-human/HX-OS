@@ -166,6 +166,37 @@ export async function saveHifiDesigns(featureId: string, designs: HifiDesign[]):
   await updateFeature(featureId, { hifi_designs: designs, phase_hifi: "complete" });
 }
 
+export async function saveReview(data: {
+  projectName: string;
+  projectBrand: string;
+  flowName: string;
+  reviewType: string;
+  overallScore: number;
+  summary: string;
+  dimensions: unknown;
+  strengths: unknown;
+  issues: unknown;
+  ideas: unknown;
+  rawResponse: string;
+  framesCount: number;
+}): Promise<void> {
+  const { error } = await supabase.from("reviews").insert({
+    project_name: data.projectName,
+    project_brand: data.projectBrand,
+    flow_name: data.flowName,
+    review_type: data.reviewType,
+    overall_score: data.overallScore,
+    summary: data.summary,
+    dimensions: data.dimensions,
+    strengths: data.strengths,
+    issues: data.issues,
+    ideas: data.ideas,
+    raw_response: data.rawResponse,
+    frames_count: data.framesCount,
+  });
+  if (error) console.error("Failed to save review:", error);
+}
+
 export async function saveHifiChatMessages(featureId: string, messages: ChatMessage[]): Promise<void> {
   await updateFeature(featureId, { hifi_chat_messages: messages });
 }
