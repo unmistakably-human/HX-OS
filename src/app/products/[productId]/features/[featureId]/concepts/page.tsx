@@ -36,6 +36,8 @@ export default function ConceptsPage() {
   const [loadingState, setLoadingState] = useState<"loading" | "ready">("loading");
   const [copyingToFigma, setCopyingToFigma] = useState(false);
   const [copyResult, setCopyResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [chatWidth, setChatWidth] = useState(400);
+  const isDragging = useRef(false);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -52,6 +54,34 @@ export default function ConceptsPage() {
     s.setAttribute("data-figma-capture", "true");
     document.head.appendChild(s);
   }, []);
+
+  // Resize drag handler
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    const startX = e.clientX;
+    const startWidth = chatWidth;
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = startX - ev.clientX;
+      const newWidth = Math.min(Math.max(startWidth + delta, 280), window.innerWidth - 500);
+      setChatWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isDragging.current = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [chatWidth]);
 
   const handleCopyToFigma = useCallback(async () => {
     setCopyingToFigma(true);
@@ -233,8 +263,8 @@ export default function ConceptsPage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* LEFT PANEL (60%) */}
-        <div className="w-[60%] flex flex-col overflow-hidden border-r border-divider">
+        {/* LEFT PANEL — fills remaining space */}
+        <div className="flex-1 min-w-[400px] flex flex-col overflow-hidden border-r border-divider">
           {concepts.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4">
               <Loader2 className="w-6 h-6 text-action-primary-bg animate-spin" strokeWidth={1.5} />
@@ -373,8 +403,14 @@ export default function ConceptsPage() {
           )}
         </div>
 
-        {/* RIGHT PANEL (40%) — Chat */}
-        <div className="w-[40%] flex flex-col bg-surface-page-alt">
+        {/* Resize handle */}
+        <div
+          onMouseDown={startResize}
+          className="w-1 cursor-col-resize hover:bg-action-primary-bg/20 active:bg-action-primary-bg/30 transition-colors shrink-0"
+        />
+
+        {/* RIGHT PANEL — Chat (resizable) */}
+        <div className="flex flex-col bg-surface-page-alt shrink-0" style={{ width: chatWidth, minWidth: 280 }}>
           <div className="px-4 py-2.5 border-b border-divider bg-surface-card">
             <h2 className="text-body-sm font-semibold text-content-heading">Design Chat</h2>
             <p className="text-overline text-content-muted">Discuss concepts with the AI designer</p>
