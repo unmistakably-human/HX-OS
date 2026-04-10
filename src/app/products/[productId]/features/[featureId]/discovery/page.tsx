@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { ChatPanel } from "@/components/chat-panel";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, ArrowRight, ArrowLeft, Search } from "lucide-react";
+import { Loader2, Check, ArrowRight, ArrowLeft, Search, Plus } from "lucide-react";
 import { Star } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { Feature, Product, Insight, HMWStatement, KnowledgeEntry, ChatMessage } from "@/lib/types";
 
 const MAX_INSIGHTS = 5;
@@ -16,6 +18,7 @@ const CATEGORY_CONFIG = [
   { key: "user" as const, label: "User Behaviour", icon: "U", color: "var(--accent-green)", dimColor: "var(--accent-green-light)" },
   { key: "domain" as const, label: "Domain / Category", icon: "D", color: "var(--accent-amber)", dimColor: "var(--raw-warning-light)" },
   { key: "competitor" as const, label: "Benchmarks", icon: "B", color: "var(--accent-blue)", dimColor: "var(--accent-blue-light)" },
+  { key: "custom" as const, label: "Your Insights", icon: "Y", color: "var(--content-heading)", dimColor: "var(--surface-subtle)" },
 ];
 
 export default function FeatureInsightsPage() {
@@ -40,6 +43,10 @@ export default function FeatureInsightsPage() {
   const [hmwStatements, setHmwStatements] = useState<HMWStatement[]>([]);
   const [selectedHmws, setSelectedHmws] = useState<string[]>([]);
   const [relatedEntries, setRelatedEntries] = useState<(KnowledgeEntry & { product_name?: string })[]>([]);
+
+  // Custom insight state
+  const [customHeadline, setCustomHeadline] = useState("");
+  const [customBody, setCustomBody] = useState("");
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -189,6 +196,26 @@ export default function FeatureInsightsPage() {
       return [...prev, id];
     });
   };
+
+  const addCustomInsight = useCallback(() => {
+    if (!customHeadline.trim()) return;
+    const newInsight: Insight = {
+      id: `custom-${Date.now()}`,
+      category: "custom" as Insight["category"],
+      tag: "YOUR INSIGHT",
+      headline: customHeadline.trim(),
+      body: customBody.trim(),
+    };
+    setInsights((prev) => [...prev, newInsight]);
+    setCustomHeadline("");
+    setCustomBody("");
+    // Also save to feature
+    fetch(`/api/products/${productId}/features/${featureId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ insights: [...insights, newInsight] }),
+    }).catch(() => {});
+  }, [customHeadline, customBody, insights, productId, featureId]);
 
   const handleChatSend = useCallback(async (content: string) => {
     const userMsg: ChatMessage = { role: "user", content, timestamp: Date.now() };
@@ -349,6 +376,36 @@ export default function FeatureInsightsPage() {
 
               {/* Insight cards */}
               <div className="flex-1 overflow-y-auto p-5 space-y-3 pb-24">
+                {/* Add custom insight form — shown on "Your Insights" tab */}
+                {cat.key === "custom" && (
+                  <div className="p-4 rounded-xl border border-dashed border-divider bg-surface-subtle/50">
+                    <div className="space-y-2">
+                      <Input
+                        value={customHeadline}
+                        onChange={(e) => setCustomHeadline(e.target.value)}
+                        placeholder="Insight headline..."
+                        className="text-sm"
+                      />
+                      <Textarea
+                        value={customBody}
+                        onChange={(e) => setCustomBody(e.target.value)}
+                        placeholder="Supporting evidence or context (optional)"
+                        rows={2}
+                        className="text-sm"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={addCustomInsight}
+                        disabled={!customHeadline.trim()}
+                      >
+                        <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                        Add Insight
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {catInsights.map((ins) => {
                   const selected = selectedInsights.includes(ins.id);
                   const disabled = !selected && selectedInsights.length >= MAX_INSIGHTS;
@@ -401,7 +458,7 @@ export default function FeatureInsightsPage() {
                   <span className="text-h2 font-bold text-content-heading">{selectedInsights.length}</span>
                   <span className="text-body-sm text-content-muted ml-1.5">/ {MAX_INSIGHTS} insights</span>
                 </div>
-                {selectedInsights.length >= MAX_INSIGHTS && catPage === CATEGORY_CONFIG.length - 1 ? (
+                {selectedInsights.length >= MAX_INSIGHTS && catPage >= 2 ? (
                   <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={async () => {
                       // Skip HMW — save insights and go directly to concept generation
@@ -438,9 +495,9 @@ export default function FeatureInsightsPage() {
                         setCatPage(catPage + 1);
                       }
                     }}
-                    disabled={catPage === CATEGORY_CONFIG.length - 1 && selectedInsights.length < MAX_INSIGHTS}
+                    disabled={catPage >= CATEGORY_CONFIG.length - 1 && selectedInsights.length < MAX_INSIGHTS}
                   >
-                    {catPage === CATEGORY_CONFIG.length - 1
+                    {catPage >= 2 && selectedInsights.length < MAX_INSIGHTS
                       ? `Select ${MAX_INSIGHTS - selectedInsights.length} more`
                       : "Next"}
                     <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />

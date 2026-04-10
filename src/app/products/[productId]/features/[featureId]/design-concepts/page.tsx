@@ -64,14 +64,20 @@ export default function DesignConceptsPage() {
 
   // ── Generate Concepts ──
   const generateConcepts = useCallback(async () => {
-    if (!feature?.selected_hmws?.length) return;
+    // Support both HMW-based and insight-based generation
+    const hasHmws = feature?.selected_hmws?.length;
+    const hasInsights = feature?.selected_insights?.length;
+    if (!hasHmws && !hasInsights) return;
     setGenerating(true);
     setError(null);
     try {
+      const body = hasHmws
+        ? { selectedHmwIds: feature.selected_hmws }
+        : { selectedInsightIds: feature.selected_insights };
       const res = await fetch(`/api/products/${productId}/features/${featureId}/design-concepts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedHmwIds: feature.selected_hmws }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -86,7 +92,7 @@ export default function DesignConceptsPage() {
       setError(err instanceof Error ? err.message : "Failed to generate concepts");
     }
     setGenerating(false);
-  }, [productId, featureId, feature?.selected_hmws]);
+  }, [productId, featureId, feature?.selected_hmws, feature?.selected_insights]);
 
   // ── Save selected concepts and proceed ──
   const handleContinueToVisual = useCallback(async () => {

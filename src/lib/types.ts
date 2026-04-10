@@ -84,7 +84,7 @@ export interface FeatureSummary {
 
 export interface Insight {
   id: string;
-  category: "user" | "domain" | "competitor";
+  category: "user" | "domain" | "competitor" | "custom";
   tag: string;
   headline: string;
   body: string;
