@@ -199,9 +199,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
             const state =
               phase.key === "context"
                 ? product.phase_context
-                : phase.key === "review"
-                  ? "active"
-                  : product.phase_discovery;
+                : product.phase_discovery;
             const isActive = pathname.includes(phase.href(productId));
             const isLocked = state === "locked";
             const isComplete = state === "complete" || (phase.key === "discovery" && !!product.discovery_insights);
@@ -242,6 +240,30 @@ export function Sidebar({ product, productId }: SidebarProps) {
               </Link>
             );
           })
+        )}
+
+        {/* Features list on product-level pages */}
+        {!isFeatureRoute && product.features && product.features.length > 0 && (
+          <>
+            <div className="mx-3 border-t border-[#27272a] my-2" />
+            <div className="px-3">
+              <div className="text-overline font-medium text-content-section-label uppercase tracking-wider px-2 mb-1">
+                Features
+              </div>
+              {product.features.map((f) => (
+                <Link key={f.id} href={`/products/${productId}/features/${f.id}`}>
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded text-overline text-nav-item-text-default hover:text-nav-item-text-active transition-colors duration-fast">
+                    {f.phase_concepts === "complete" ? (
+                      <Check className="w-3 h-3 text-hx-green-dark" strokeWidth={1.5} />
+                    ) : (
+                      <span className="w-3 h-3 rounded-full border border-content-muted inline-block" />
+                    )}
+                    <span className="truncate">{f.name}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
         )}
       </nav>
 

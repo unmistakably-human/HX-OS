@@ -84,7 +84,7 @@ export function DeckNavigator({ data }: DeckNavigatorProps) {
       </div>
 
       {/* Page counter */}
-      <div className="text-[11px] text-content-muted text-right mb-3">
+      <div className="text-xs text-content-muted text-right mb-4">
         {idx + 1} / {total}
       </div>
 

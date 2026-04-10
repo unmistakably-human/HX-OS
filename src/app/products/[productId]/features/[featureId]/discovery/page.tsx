@@ -353,9 +353,34 @@ export default function FeatureInsightsPage() {
                   <span className="text-body-sm text-content-muted ml-1.5">/ {MAX_INSIGHTS} insights</span>
                 </div>
                 {selectedInsights.length >= MAX_INSIGHTS && catPage === CATEGORY_CONFIG.length - 1 ? (
-                  <Button onClick={generateHmws} className="bg-action-primary-bg hover:bg-action-primary-hover text-content-on-dark">
-                    Write HMWs <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={async () => {
+                      // Skip HMW — save insights and go directly to concept generation
+                      setGenerating(true);
+                      try {
+                        await fetch(`/api/products/${productId}/features/${featureId}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            selected_insights: selectedInsights,
+                            phase_discovery: "complete",
+                            phase_design_concepts: "active",
+                          }),
+                        });
+                        await fetch(`/api/products/${productId}/features/${featureId}/design-concepts`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ selectedInsightIds: selectedInsights }),
+                        });
+                        router.push(`/products/${productId}/features/${featureId}/design-concepts`);
+                      } catch { setGenerating(false); }
+                    }}>
+                      Skip to Concepts <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
+                    </Button>
+                    <Button onClick={generateHmws}>
+                      Write HMWs <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     variant="outline"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhaseHeader } from "@/components/phase-header";
-import { Sparkles, Search, Loader2 } from "lucide-react";
+import { Sparkles, ArrowRight, Loader2, Upload, FileText, X } from "lucide-react";
 import type { Feature } from "@/lib/types";
 
 export default function FeatureBriefPage() {
@@ -26,6 +26,9 @@ export default function FeatureBriefPage() {
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [autofilling, setAutofilling] = useState(false);
+  const [brdFile, setBrdFile] = useState<File | null>(null);
+  const [parsingBrd, setParsingBrd] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing feature data
   useEffect(() => {
@@ -104,6 +107,34 @@ export default function FeatureBriefPage() {
     setAutofilling(false);
   }
 
+  async function handleBrdUpload(file: File) {
+    setBrdFile(file);
+    setParsingBrd(true);
+    try {
+      const text = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+      const res = await fetch("/api/parse-brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (res.ok) {
+        const parsed = await res.json();
+        if (parsed.explain && !problem) setProblem(parsed.explain);
+        if (parsed.valueProp && !mustHave) setMustHave(parsed.valueProp);
+        if (parsed.notThis && !notBe) setNotBe(parsed.notThis);
+        if (parsed.clientBrief && !context) setContext(parsed.clientBrief);
+      }
+    } catch {
+      // ignore
+    }
+    setParsingBrd(false);
+  }
+
   if (!loaded) {
     return (
       <div className="flex items-center justify-center h-full text-content-muted">
@@ -153,7 +184,7 @@ export default function FeatureBriefPage() {
             {saving ? (
               <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1" strokeWidth={1.5} />Researching...</>
             ) : (
-              <><Search className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />Research Insights</>
+              <>Research Insights <ArrowRight className="w-3.5 h-3.5 ml-1" strokeWidth={1.5} /></>
             )}
           </Button>
         }
@@ -195,6 +226,42 @@ export default function FeatureBriefPage() {
             <Label className="text-[13px] font-medium text-content-label">Additional context</Label>
             <Textarea value={context} onChange={(e) => setContext(e.target.value)} rows={3} placeholder="Any other relevant context..." className="mt-1" />
           </div>
+
+          {/* BRD Upload */}
+          <div>
+            <Label className="text-[13px] font-medium text-content-label">Upload BRD (optional)</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.md,.txt,.docx,.doc"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleBrdUpload(file);
+                e.target.value = "";
+              }}
+            />
+            {brdFile ? (
+              <div className="mt-1 flex items-center gap-2 px-3 py-2 bg-[#eff6ff] border border-[#93c5fd] rounded-lg">
+                <FileText className="w-4 h-4 text-[#1d4ed8] shrink-0" strokeWidth={1.5} />
+                <span className="text-[13px] text-[#1d4ed8] truncate flex-1">{brdFile.name}</span>
+                {parsingBrd && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1d4ed8]" strokeWidth={1.5} />}
+                <button onClick={() => setBrdFile(null)} className="text-[#6b7280] hover:text-[#111827]">
+                  <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-[#d1d5db] rounded-lg text-[#6b7280] hover:border-content-muted hover:text-content-secondary transition-colors text-[13px]"
+              >
+                <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Upload BRD (PDF, MD, DOCX)
+              </button>
+            )}
+            <p className="text-[11px] text-content-muted mt-1">AI will extract fields from the document.</p>
+          </div>
+
           <div className="pt-3">
             <button
               onClick={handleAutofill}

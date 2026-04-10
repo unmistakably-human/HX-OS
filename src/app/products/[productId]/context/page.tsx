@@ -630,7 +630,7 @@ export default function ContextPage() {
       case 1:
         return !!(ctx.explain && ctx.briefWhy && ctx.valueProp && ctx.notThis);
       case 2:
-        return !!(ctx.seg1.name && ctx.seg2.name);
+        return !!(ctx.seg1.name);
       case 3:
         return !!ctx.flows;
       case 4:
@@ -750,7 +750,7 @@ export default function ContextPage() {
         return (
           <div className="space-y-5">
             <SegmentCard label="Primary User Segment" seg={ctx.seg1} onChange={(s) => setSeg("seg1", s)} required />
-            <SegmentCard label="Secondary User Segment" seg={ctx.seg2} onChange={(s) => setSeg("seg2", s)} required />
+            <SegmentCard label="Secondary User Segment" seg={ctx.seg2} onChange={(s) => setSeg("seg2", s)} />
           </div>
         );
       case 3:

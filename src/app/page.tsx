@@ -308,6 +308,7 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={product.phase_context !== "complete" || product.phase_discovery !== "complete"}
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowNewFeature(product.id);
@@ -315,6 +316,7 @@ export default function DashboardPage() {
                       setNewFeatureType("screen");
                     }}
                     className="text-xs h-7 rounded-md"
+                    title={product.phase_context !== "complete" || product.phase_discovery !== "complete" ? "Complete Product Context and Discovery first" : ""}
                   >
                     <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                     New Feature

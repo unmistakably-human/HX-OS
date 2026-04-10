@@ -75,19 +75,31 @@ export async function POST(
   const { id, fid } = await params;
 
   try {
-    const { selectedHmwIds } = await req.json();
+    const body = await req.json();
+    const { selectedHmwIds, selectedInsightIds } = body;
     const [product, feature] = await Promise.all([getProduct(id), getFeature(fid)]);
 
-    if (!feature.hmw_statements || !Array.isArray(selectedHmwIds) || selectedHmwIds.length === 0) {
-      return Response.json({ error: "No HMWs selected" }, { status: 400 });
-    }
+    // Support both HMW-based and direct insight-based concept generation
+    const hasHmws = feature.hmw_statements && Array.isArray(selectedHmwIds) && selectedHmwIds.length > 0;
+    const hasInsights = Array.isArray(selectedInsightIds) && selectedInsightIds.length > 0;
 
-    const selectedHmws = feature.hmw_statements.filter((h) =>
-      selectedHmwIds.includes(h.id)
-    );
+    if (!hasHmws && !hasInsights) {
+      return Response.json({ error: "No HMWs or insights selected" }, { status: 400 });
+    }
 
     // Build cached product context from PCD
     const cachedContext = buildProductContext(product);
+
+    let contextBlock = "";
+    if (hasHmws) {
+      const selectedHmws = (feature.hmw_statements || []).filter((h) =>
+        selectedHmwIds.includes(h.id)
+      );
+      contextBlock = `## Selected HMW Questions\n${selectedHmws.map((h) => `- ${h.question}`).join("\n")}`;
+    }
+
+    const selectedInsights = (feature.insights || [])
+      .filter((i) => (selectedInsightIds || feature.selected_insights || []).includes(i.id));
 
     const userMessage = `## Feature
 - Name: ${feature.name}
@@ -95,14 +107,10 @@ export async function POST(
 - Problem: ${feature.problem}
 - Must-have: ${feature.must_have}
 
-## Selected HMW Questions
-${selectedHmws.map((h) => `- ${h.question}`).join("\n")}
+${contextBlock}
 
-## Selected Insights (for reference)
-${(feature.insights || [])
-  .filter((i) => (feature.selected_insights || []).includes(i.id))
-  .map((i) => `- [${i.tag}] ${i.headline}`)
-  .join("\n")}
+## Selected Insights
+${selectedInsights.map((i) => `- [${i.tag}] ${i.headline}: ${i.body}`).join("\n")}
 
 Generate 3 design concepts + baseline + beyond-the-screen interventions now.`;
 

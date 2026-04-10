@@ -22,10 +22,10 @@ export function ExpandableCard({ label, title, children, defaultOpen = false }: 
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[10px] font-medium text-content-heading mb-0.5">
+          <div className="text-xs font-medium text-content-heading mb-0.5">
             {label}
           </div>
-          <div className="text-[13px] font-medium text-content-heading leading-snug">
+          <div className="text-sm font-medium text-content-heading leading-snug">
             {title}
           </div>
         </div>
@@ -37,7 +37,7 @@ export function ExpandableCard({ label, title, children, defaultOpen = false }: 
         />
       </div>
       {open && (
-        <div className="mt-2.5 pt-2.5 border-t border-divider-light text-[12px] text-content-secondary leading-relaxed">
+        <div className="mt-2.5 pt-2.5 border-t border-divider-light text-sm text-content-secondary leading-relaxed">
           {children}
         </div>
       )}

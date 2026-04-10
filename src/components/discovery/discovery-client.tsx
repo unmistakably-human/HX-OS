@@ -193,11 +193,11 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
             </div>
           }
         />
-        <div className="flex-1 overflow-y-auto px-5 py-6">
-          <div className="max-w-[900px] mx-auto bg-white border border-divider rounded-[8px] p-5">
+        <div className="flex-1 overflow-y-auto px-8 py-8">
+          <div className="max-w-[960px] mx-auto">
             <DeckNavigator data={deck} />
           </div>
-          <div className="mt-6 pt-4 border-t border-divider max-w-[900px] mx-auto space-y-4">
+          <div className="mt-8 pt-5 border-t border-divider max-w-[960px] mx-auto space-y-4">
             <div>
               <p className="text-sm font-medium text-content-heading mb-2">Create your first feature</p>
               <div className="flex gap-2">
