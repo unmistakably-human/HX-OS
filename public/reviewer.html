@@ -267,10 +267,19 @@ textarea:focus,.inp:focus{border-color:var(--hx-red);box-shadow:0 0 0 2px rgba(0
       <div class="wh"><img id="wLogo" src="/humanx-logo.svg" alt="HumanX" style="border-radius:0"/><h1>Design Review</h1><p>AI-powered design reviews for your workflows</p></div>
       <div id="projList" style="display:flex;flex-direction:column;gap:8px"></div>
       <button class="btn btn-s btn-full" onclick="newProject()">+ New Project</button>
-      <div style="margin-top:14px"><div class="label">Figma Personal Access Token</div>
-      <div class="api-row"><span style="font-size:15px;color:var(--t4)">🎨</span><input class="inp" id="figmaToken" type="password" placeholder="figd_…"/></div>
-      <div style="font-size:12px;color:var(--t4);margin-top:5px;font-style:italic">Generate at figma.com → Settings → Personal Access Tokens. Stored locally in browser.</div></div>
+      <div style="margin-top:14px"><div class="label">Figma</div>
+      <div id="figmaAuthWrap">
+        <button class="btn btn-s btn-full" id="figmaConnectBtn" onclick="window.location.href='/api/figma/auth'" style="gap:8px">
+          <svg width="16" height="16" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z" fill="#A259FF"/></svg>
+          Connect Figma
+        </button>
+        <div id="figmaConnected" style="display:none;padding:10px 14px;background:var(--green-d);border:1px solid rgba(6,95,70,.15);border-radius:var(--rs);font-size:13px;color:var(--green);display:none;align-items:center;gap:8px">
+          <span>✓</span> Figma connected
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--t4);margin-top:5px;font-style:italic">One-click OAuth — no tokens to copy.</div></div>
       <input type="hidden" id="apiKey" value="server-managed"/>
+      <input type="hidden" id="figmaToken" value=""/>
     </div>
 
     <div class="scr" id="scrProjSetup">
@@ -846,7 +855,7 @@ async function extractFigmaDS(){
       document.getElementById('dsStatus').innerHTML='<span class="figma-spinner"></span>Reading '+styleIds.length+' published styles…';
       try{
         var enc=styleIds.map(function(id){return encodeURIComponent(id);}).join(',');
-        var nr=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'/nodes?ids='+enc,{headers:{'X-Figma-Token':token}});
+        var nr=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'/nodes?ids='+enc,{headers:{'Authorization':'Bearer '+token}});
         if(nr.ok){var nd=await nr.json();styleIds.forEach(function(sid){var m=styles[sid],nw=nd.nodes[sid];if(!nw||!nw.document)return;var n=nw.document;if(m.style_type==='FILL'&&n.fills&&n.fills.length){var f=n.fills[0];if(f.color){var c=f.color;var h='#'+[c.r,c.g,c.b].map(function(v){return Math.round(v*255).toString(16).padStart(2,'0');}).join('');apiColors.push(m.name+': '+h.toUpperCase()+' | RGB('+Math.round(c.r*255)+','+Math.round(c.g*255)+','+Math.round(c.b*255)+')');}}if(m.style_type==='TEXT'&&n.style){var t=n.style;apiText.push(m.name+': '+t.fontFamily+' '+t.fontWeight+' / '+(t.fontSize||'?')+'px'+(t.lineHeightPx?' / LH:'+Math.round(t.lineHeightPx)+'px':''));}});}
       }catch(e){console.warn('[HX] Style nodes failed:',e);}
     }
@@ -1214,7 +1223,17 @@ function hideErr(){document.getElementById('err').classList.remove('vis');}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,400)+'px';}
 function getKey(){return 'server-managed';}
-function getFigmaToken(){var inp=document.getElementById('figmaToken');if(inp){var v=inp.value.trim();if(v.length>10){D.figmaToken=v;save();return v;}}if(D.figmaToken&&D.figmaToken.length>10)return D.figmaToken;return '';}
+var _figmaOAuthToken=null;
+function getFigmaToken(){return _figmaOAuthToken||'';}
+function loadFigmaOAuth(){
+  fetch('/api/figma/token').then(function(r){return r.json();}).then(function(d){
+    if(d.connected&&d.token){
+      _figmaOAuthToken=d.token;
+      document.getElementById('figmaConnectBtn').style.display='none';
+      var el=document.getElementById('figmaConnected');el.style.display='flex';
+    }
+  }).catch(function(){});
+}
 
 /* ═══ FIGMA API ═══ */
 function parseFigmaUrl(url){
@@ -1229,7 +1248,7 @@ function parseFigmaUrl(url){
 }
 async function fetchFigmaFile(fileKey,token){
   console.log('[HX] Fetching Figma file:',fileKey);
-  var r=await fetch('https://api.figma.com/v1/files/'+fileKey+'?depth=2',{headers:{'X-Figma-Token':token}});
+  var r=await fetch('https://api.figma.com/v1/files/'+fileKey+'?depth=2',{headers:{'Authorization':'Bearer '+token}});
   if(!r.ok){var e=await r.json().catch(function(){return{};});throw new Error(e.message||e.err||'Figma API error '+r.status);}
   return await r.json();
 }
@@ -1245,7 +1264,7 @@ async function fetchFigmaImages(fileKey,nodeIds,token,scale){
       var batchEncoded=batch.map(function(id){return encodeURIComponent(id);}).join(',');
       var url='https://api.figma.com/v1/images/'+fileKey+'?ids='+batchEncoded+'&scale='+scale+'&format=png';
       console.log('[HX] Batch '+(Math.floor(i/20)+1)+':',batch.length,'nodes, URL length:',url.length);
-      var r=await fetch(url,{headers:{'X-Figma-Token':token}});
+      var r=await fetch(url,{headers:{'Authorization':'Bearer '+token}});
       if(!r.ok){var ej=await r.json().catch(function(){return{};});console.error('[HX] Image batch error:',ej);throw new Error('Figma image export failed: '+r.status+(ej.err?' — '+ej.err:''));}
       var d=await r.json();
       if(d.err)throw new Error('Figma: '+d.err);
@@ -1255,7 +1274,7 @@ async function fetchFigmaImages(fileKey,nodeIds,token,scale){
   }
   var url='https://api.figma.com/v1/images/'+fileKey+'?ids='+encodedIds+'&scale='+scale+'&format=png';
   console.log('[HX] Image URL:',url.substring(0,120)+'...');
-  var r=await fetch(url,{headers:{'X-Figma-Token':token}});
+  var r=await fetch(url,{headers:{'Authorization':'Bearer '+token}});
   if(!r.ok){var ej=await r.json().catch(function(){return{};});console.error('[HX] Image error:',ej);throw new Error('Figma image export failed: '+r.status+(ej.err?' — '+ej.err:''));}
   var d=await r.json();
   if(d.err)throw new Error('Figma: '+d.err);
@@ -1330,7 +1349,7 @@ async function loadFigmaFile(url){
       // URL has a specific node — fetch ONLY that node and its children
       console.log('[HX] Fetching specific node:',parsed.nodeId);
       setFigmaStatus('<span class="figma-spinner"></span>Loading specific frame…','loading');
-      var nodeResp=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'/nodes?ids='+encodeURIComponent(parsed.nodeId),{headers:{'X-Figma-Token':token}});
+      var nodeResp=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'/nodes?ids='+encodeURIComponent(parsed.nodeId),{headers:{'Authorization':'Bearer '+token}});
       if(!nodeResp.ok){var ej=await nodeResp.json().catch(function(){return{};});throw new Error(ej.message||ej.err||'Figma node fetch failed: '+nodeResp.status);}
       var nodeData=await nodeResp.json();
       var nodeWrap=nodeData.nodes[parsed.nodeId];
@@ -1368,7 +1387,7 @@ async function loadFigmaFile(url){
         }
       }
       // Also fetch file name for display
-      try{var fileMeta=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'?depth=1',{headers:{'X-Figma-Token':token}});if(fileMeta.ok){var fm=await fileMeta.json();data={name:fm.name,document:{children:[{name:targetNode.name,children:[]}]}};} else{data={name:'Figma File',document:{children:[]}};}}catch(e){data={name:'Figma File',document:{children:[]}};}
+      try{var fileMeta=await fetch('https://api.figma.com/v1/files/'+parsed.fileKey+'?depth=1',{headers:{'Authorization':'Bearer '+token}});if(fileMeta.ok){var fm=await fileMeta.json();data={name:fm.name,document:{children:[{name:targetNode.name,children:[]}]}};} else{data={name:'Figma File',document:{children:[]}};}}catch(e){data={name:'Figma File',document:{children:[]}};}
 
       if(!targetFrames.length)throw new Error('No frames found in this node. Try pasting the parent frame URL.');
       console.log('[HX] Found',targetFrames.length,'frames in target node');
@@ -1524,6 +1543,6 @@ async function importFigmaFrames(){
   }
 }
 
-load();renderWelcome();
+load();renderWelcome();loadFigmaOAuth();
 </script>
 </body></html>
