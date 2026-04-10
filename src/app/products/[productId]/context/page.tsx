@@ -632,7 +632,7 @@ export default function ContextPage() {
   const isStepValid = useCallback((s: number): boolean => {
     switch (s) {
       case 0:
-        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && (Array.isArray(ctx.audience) ? ctx.audience.length > 0 : !!ctx.audience) && ctx.platform);
+        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && ctx.platform);
       case 1:
         return !!(ctx.explain && ctx.briefWhy && ctx.valueProp && ctx.notThis);
       case 2:
@@ -705,7 +705,7 @@ export default function ContextPage() {
               </div>
             </div>
             <div>
-              <FieldLabel required>Target audience / Market</FieldLabel>
+              <FieldLabel>Target audience / Market</FieldLabel>
               <AudienceMultiSelect
                 value={Array.isArray(ctx.audience) ? ctx.audience : []}
                 onChange={(entries) => set("audience", entries as unknown as ProductContext["audience"])}
