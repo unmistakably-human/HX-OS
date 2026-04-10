@@ -287,16 +287,16 @@ export default function FeatureInsightsPage() {
                   const disabled = !selected && selectedInsights.length >= MAX_INSIGHTS;
                   return (
                     <button key={ins.id} onClick={() => !disabled && toggleInsight(ins.id)}
-                      className={`w-full text-left p-4 rounded-xl border transition-all relative ${selected ? "border-[#18181b] bg-[#18181b]/[0.03] shadow-sm" : disabled ? "border-[#e5e7eb] opacity-40 cursor-not-allowed" : "border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+                      className={`w-full text-left p-4 rounded-xl border transition-all relative ${selected ? "border-content-heading bg-content-heading/[0.03] shadow-sm" : disabled ? "border-divider opacity-40 cursor-not-allowed" : "border-divider hover:border-content-muted"}`}
                     >
-                      <div className={`absolute top-4 right-4 w-5 h-5 rounded flex items-center justify-center text-[11px] font-bold transition-all ${selected ? "bg-[#18181b] text-white" : "border border-[#d1d5db]"}`}>
+                      <div className={`absolute top-4 right-4 w-5 h-5 rounded flex items-center justify-center text-overline font-bold transition-all ${selected ? "bg-content-heading text-content-on-dark" : "border border-divider"}`}>
                         {selected && "✓"}
                       </div>
-                      <span className="inline-block text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded mb-2 bg-[#f4f4f5] text-[#6b7280]">
+                      <span className="inline-block text-overline font-semibold tracking-wider uppercase px-2 py-0.5 rounded mb-2 bg-surface-subtle text-content-secondary">
                         {ins.tag}
                       </span>
-                      <div className="text-[15px] font-semibold text-[#111827] leading-snug mb-1.5 pr-8">{ins.headline}</div>
-                      <div className="text-[13px] text-[#6b7280] leading-relaxed">{ins.body}</div>
+                      <div className="text-body-base font-semibold text-content-heading leading-snug mb-1.5 pr-8">{ins.headline}</div>
+                      <div className="text-body-sm text-content-secondary leading-relaxed">{ins.body}</div>
                     </button>
                   );
                 })}
@@ -376,17 +376,17 @@ export default function FeatureInsightsPage() {
                   const parentCat = parentInsight ? CATEGORY_CONFIG.find((c) => c.key === parentInsight.category) : null;
                   return (
                     <button key={hmw.id} onClick={() => !disabled && toggleHmw(hmw.id)}
-                      className={`w-full text-left p-4 rounded-xl border transition-all relative ${selected ? "border-[#18181b] bg-[#18181b]/[0.03] shadow-sm" : disabled ? "border-[#e5e7eb] opacity-40 cursor-not-allowed" : "border-[#e5e7eb] hover:border-[#d1d5db]"}`}
+                      className={`w-full text-left p-4 rounded-xl border transition-all relative ${selected ? "border-content-heading bg-content-heading/[0.03] shadow-sm" : disabled ? "border-divider opacity-40 cursor-not-allowed" : "border-divider hover:border-content-muted"}`}
                     >
-                      <div className={`absolute top-4 right-4 w-5 h-5 rounded flex items-center justify-center text-[11px] font-bold ${selected ? "bg-[#18181b] text-white" : "border border-[#d1d5db]"}`}>
+                      <div className={`absolute top-4 right-4 w-5 h-5 rounded flex items-center justify-center text-overline font-bold ${selected ? "bg-content-heading text-content-on-dark" : "border border-divider"}`}>
                         {selected && "✓"}
                       </div>
                       {parentCat && (
-                        <span className="inline-block text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded mb-2 bg-[#f4f4f5] text-[#6b7280]">
+                        <span className="inline-block text-overline font-semibold tracking-wider uppercase px-2 py-0.5 rounded mb-2 bg-surface-subtle text-content-secondary">
                           {parentInsight?.tag}
                         </span>
                       )}
-                      <div className="text-[14px] font-medium text-[#111827] leading-snug pr-8">{hmw.question}</div>
+                      <div className="text-sm font-medium text-content-heading leading-snug pr-8">{hmw.question}</div>
                     </button>
                   );
                 })}
@@ -395,8 +395,8 @@ export default function FeatureInsightsPage() {
               <div className="border-t border-divider bg-surface-frosted backdrop-blur px-5 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Button variant="outline" size="sm" onClick={() => setStep(1)}><ArrowLeft className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Back</Button>
-                  <span className="text-[20px] font-bold text-[#18181b]">{selectedHmws.length}</span>
-                  <span className="text-[13px] text-[#9ca3af]">/ {MAX_HMW} HMWs</span>
+                  <span className="text-h2 font-bold text-content-heading">{selectedHmws.length}</span>
+                  <span className="text-body-sm text-content-muted">/ {MAX_HMW} HMWs</span>
                 </div>
                 <Button onClick={handleContinueToConcepts} disabled={selectedHmws.length === 0}>
                   Continue to Concepts <ArrowRight className="w-4 h-4 ml-1" strokeWidth={1.5} />
