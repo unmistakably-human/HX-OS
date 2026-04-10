@@ -419,7 +419,7 @@ export default function DashboardPage() {
                 />
               </div>
               <div>
-                <Label className="text-body-sm text-content-secondary">Company (optional)</Label>
+                <Label className="text-body-sm text-content-secondary">Company *</Label>
                 <Input
                   value={newProductCompany}
                   onChange={(e) => setNewProductCompany(e.target.value)}
@@ -471,7 +471,7 @@ export default function DashboardPage() {
               </Button>
               <Button
                 onClick={handleCreateProduct}
-                disabled={!newProductName.trim() || creatingProduct}
+                disabled={!newProductName.trim() || !newProductCompany.trim() || creatingProduct}
               >
                 {creatingProduct ? (
                   <>
