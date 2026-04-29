@@ -270,12 +270,6 @@ export default function DashboardPage() {
 
           {/* Right — Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {view === "signals" && (
-              <span className="flex items-center gap-1.5 text-xs text-content-muted mr-2">
-                <span className="w-1.5 h-1.5 bg-hx-green rounded-full animate-pulse" />
-                Updated today
-              </span>
-            )}
             <Button variant="outline" size="sm" onClick={() => router.push("/review")} className="text-xs h-8">
               <ClipboardCheck className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
               Review
@@ -344,22 +338,31 @@ export default function DashboardPage() {
                 </button>
 
                 <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={product.phase_context !== "complete" || product.phase_discovery !== "complete"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowNewFeature(product.id);
-                      setNewFeatureName("");
-                      setNewFeatureType("screen");
-                    }}
-                    className="text-xs h-7 rounded-md"
-                    title={product.phase_context !== "complete" || product.phase_discovery !== "complete" ? "Complete Product Context and Discovery first" : ""}
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-                    New Feature
-                  </Button>
+                  {product.phase_context !== "complete" ? (
+                    <span
+                      className="text-xs h-7 px-2.5 inline-flex items-center rounded-full border border-divider bg-surface-subtle text-content-muted font-medium"
+                      title="Product context not yet complete"
+                    >
+                      Draft
+                    </span>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={product.phase_discovery !== "complete"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowNewFeature(product.id);
+                        setNewFeatureName("");
+                        setNewFeatureType("screen");
+                      }}
+                      className="text-xs h-7 rounded-md"
+                      title={product.phase_discovery !== "complete" ? "Complete Discovery first" : ""}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                      New Feature
+                    </Button>
+                  )}
                   {/* Three-dot menu */}
                   <div className="relative">
                     <button

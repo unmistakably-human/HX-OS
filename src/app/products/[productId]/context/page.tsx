@@ -58,14 +58,28 @@ const CITY_TIERS = [
 ];
 
 const PLATFORMS = [
-  { value: "desktop", title: "Desktop web only", desc: "Min 1280px, mouse & keyboard" },
-  { value: "mobile", title: "Mobile web only", desc: "Touch-first, portrait orientation" },
-  { value: "responsive", title: "Desktop + mobile responsive", desc: "Adapts to all screen sizes" },
-  { value: "ios", title: "iOS app", desc: "" },
-  { value: "android", title: "Android app", desc: "" },
-  { value: "iosAndroid", title: "iOS + Android", desc: "" },
-  { value: "desktopApp", title: "Desktop app", desc: "Electron, Tauri, or native" },
+  { value: "web", title: "Web app", desc: "Interactive product accessible via browser" },
+  { value: "mobile", title: "Mobile app", desc: "iOS, Android, or both — native or hybrid" },
+  { value: "website", title: "Website", desc: "Marketing or content-led site" },
 ];
+
+const PLATFORM_VALUES = ["web", "mobile", "website"] as const;
+type NewPlatform = typeof PLATFORM_VALUES[number];
+
+// Read either shape from storage and return the de-duplicated, validated
+// list of new web/mobile/website values. Legacy single-string values
+// ("ios", "responsive", etc.) are bucketed onto the closest new value.
+function normalizePlatforms(p: ProductContext["platform"] | null | undefined): NewPlatform[] {
+  if (!p) return [];
+  const tokens = p.split(",").map((t) => t.trim()).filter(Boolean);
+  const out = new Set<NewPlatform>();
+  for (const t of tokens) {
+    if (t === "ios" || t === "android" || t === "iosAndroid" || t === "mobile") out.add("mobile");
+    else if (t === "desktop" || t === "responsive" || t === "desktopApp" || t === "web") out.add("web");
+    else if (t === "website") out.add("website");
+  }
+  return Array.from(out);
+}
 
 const DS_OPTIONS = [
   { value: "figma", title: "Connect Figma", desc: "Extract design tokens and variables from your Figma file" },
@@ -329,56 +343,6 @@ function AudienceMultiSelect({
   );
 }
 
-function IAUploadZone({
-  iaText, onIaTextChange, figmaLink, onFigmaLinkChange,
-}: {
-  iaText: string; onIaTextChange: (v: string) => void;
-  figmaLink: string; onFigmaLinkChange: (v: string) => void;
-}) {
-  const iaFileRef = useRef<HTMLInputElement>(null);
-  const [iaFile, setIaFile] = useState<File | null>(null);
-  const [iaDragOver, setIaDragOver] = useState(false);
-
-  async function handleFile(file: File) {
-    setIaFile(file);
-    if (file.name.endsWith(".md") || file.name.endsWith(".txt")) {
-      const text = await file.text();
-      onIaTextChange(iaText ? iaText + "\n\n" + text : text);
-    } else {
-      onIaTextChange(iaText ? iaText + `\n\n[Uploaded: ${file.name}]` : `[Uploaded: ${file.name}]`);
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      <Textarea value={iaText} onChange={(e) => onIaTextChange(e.target.value)} rows={5}
-        placeholder="Describe your information architecture or upload files below" />
-      <input ref={iaFileRef} type="file" accept=".png,.jpg,.jpeg,.pdf,.md,.txt" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
-      <button
-        type="button"
-        onClick={() => iaFileRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setIaDragOver(true); }}
-        onDragLeave={() => setIaDragOver(false)}
-        onDrop={(e) => { e.preventDefault(); setIaDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f); }}
-        className={`w-full border-2 border-dashed rounded-[8px] p-5 text-center transition-colors ${
-          iaDragOver ? "border-divider-card-hover bg-surface-subtle" : "border-divider hover:border-divider-card-hover"
-        }`}
-      >
-        <Upload className="w-5 h-5 text-content-muted mx-auto mb-2" strokeWidth={1.5} />
-        <p className="text-sm font-medium text-content-heading">
-          {iaFile ? iaFile.name : "Drop file or click to upload"}
-        </p>
-        <p className="text-xs text-content-muted mt-0.5">PNG, JPG, PDF, or Markdown</p>
-      </button>
-      <div>
-        <FieldLabel>Figma link (IA / sitemap)</FieldLabel>
-        <Input value={figmaLink} onChange={(e) => onFigmaLinkChange(e.target.value)} placeholder="https://www.figma.com/design/..." />
-      </div>
-    </div>
-  );
-}
-
 export default function ContextPage() {
   const params = useParams();
   const router = useRouter();
@@ -626,7 +590,7 @@ export default function ContextPage() {
   const isStepValid = useCallback((s: number): boolean => {
     switch (s) {
       case 0:
-        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && (Array.isArray(ctx.audience) ? ctx.audience.length > 0 : !!ctx.audience) && ctx.platform);
+        return !!(ctx.productName && ctx.company && ctx.productType && ctx.stage && ctx.industries.length && (Array.isArray(ctx.audience) ? ctx.audience.length > 0 : !!ctx.audience) && normalizePlatforms(ctx.platform).length > 0);
       case 1:
         return !!(ctx.explain && ctx.briefWhy && ctx.valueProp && ctx.notThis);
       case 2:
@@ -708,9 +672,31 @@ export default function ContextPage() {
             <div>
               <FieldLabel required>Platform</FieldLabel>
               <div className="space-y-2 mt-1">
-                {PLATFORMS.map((p) => (
-                  <RadioCard key={p.value} selected={ctx.platform === p.value} onSelect={() => set("platform", p.value)} title={p.title} desc={p.desc} />
-                ))}
+                {(() => {
+                  const platforms = normalizePlatforms(ctx.platform);
+                  return PLATFORMS.map((p) => {
+                    const checked = platforms.includes(p.value as NewPlatform);
+                    return (
+                      <button
+                        type="button"
+                        key={p.value}
+                        onClick={() => {
+                          const next = checked ? platforms.filter((v) => v !== p.value) : [...platforms, p.value as NewPlatform];
+                          set("platform", next.join(","));
+                        }}
+                        className={`w-full flex items-start gap-3 text-left border rounded-md px-3 py-[9px] transition-colors ${
+                          checked ? "border-action-primary-bg bg-surface-subtle" : "border-divider bg-surface-card hover:border-divider"
+                        }`}
+                      >
+                        <Checkbox checked={checked} className="pointer-events-none mt-0.5" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-content-heading">{p.title}</div>
+                          {p.desc && <div className="text-xs text-content-muted mt-0.5">{p.desc}</div>}
+                        </div>
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -732,7 +718,14 @@ export default function ContextPage() {
             </div>
             <div>
               <FieldLabel required>What this product is NOT</FieldLabel>
-              <Textarea value={ctx.notThis} onChange={(e) => set("notThis", e.target.value)} rows={3} placeholder="Define boundaries of the product's scope. State what this product does not aim to do" />
+              <p className="text-xs text-content-muted -mt-0.5 mb-2 leading-relaxed">
+                List adjacent things this product explicitly will not do. The AI uses this to avoid suggesting features and flows that fall outside scope, so be specific about what to rule out.
+                <br />
+                <span className="text-content-tertiary">
+                  Example: <em>&ldquo;A meal-planning app that does not generate recipes, does not track nutrition, and does not integrate with grocery delivery — only weekly meal selection from a curated catalog.&rdquo;</em>
+                </span>
+              </p>
+              <Textarea value={ctx.notThis} onChange={(e) => set("notThis", e.target.value)} rows={3} placeholder="Define boundaries of the product's scope. State what this product does not aim to do." />
             </div>
             <Separator />
             <SectionHeader title="Insights" optional />
@@ -759,15 +752,6 @@ export default function ContextPage() {
             <div>
               <FieldLabel required>Key modules</FieldLabel>
               <Textarea value={ctx.flows} onChange={(e) => set("flows", e.target.value)} rows={4} placeholder="Describe 3-5 most important flows. Start with verb." />
-            </div>
-            <div>
-              <FieldLabel>Information Architecture</FieldLabel>
-              <IAUploadZone
-                iaText={ctx.ia}
-                onIaTextChange={(v) => set("ia", v)}
-                figmaLink={ctx.figmaLink}
-                onFigmaLinkChange={(v) => set("figmaLink", v)}
-              />
             </div>
             <Separator />
             <div>
