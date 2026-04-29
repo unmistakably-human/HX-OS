@@ -30,9 +30,31 @@ JSON structure:
   ]
 }
 
+CRITICAL — SCREENS vs DECISIONS ARE DISJOINT:
+- Decision points (diamonds, branching logic) belong ONLY in the "decisions" array.
+- NEVER place a decision object in "screens". NEVER duplicate a node id across both arrays.
+- Every entry in "screens" MUST have a non-empty string "title" and a non-empty array "elements" (4–6 items). If you cannot fill both, the node is a decision — put it in "decisions".
+- Every entry in "decisions" MUST have a "label" (the branching question). Decisions have no "title" and no "elements".
+- "connections" reference ids from EITHER array.
+
+Minimal valid example showing the separation:
+{
+  "screens": [
+    { "id": "home", "title": "Home", "elements": ["Search bar", "Featured items", "Cart icon", "Profile avatar"], "x": 0, "y": 1 },
+    { "id": "results", "title": "Search Results", "elements": ["Result list", "Filter chips", "Sort dropdown", "Empty state link"], "x": 2, "y": 1 }
+  ],
+  "decisions": [
+    { "id": "has_results", "label": "Any results?", "x": 1, "y": 1 }
+  ],
+  "connections": [
+    { "from": "home", "to": "has_results", "label": "Submits search" },
+    { "from": "has_results", "to": "results", "label": "Yes" }
+  ]
+}
+
 RULES:
 1. Generate 8-15 screens covering the complete user journey for this feature
-2. Include 2-4 decision points (diamonds) for branching logic
+2. Include 2-4 decision points (diamonds) for branching logic — IN "decisions" ONLY
 3. Include error states, empty states, and edge case screens
 4. Include at least one alternate entry point (e.g., notification deep link, share link)
 5. Position screens on a grid: x (columns, 0-5), y (rows, 0-3). Main happy path flows left-to-right on y=1. Error states on y=2. Alt entries on y=0.
