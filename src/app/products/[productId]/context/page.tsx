@@ -949,18 +949,23 @@ export default function ContextPage() {
       />
       <div className="flex items-center gap-1 px-5 py-2 border-b border-divider bg-surface-card">
         {STEP_LABELS.map((label, i) => {
-          const isPast = i < step;
           const isCurrent = i === step;
-          const isFuture = i > step;
+          // A tab is reachable if every earlier step is currently valid.
+          // Step 0 is always reachable (no prior steps). This lets a designer
+          // jump from Overview straight to Structure if Overview, Product
+          // and User Segments are all already filled, without clicking
+          // Continue between each one.
+          const allPriorValid = Array.from({ length: i }, (_, j) => isStepValid(j)).every(Boolean);
+          const isReachable = isCurrent || allPriorValid;
           return (
             <button
               key={label}
-              onClick={() => { if (isPast || isCurrent) setStep(i); }}
-              disabled={isFuture}
+              onClick={() => { if (isReachable) setStep(i); }}
+              disabled={!isReachable}
               className={`px-3 py-1.5 rounded-md text-body-sm font-medium transition-colors ${
                 isCurrent
                   ? "bg-surface-subtle text-feedback-info-text"
-                  : isPast
+                  : isReachable
                   ? "text-content-secondary hover:bg-surface-page-alt cursor-pointer"
                   : "text-divider cursor-not-allowed"
               }`}
