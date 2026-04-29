@@ -167,6 +167,24 @@ export interface UserFlow {
   edge_cases: FlowEdgeCaseCategory[];
 }
 
+// Drops items the AI sometimes mixes into `screens` that are actually decisions
+// (title:null, no elements). Without this, the flow page crashes on
+// `s.title.toLowerCase()` while computing entry/error highlights.
+export function sanitizeUserFlow(flow: Partial<UserFlow> | null | undefined): UserFlow {
+  return {
+    screens: (flow?.screens ?? []).filter(
+      (s): s is FlowScreen => typeof s?.title === "string" && Array.isArray(s?.elements),
+    ),
+    decisions: (flow?.decisions ?? []).filter(
+      (d): d is FlowDecision => typeof d?.id === "string" && typeof d?.label === "string",
+    ),
+    connections: flow?.connections ?? [],
+    changelog: flow?.changelog ?? [],
+    rationale: flow?.rationale ?? [],
+    edge_cases: flow?.edge_cases ?? [],
+  };
+}
+
 // ═══ Feature (updated with insights flow fields) ═══
 
 export interface Feature {

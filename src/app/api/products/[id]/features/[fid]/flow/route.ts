@@ -1,6 +1,7 @@
 import { getProduct, getFeature, updateFeature } from "@/lib/projects";
 import { callClaude } from "@/lib/claude";
 import { getKnowledgeForContext } from "@/lib/knowledge";
+import { sanitizeUserFlow } from "@/lib/types";
 
 const FLOW_SYSTEM = `You are a senior UX designer generating an interactive user flow diagram for a product feature.
 
@@ -115,11 +116,13 @@ Generate the complete user flow for this feature and concept now.`;
     });
 
     const jsonStr = extractJSON(responseText);
-    const flow = JSON.parse(jsonStr);
+    const parsed = JSON.parse(jsonStr);
 
-    if (!flow.screens || !Array.isArray(flow.screens)) {
+    if (!parsed.screens || !Array.isArray(parsed.screens)) {
       return Response.json({ error: "Invalid flow format" }, { status: 500 });
     }
+
+    const flow = sanitizeUserFlow(parsed);
 
     await updateFeature(fid, {
       user_flow: flow,

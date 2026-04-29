@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { PhaseHeader } from "@/components/phase-header";
 import { Loader2 } from "lucide-react";
-import type { Feature, UserFlow } from "@/lib/types";
+import { sanitizeUserFlow, type Feature, type UserFlow } from "@/lib/types";
 
 const CARD_W = 175;
 const CARD_H = 140;
@@ -37,7 +37,7 @@ export default function FlowPage() {
           const feat: Feature = await res.json();
           setFeature(feat);
           if (feat.user_flow) {
-            setFlow(feat.user_flow);
+            setFlow(sanitizeUserFlow(feat.user_flow));
           } else {
             // Auto-trigger generation
             setGenerating(true);
@@ -45,7 +45,7 @@ export default function FlowPage() {
               const genRes = await fetch(`/api/products/${productId}/features/${featureId}/flow`, { method: "POST" });
               if (genRes.ok) {
                 const data = await genRes.json();
-                setFlow(data);
+                setFlow(sanitizeUserFlow(data));
               }
             } catch { /* ignore */ }
             setGenerating(false);
