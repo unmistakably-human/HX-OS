@@ -1073,7 +1073,11 @@ export default function ContextPage() {
         })}
       </div>
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[720px] mx-auto px-5 py-6">
+        {/* pb-72 reserves ~288px of empty space below the last field so an
+            absolute-positioned dropdown opened on the last field (e.g. the
+            Markets multi-select) renders fully inside the scroll container
+            without being clipped or pushing other fields. */}
+        <div className="max-w-[720px] mx-auto px-5 pt-6 pb-72">
           {renderStep()}
         </div>
       </div>
