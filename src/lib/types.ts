@@ -27,6 +27,9 @@ export interface ProductContext {
   stage: string;
   industries: string[];
   audience: string | AudienceEntry[];
+  // Comma-joined list of values from the platform multi-select
+  // (web/mobile/website). Legacy single-string values like "ios", "responsive"
+  // stay readable — the form normalises both shapes on render.
   platform: string;
   explain: string;
   briefWhy: string;
