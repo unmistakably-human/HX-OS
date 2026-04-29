@@ -40,21 +40,55 @@ const INDUSTRIES = [
   "Real Estate & Property", "AI & Machine Learning", "Logistics & Supply Chain", "Other",
 ];
 
-const COUNTRIES = [
+// Curated list of ~40 commonly-used markets, plus a few regional groupings
+// at the bottom for cases where a designer wants to scope by region rather
+// than by country. Sort order is rough recall frequency, not alphabetical,
+// so the most common picks appear first when the dropdown opens.
+const COUNTRY_LIST = [
   { value: "india", label: "India" },
-  { value: "usa", label: "USA" },
-  { value: "uk", label: "UK" },
+  { value: "usa", label: "United States" },
+  { value: "uk", label: "United Kingdom" },
+  { value: "canada", label: "Canada" },
+  { value: "australia", label: "Australia" },
+  { value: "germany", label: "Germany" },
+  { value: "france", label: "France" },
+  { value: "spain", label: "Spain" },
+  { value: "italy", label: "Italy" },
+  { value: "netherlands", label: "Netherlands" },
+  { value: "sweden", label: "Sweden" },
+  { value: "switzerland", label: "Switzerland" },
+  { value: "ireland", label: "Ireland" },
+  { value: "poland", label: "Poland" },
+  { value: "china", label: "China" },
+  { value: "japan", label: "Japan" },
+  { value: "south_korea", label: "South Korea" },
+  { value: "singapore", label: "Singapore" },
+  { value: "indonesia", label: "Indonesia" },
+  { value: "malaysia", label: "Malaysia" },
+  { value: "thailand", label: "Thailand" },
+  { value: "vietnam", label: "Vietnam" },
+  { value: "philippines", label: "Philippines" },
+  { value: "pakistan", label: "Pakistan" },
+  { value: "bangladesh", label: "Bangladesh" },
+  { value: "sri_lanka", label: "Sri Lanka" },
+  { value: "uae", label: "United Arab Emirates" },
+  { value: "saudi_arabia", label: "Saudi Arabia" },
+  { value: "israel", label: "Israel" },
+  { value: "turkey", label: "Turkey" },
+  { value: "brazil", label: "Brazil" },
+  { value: "mexico", label: "Mexico" },
+  { value: "argentina", label: "Argentina" },
+  { value: "colombia", label: "Colombia" },
+  { value: "chile", label: "Chile" },
+  { value: "south_africa", label: "South Africa" },
+  { value: "nigeria", label: "Nigeria" },
+  { value: "kenya", label: "Kenya" },
+  { value: "egypt", label: "Egypt" },
   { value: "global", label: "Global" },
+  { value: "europe", label: "Europe (multi-country)" },
   { value: "sea", label: "Southeast Asia" },
-  { value: "europe", label: "Europe" },
   { value: "mena", label: "Middle East & North Africa" },
-  { value: "other", label: "Other" },
-];
-
-const CITY_TIERS = [
-  { value: "tier1", label: "Tier 1 cities" },
-  { value: "tier2", label: "Tier 2 cities" },
-  { value: "tier3", label: "Tier 3 cities" },
+  { value: "latam", label: "Latin America" },
 ];
 
 const PLATFORMS = [
@@ -278,67 +312,135 @@ function SectionHeader({ title, optional }: { title: string; optional?: boolean 
   );
 }
 
-function AudienceMultiSelect({
+function MarketsMultiSelect({
   value,
   onChange,
 }: {
   value: AudienceEntry[];
   onChange: (entries: AudienceEntry[]) => void;
 }) {
-  function toggleCountry(country: string) {
-    const existing = value.find((e) => e.country === country);
-    if (existing) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close the popover on outside click while it's open.
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const selectedSet = new Set(value.map((e) => e.country));
+  const labelFor = (country: string) =>
+    COUNTRY_LIST.find((c) => c.value === country)?.label ?? country;
+
+  const filtered = query.trim().length === 0
+    ? COUNTRY_LIST
+    : COUNTRY_LIST.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()));
+
+  function toggle(country: string) {
+    if (selectedSet.has(country)) {
       onChange(value.filter((e) => e.country !== country));
     } else {
       onChange([...value, { country, tiers: [] }]);
     }
   }
 
-  function toggleTier(country: string, tier: string) {
-    onChange(
-      value.map((e) => {
-        if (e.country !== country) return e;
-        const hasTier = e.tiers.includes(tier);
-        return { ...e, tiers: hasTier ? e.tiers.filter((t) => t !== tier) : [...e.tiers, tier] };
-      })
-    );
+  function remove(country: string) {
+    onChange(value.filter((e) => e.country !== country));
   }
 
-  const selectedCountries = new Set(value.map((e) => e.country));
-
   return (
-    <div className="space-y-2 mt-1">
-      {COUNTRIES.map((c) => {
-        const isSelected = selectedCountries.has(c.value);
-        const entry = value.find((e) => e.country === c.value);
-        return (
-          <div key={c.value}>
-            <CheckCard
-              checked={isSelected}
-              onToggle={() => toggleCountry(c.value)}
-              label={c.label}
+    <div ref={containerRef} className="relative mt-1">
+      <div
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        tabIndex={0}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen((o) => !o);
+          } else if (e.key === "Escape") {
+            setOpen(false);
+          }
+        }}
+        className="w-full min-h-[40px] flex items-center flex-wrap gap-1.5 px-3 py-2 border rounded-md bg-surface-card border-divider hover:border-divider-card-hover text-left transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-action-primary-bg/30"
+      >
+        {value.length === 0 ? (
+          <span className="text-sm text-content-muted">Select markets…</span>
+        ) : (
+          value.map((entry) => (
+            <span
+              key={entry.country}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-divider bg-surface-subtle text-content-heading"
+            >
+              {labelFor(entry.country)}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(entry.country);
+                }}
+                className="ml-0.5 text-content-muted hover:text-content-heading"
+                aria-label={`Remove ${labelFor(entry.country)}`}
+              >
+                <X className="w-3 h-3" strokeWidth={2} />
+              </button>
+            </span>
+          ))
+        )}
+        <span className="ml-auto text-content-muted text-xs">▾</span>
+      </div>
+
+      {open && (
+        <div
+          className="absolute left-0 right-0 mt-1 bg-surface-card border border-divider rounded-md shadow-lg overflow-hidden z-20"
+          role="listbox"
+        >
+          <div className="p-2 border-b border-divider">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search markets…"
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              className="h-8 text-sm"
             />
-            {isSelected && entry && (
-              <div className="flex gap-2 ml-7 mt-1.5 mb-1">
-                {CITY_TIERS.map((tier) => (
+          </div>
+          <div className="max-h-64 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-4 text-sm text-content-muted text-center">No matches</div>
+            ) : (
+              filtered.map((c) => {
+                const isSelected = selectedSet.has(c.value);
+                return (
                   <button
-                    key={tier.value}
                     type="button"
-                    onClick={() => toggleTier(c.value, tier.value)}
-                    className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                      entry.tiers.includes(tier.value)
-                        ? "border-action-primary-bg bg-surface-subtle text-content-heading"
-                        : "border-divider text-content-secondary hover:border-divider"
+                    key={c.value}
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => toggle(c.value)}
+                    className={`w-full px-3 py-1.5 flex items-center gap-2 text-left hover:bg-surface-subtle transition-colors ${
+                      isSelected ? "bg-surface-subtle" : ""
                     }`}
                   >
-                    {tier.label}
+                    <Checkbox checked={isSelected} className="pointer-events-none" />
+                    <span className="text-sm text-content-heading flex-1">{c.label}</span>
                   </button>
-                ))}
-              </div>
+                );
+              })
             )}
           </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 }
@@ -663,8 +765,8 @@ export default function ContextPage() {
               </div>
             </div>
             <div>
-              <FieldLabel required>Target audience / Market</FieldLabel>
-              <AudienceMultiSelect
+              <FieldLabel required>Markets</FieldLabel>
+              <MarketsMultiSelect
                 value={Array.isArray(ctx.audience) ? ctx.audience : []}
                 onChange={(entries) => set("audience", entries as unknown as ProductContext["audience"])}
               />
