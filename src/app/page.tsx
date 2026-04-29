@@ -86,14 +86,15 @@ export default function DashboardPage() {
     ? products.find((p) => p.name.toLowerCase() === trimmedName) ?? null
     : null;
 
-  // The "latest step" for an existing project — Context if PCD isn't done,
-  // otherwise Discovery if discovery isn't done, otherwise Context as the
-  // default landing page (matches the dashboard's product-card click target).
-  const latestStepRoute = (p: Product): string => {
-    if (p.phase_context !== "complete") return `/products/${p.id}/context`;
-    if (p.phase_discovery !== "complete") return `/products/${p.id}/discovery`;
-    return `/products/${p.id}/context`;
-  };
+  // Where to land an existing project picked from the autocomplete:
+  // - if a discovery deck has already been generated → /discovery
+  // - otherwise → /context (where the user fills the PCD that unlocks discovery)
+  // Uses `discovery_insights` as the authoritative "generated" signal so a
+  // stale phase_discovery doesn't mis-route, matching the dashboard logic.
+  const latestStepRoute = (p: Product): string =>
+    p.discovery_insights
+      ? `/products/${p.id}/discovery`
+      : `/products/${p.id}/context`;
 
   const goToExistingProject = (p: Product) => {
     setShowNewProduct(false);
@@ -525,11 +526,7 @@ export default function DashboardPage() {
                           )}
                         </span>
                         <span className="text-xs text-content-tertiary shrink-0">
-                          {p.phase_context !== "complete"
-                            ? "Continue context →"
-                            : p.phase_discovery !== "complete"
-                              ? "Continue discovery →"
-                              : "Open →"}
+                          Open →
                         </span>
                       </button>
                     ))}
