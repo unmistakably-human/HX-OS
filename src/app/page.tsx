@@ -75,6 +75,34 @@ export default function DashboardPage() {
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Existing-project autocomplete on the name input (replaces the browser's
+  // tooltip-shaped autofill). Up to 8 case-insensitive name matches; exact
+  // match short-circuits Create and routes to the project's latest step.
+  const trimmedName = newProductName.trim().toLowerCase();
+  const nameMatches = trimmedName.length > 0
+    ? products.filter((p) => p.name.toLowerCase().includes(trimmedName)).slice(0, 8)
+    : [];
+  const exactMatch = trimmedName.length > 0
+    ? products.find((p) => p.name.toLowerCase() === trimmedName) ?? null
+    : null;
+
+  // The "latest step" for an existing project — Context if PCD isn't done,
+  // otherwise Discovery if discovery isn't done, otherwise Context as the
+  // default landing page (matches the dashboard's product-card click target).
+  const latestStepRoute = (p: Product): string => {
+    if (p.phase_context !== "complete") return `/products/${p.id}/context`;
+    if (p.phase_discovery !== "complete") return `/products/${p.id}/discovery`;
+    return `/products/${p.id}/context`;
+  };
+
+  const goToExistingProject = (p: Product) => {
+    setShowNewProduct(false);
+    setNewProductName("");
+    setNewProductCompany("");
+    setBriefFile(null);
+    router.push(latestStepRoute(p));
+  };
+
   // New feature modal
   const [showNewFeature, setShowNewFeature] = useState<string | null>(null);
   const [newFeatureName, setNewFeatureName] = useState("");
@@ -117,6 +145,10 @@ export default function DashboardPage() {
 
   async function handleCreateProduct() {
     if (!newProductName.trim()) return;
+    if (exactMatch) {
+      goToExistingProject(exactMatch);
+      return;
+    }
     setCreatingProduct(true);
     try {
       const product = await createProduct(newProductName.trim(), newProductCompany.trim() || undefined);
@@ -449,7 +481,7 @@ export default function DashboardPage() {
           <div className="bg-surface-card rounded-xl p-6 w-[420px] shadow-lg" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-h3 font-bold text-content-heading mb-4">New Product</h3>
             <div className="space-y-3">
-              <div>
+              <div className="relative">
                 <Label className="text-body-sm text-content-secondary">Product name *</Label>
                 <Input
                   value={newProductName}
@@ -457,8 +489,52 @@ export default function DashboardPage() {
                   placeholder="e.g. Perfora Oral Care"
                   className="mt-1"
                   autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && !creatingProduct && handleCreateProduct()}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !creatingProduct) {
+                      e.preventDefault();
+                      handleCreateProduct();
+                    }
+                  }}
                 />
+                {nameMatches.length > 0 && (
+                  <div
+                    className="absolute left-0 right-0 mt-1 bg-surface-card border border-divider rounded-[8px] shadow-lg overflow-hidden z-10"
+                    role="listbox"
+                  >
+                    <div className="px-3 py-1.5 text-overline text-content-muted bg-surface-subtle border-b border-divider">
+                      Existing projects
+                    </div>
+                    {nameMatches.map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        role="option"
+                        onClick={() => goToExistingProject(p)}
+                        className="w-full px-3 py-2 flex items-center gap-3 text-left hover:bg-surface-subtle transition-colors"
+                      >
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium text-content-heading truncate">
+                            {p.name}
+                          </span>
+                          {p.company && (
+                            <span className="block text-xs text-content-muted truncate">
+                              {p.company}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-content-tertiary shrink-0">
+                          {p.phase_context !== "complete"
+                            ? "Continue context →"
+                            : p.phase_discovery !== "complete"
+                              ? "Continue discovery →"
+                              : "Open →"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-body-sm text-content-secondary">Company *</Label>
@@ -513,13 +589,15 @@ export default function DashboardPage() {
               </Button>
               <Button
                 onClick={handleCreateProduct}
-                disabled={!newProductName.trim() || !newProductCompany.trim() || creatingProduct}
+                disabled={!newProductName.trim() || (!exactMatch && !newProductCompany.trim()) || creatingProduct}
               >
                 {creatingProduct ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-1.5 animate-spin" strokeWidth={1.5} />
                     {briefFile ? "Extracting & Creating..." : "Creating..."}
                   </>
+                ) : exactMatch ? (
+                  "Open existing"
                 ) : (
                   "Create"
                 )}
