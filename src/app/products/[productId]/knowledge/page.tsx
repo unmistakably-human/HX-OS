@@ -116,8 +116,20 @@ export default function KnowledgeBrowserPage() {
   }, [productId]);
 
   useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${productId}/knowledge`);
+        if (!cancelled && res.ok) setEntries(await res.json());
+      } catch {
+        // ignore
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
 
   // Load cross-product entries based on product name/context
   useEffect(() => {

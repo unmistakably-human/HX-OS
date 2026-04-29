@@ -917,7 +917,7 @@ export default function ContextPage() {
                     <Wand2 className="w-8 h-8 text-action-primary-bg mx-auto mb-3" strokeWidth={1.5} />
                     <p className="text-sm font-medium text-content-heading mb-1">Generate a style guide</p>
                     <p className="text-xs text-content-muted mb-4">
-                      AI will create a color palette with brand colors, neutrals, gradient, and a 5-level typography system — each color includes where it's used
+                      AI will create a color palette with brand colors, neutrals, gradient, and a 5-level typography system — each color includes where it&apos;s used
                     </p>
                     <Button
                       onClick={handleProposeStyle}
