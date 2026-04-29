@@ -307,6 +307,13 @@ export default function DashboardPage() {
 
         {products.map((product) => {
           const features = (product.features || []) as FeatureSummary[];
+          // Some products have a stale `phase_discovery: "active"` even though
+          // a complete insights deck is persisted in `discovery_insights`
+          // (caused by the old saveEnrichedPcd path resetting the phase when
+          // PCD was re-enriched after discovery). Treat the presence of the
+          // deck as authoritative for the dashboard's complete check, mirroring
+          // what the sidebar already does.
+          const discoveryDone = product.phase_discovery === "complete" || !!product.discovery_insights;
           return (
             <div
               key={product.id}
@@ -330,7 +337,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <PhaseCheck done={product.phase_context === "complete"} label="Context" />
-                    <PhaseCheck done={product.phase_discovery === "complete"} label="Discovery" />
+                    <PhaseCheck done={discoveryDone} label="Discovery" />
                     <span className="text-overline text-content-muted">
                       Updated {relativeTime(product.updated_at)}
                     </span>
@@ -349,7 +356,7 @@ export default function DashboardPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={product.phase_discovery !== "complete"}
+                      disabled={!discoveryDone}
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowNewFeature(product.id);
@@ -357,7 +364,7 @@ export default function DashboardPage() {
                         setNewFeatureType("screen");
                       }}
                       className="text-xs h-7 rounded-md"
-                      title={product.phase_discovery !== "complete" ? "Complete Discovery first" : ""}
+                      title={!discoveryDone ? "Complete Discovery first" : ""}
                     >
                       <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
                       New Feature

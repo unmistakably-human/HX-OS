@@ -119,10 +119,19 @@ export async function saveProductContext(id: string, context: ProductContext): P
 }
 
 export async function saveEnrichedPcd(id: string, pcd: string): Promise<void> {
+  // Re-running PCD enrichment must NOT regress an already-completed
+  // discovery. Read the current phase first; only transition from
+  // "locked" → "active". Preserve "active" or "complete" untouched.
+  const { data: current } = await supabase
+    .from("products")
+    .select("phase_discovery")
+    .eq("id", id)
+    .single();
+  const currentPhase = current?.phase_discovery ?? "locked";
   await updateProduct(id, {
     enriched_pcd: pcd,
     phase_context: "complete",
-    phase_discovery: "active",
+    ...(currentPhase === "locked" ? { phase_discovery: "active" as const } : {}),
   });
 }
 
