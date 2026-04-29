@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -238,10 +239,10 @@ export default function DashboardPage() {
       <div className="bg-surface-card border-b border-divider">
         <div className="max-w-[1320px] mx-auto px-6 py-3 flex items-center justify-between">
           {/* Left — Logo */}
-          <a href="/" className="flex items-center gap-3 shrink-0">
+          <Link href="/" className="flex items-center gap-3 shrink-0">
             <img src="/humanx-logo.svg" alt="" className="h-7 w-auto shrink-0" />
             <span className="text-sm font-bold text-content-heading leading-tight">HumanX Labs</span>
-          </a>
+          </Link>
 
           {/* Center — Tab switcher */}
           <div className="flex items-center bg-surface-subtle rounded-full p-0.5">

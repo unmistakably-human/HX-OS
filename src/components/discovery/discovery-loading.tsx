@@ -33,10 +33,11 @@ export function DiscoveryLoading({ progress = 0, snippets = [] }: DiscoveryLoadi
     return () => clearInterval(msgTimer);
   }, []);
 
-  // Rotate insight snippets every 10 seconds
+  // Rotate insight snippets every 10 seconds. Initial index is 0 (from useState).
+  // When snippets.length changes mid-stream, the modulo on render keeps the
+  // visible snippet in range without a synchronous reset in the effect body.
   useEffect(() => {
     if (snippets.length === 0) return;
-    setSnippetIdx(0);
     const snippetTimer = setInterval(() => {
       setSnippetIdx((i) => (i + 1) % snippets.length);
     }, 10000);
