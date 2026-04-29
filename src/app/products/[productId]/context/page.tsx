@@ -343,6 +343,248 @@ function AudienceMultiSelect({
   );
 }
 
+interface ResearchSummary {
+  key_insights: string[];
+  pain_points: string[];
+  opportunities: string[];
+  quotes: string[];
+}
+
+const RESEARCH_SECTIONS: { key: keyof ResearchSummary; label: string; placeholder: string }[] = [
+  { key: "key_insights",  label: "Key insights",  placeholder: "What did you learn?" },
+  { key: "pain_points",   label: "Pain points",   placeholder: "What's not working?" },
+  { key: "opportunities", label: "Opportunities", placeholder: "Where could design help?" },
+  { key: "quotes",        label: "User quotes",   placeholder: "Add a verbatim quote…" },
+];
+
+function ResearchUpload({
+  productId,
+  existingInsights,
+  onAppend,
+}: {
+  productId: string;
+  existingInsights: string;
+  onAppend: (text: string) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [filename, setFilename] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<ResearchSummary | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  async function readText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(typeof r.result === "string" ? r.result : "");
+      r.onerror = () => reject(r.error);
+      r.readAsText(file);
+    });
+  }
+
+  async function handleFile(file: File) {
+    const lower = file.name.toLowerCase();
+    if (!(lower.endsWith(".txt") || lower.endsWith(".md"))) {
+      setError("Only .txt and .md research docs are supported right now.");
+      return;
+    }
+    setError(null);
+    setSummary(null);
+    setFilename(file.name);
+    setLoading(true);
+    try {
+      const text = await readText(file);
+      const res = await fetch(`/api/products/${productId}/extract-research`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error || `Extraction failed (${res.status}).`);
+      } else {
+        const data: ResearchSummary = await res.json();
+        setSummary(data);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to read or extract the file.");
+    }
+    setLoading(false);
+  }
+
+  function updateItem(key: keyof ResearchSummary, idx: number, value: string) {
+    if (!summary) return;
+    const next = [...summary[key]];
+    next[idx] = value;
+    setSummary({ ...summary, [key]: next });
+  }
+
+  function removeItem(key: keyof ResearchSummary, idx: number) {
+    if (!summary) return;
+    setSummary({ ...summary, [key]: summary[key].filter((_, i) => i !== idx) });
+  }
+
+  function addItem(key: keyof ResearchSummary) {
+    if (!summary) return;
+    setSummary({ ...summary, [key]: [...summary[key], ""] });
+  }
+
+  function saveToInsights() {
+    if (!summary) return;
+    const sections: string[] = [];
+    if (filename) sections.push(`From: ${filename}`);
+    for (const { key, label } of RESEARCH_SECTIONS) {
+      const items = summary[key].map((s) => s.trim()).filter(Boolean);
+      if (items.length === 0) continue;
+      sections.push(`${label}:\n${items.map((s) => `- ${s}`).join("\n")}`);
+    }
+    if (sections.length === 0) return;
+    const block = sections.join("\n\n");
+    const next = existingInsights.trim().length > 0
+      ? `${existingInsights.trim()}\n\n${block}`
+      : block;
+    onAppend(next);
+    setSummary(null);
+    setFilename(null);
+  }
+
+  return (
+    <div className="border border-divider rounded-[8px] bg-surface-card">
+      {!summary && !loading && (
+        <>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".txt,.md"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) handleFile(f);
+            }}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-5 border-2 border-dashed rounded-[8px] transition-colors ${
+              dragOver ? "border-action-primary-bg bg-surface-subtle" : "border-divider hover:border-divider-card-hover"
+            }`}
+          >
+            <Upload className="w-4 h-4 text-content-muted" strokeWidth={1.5} />
+            <span className="text-sm text-content-secondary">
+              Upload a research / insights doc (.txt or .md)
+            </span>
+          </button>
+          <p className="px-4 pb-3 -mt-1 text-xs text-content-muted">
+            AI will extract structured findings — key insights, pain points, opportunities, quotes — for you to review before saving.
+          </p>
+        </>
+      )}
+
+      {loading && (
+        <div className="flex items-center gap-3 px-4 py-5">
+          <Loader2 className="w-4 h-4 text-content-muted animate-spin" strokeWidth={1.5} />
+          <span className="text-sm text-content-secondary">
+            Reading {filename}…
+          </span>
+        </div>
+      )}
+
+      {error && (
+        <div className="px-4 py-3 text-sm text-feedback-error-text bg-feedback-error-bg border-b border-feedback-error-border">
+          {error}{" "}
+          <button
+            type="button"
+            onClick={() => { setError(null); setFilename(null); fileRef.current?.click(); }}
+            className="underline hover:no-underline"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {summary && (
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-content-muted">
+              Extracted from <span className="font-medium text-content-heading">{filename}</span> — review and edit each line before saving.
+            </div>
+            <button
+              type="button"
+              onClick={() => { setSummary(null); setFilename(null); }}
+              className="text-xs text-content-muted hover:text-content-heading"
+              aria-label="Discard extraction"
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
+          {RESEARCH_SECTIONS.map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <div className="flex items-center justify-between mb-1.5">
+                <h4 className="text-xs font-semibold text-content-heading uppercase tracking-wide">
+                  {label} <span className="text-content-muted font-normal">({summary[key].length})</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() => addItem(key)}
+                  className="text-xs text-content-muted hover:text-content-heading"
+                >
+                  + Add
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                {summary[key].length === 0 && (
+                  <p className="text-xs text-content-muted italic">None detected.</p>
+                )}
+                {summary[key].map((item, i) => (
+                  <div key={i} className="flex items-start gap-1.5">
+                    <Textarea
+                      value={item}
+                      onChange={(e) => updateItem(key, i, e.target.value)}
+                      rows={1}
+                      placeholder={placeholder}
+                      className="flex-1 min-h-[34px] text-sm py-1.5"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeItem(key, i)}
+                      className="mt-1.5 text-content-muted hover:text-content-heading"
+                      aria-label="Remove item"
+                    >
+                      <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setSummary(null); setFilename(null); }}
+            >
+              Discard
+            </Button>
+            <Button size="sm" onClick={saveToInsights}>
+              <Check className="w-4 h-4 mr-1" strokeWidth={1.5} />
+              Confirm and save to insights
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ContextPage() {
   const params = useParams();
   const router = useRouter();
@@ -729,6 +971,11 @@ export default function ContextPage() {
             </div>
             <Separator />
             <SectionHeader title="Insights" optional />
+            <ResearchUpload
+              productId={productId}
+              existingInsights={ctx.clientBrief}
+              onAppend={(text) => set("clientBrief", text)}
+            />
             <div>
               <FieldLabel>Preliminary insights if any</FieldLabel>
               <Textarea value={ctx.clientBrief} onChange={(e) => set("clientBrief", e.target.value)} rows={4} placeholder="State research findings, inputs or insights if available" />
