@@ -75,6 +75,58 @@ export default function DashboardPage() {
   const [briefFile, setBriefFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Existing-project autocomplete on the name input (replaces the browser's
+  // tooltip-shaped autofill). Matches case-insensitive substring against
+  // BOTH product name AND company — typing "Noth" should surface
+  // "Phone 4(a)" via its company "Nothing". Exact match (on product name
+  // only) short-circuits Create and routes to the project's latest step.
+  const trimmedName = newProductName.trim().toLowerCase();
+  const nameMatches = trimmedName.length > 0
+    ? products.filter((p) =>
+        p.name.toLowerCase().includes(trimmedName) ||
+        (p.company?.toLowerCase().includes(trimmedName) ?? false),
+      ).slice(0, 8)
+    : [];
+  const exactMatch = trimmedName.length > 0
+    ? products.find((p) => p.name.toLowerCase() === trimmedName) ?? null
+    : null;
+
+  // Company autocomplete on the company input — same dropdown shape as the
+  // product-name one but only company strings, deduplicated, suppresses
+  // browser autofill so the in-app dropdown is the only thing rendered.
+  const trimmedCompany = newProductCompany.trim().toLowerCase();
+  const allCompanies = Array.from(new Set(
+    products
+      .map((p) => p.company)
+      .filter((c): c is string => typeof c === "string" && c.trim().length > 0),
+  ));
+  // Hide the dropdown once the typed value already exactly matches an
+  // existing company — clicking a row populates the field with that value
+  // and the user shouldn't have to dismiss the dropdown manually.
+  const companyExactMatch = trimmedCompany.length > 0
+    && allCompanies.some((c) => c.toLowerCase() === trimmedCompany);
+  const companyMatches = trimmedCompany.length > 0 && !companyExactMatch
+    ? allCompanies.filter((c) => c.toLowerCase().includes(trimmedCompany)).slice(0, 8)
+    : [];
+
+  // Where to land an existing project picked from the autocomplete:
+  // - if a discovery deck has already been generated → /discovery
+  // - otherwise → /context (where the user fills the PCD that unlocks discovery)
+  // Uses `discovery_insights` as the authoritative "generated" signal so a
+  // stale phase_discovery doesn't mis-route, matching the dashboard logic.
+  const latestStepRoute = (p: Product): string =>
+    p.discovery_insights
+      ? `/products/${p.id}/discovery`
+      : `/products/${p.id}/context`;
+
+  const goToExistingProject = (p: Product) => {
+    setShowNewProduct(false);
+    setNewProductName("");
+    setNewProductCompany("");
+    setBriefFile(null);
+    router.push(latestStepRoute(p));
+  };
+
   // New feature modal
   const [showNewFeature, setShowNewFeature] = useState<string | null>(null);
   const [newFeatureName, setNewFeatureName] = useState("");
@@ -117,6 +169,10 @@ export default function DashboardPage() {
 
   async function handleCreateProduct() {
     if (!newProductName.trim()) return;
+    if (exactMatch) {
+      goToExistingProject(exactMatch);
+      return;
+    }
     setCreatingProduct(true);
     try {
       const product = await createProduct(newProductName.trim(), newProductCompany.trim() || undefined);
@@ -456,7 +512,7 @@ export default function DashboardPage() {
           <div className="bg-surface-card rounded-xl p-6 w-[420px] shadow-lg" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-h3 font-bold text-content-heading mb-4">New Product</h3>
             <div className="space-y-3">
-              <div>
+              <div className="relative">
                 <Label className="text-body-sm text-content-secondary">Product name *</Label>
                 <Input
                   value={newProductName}
@@ -464,18 +520,86 @@ export default function DashboardPage() {
                   placeholder="e.g. Perfora Oral Care"
                   className="mt-1"
                   autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && !creatingProduct && handleCreateProduct()}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !creatingProduct) {
+                      e.preventDefault();
+                      handleCreateProduct();
+                    }
+                  }}
                 />
+                {nameMatches.length > 0 && (
+                  <div
+                    className="absolute left-0 right-0 mt-1 bg-surface-card border border-divider rounded-[8px] shadow-lg overflow-hidden z-10"
+                    role="listbox"
+                  >
+                    <div className="px-3 py-1.5 text-overline text-content-muted bg-surface-subtle border-b border-divider">
+                      Existing projects
+                    </div>
+                    {nameMatches.map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        role="option"
+                        onClick={() => goToExistingProject(p)}
+                        className="w-full px-3 py-2 flex items-center gap-3 text-left hover:bg-surface-subtle transition-colors"
+                      >
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium text-content-heading truncate">
+                            {p.name}
+                          </span>
+                          {p.company && (
+                            <span className="block text-xs text-content-muted truncate">
+                              {p.company}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-content-tertiary shrink-0">
+                          Open →
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div>
+              <div className="relative">
                 <Label className="text-body-sm text-content-secondary">Company *</Label>
                 <Input
                   value={newProductCompany}
                   onChange={(e) => setNewProductCompany(e.target.value)}
                   placeholder="e.g. Perfora"
                   className="mt-1"
-                  onKeyDown={(e) => e.key === "Enter" && !creatingProduct && handleCreateProduct()}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !creatingProduct) {
+                      e.preventDefault();
+                      handleCreateProduct();
+                    }
+                  }}
                 />
+                {companyMatches.length > 0 && (
+                  <div
+                    className="absolute left-0 right-0 mt-1 bg-surface-card border border-divider rounded-[8px] shadow-lg overflow-hidden z-10"
+                    role="listbox"
+                  >
+                    <div className="px-3 py-1.5 text-overline text-content-muted bg-surface-subtle border-b border-divider">
+                      Existing companies
+                    </div>
+                    {companyMatches.map((company) => (
+                      <button
+                        type="button"
+                        key={company}
+                        role="option"
+                        onClick={() => setNewProductCompany(company)}
+                        className="w-full px-3 py-2 text-left text-sm font-medium text-content-heading hover:bg-surface-subtle transition-colors"
+                      >
+                        {company}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Upload Brief */}
@@ -520,13 +644,15 @@ export default function DashboardPage() {
               </Button>
               <Button
                 onClick={handleCreateProduct}
-                disabled={!newProductName.trim() || !newProductCompany.trim() || creatingProduct}
+                disabled={!newProductName.trim() || (!exactMatch && !newProductCompany.trim()) || creatingProduct}
               >
                 {creatingProduct ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-1.5 animate-spin" strokeWidth={1.5} />
                     {briefFile ? "Extracting & Creating..." : "Creating..."}
                   </>
+                ) : exactMatch ? (
+                  "Open existing"
                 ) : (
                   "Create"
                 )}
