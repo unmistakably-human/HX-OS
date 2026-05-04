@@ -820,12 +820,8 @@ export default function ContextPage() {
             </div>
             <div>
               <FieldLabel required>What this product is NOT</FieldLabel>
-              <p className="text-xs text-content-muted -mt-0.5 mb-2 leading-relaxed">
-                List adjacent things this product explicitly will not do. The AI uses this to avoid suggesting features and flows that fall outside scope, so be specific about what to rule out.
-                <br />
-                <span className="text-content-tertiary">
-                  Example: <em>&ldquo;A meal-planning app that does not generate recipes, does not track nutrition, and does not integrate with grocery delivery — only weekly meal selection from a curated catalog.&rdquo;</em>
-                </span>
+              <p className="text-xs text-content-tertiary -mt-0.5 mb-2 leading-relaxed">
+                Example: <em>&ldquo;A meal-planning app that does not generate recipes, does not track nutrition, and does not integrate with grocery delivery — only weekly meal selection from a curated catalog.&rdquo;</em>
               </p>
               <Textarea value={ctx.notThis} onChange={(e) => set("notThis", e.target.value)} rows={3} placeholder="Define boundaries of the product's scope. State what this product does not aim to do." />
             </div>
