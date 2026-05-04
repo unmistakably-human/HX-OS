@@ -19,6 +19,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import type { Product, FeatureSummary, ProductContext } from "@/lib/types";
+import { ACCEPTED_DOC_ACCEPT, ACCEPTED_DOC_LABEL } from "@/lib/extract-doc";
 import {
   listProducts,
   createProduct,
@@ -158,15 +159,6 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, []);
 
-  async function readFileAsText(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
-  }
-
   async function handleCreateProduct() {
     if (!newProductName.trim()) return;
     if (exactMatch) {
@@ -177,14 +169,17 @@ export default function DashboardPage() {
     try {
       const product = await createProduct(newProductName.trim(), newProductCompany.trim() || undefined);
 
-      // If a brief file was uploaded, parse it and save context
+      // If a brief file was uploaded, send it to the backend (multipart) so
+      // PDF + DOCX + TXT/MD all parse correctly. The route uses Anthropic's
+      // native PDF support for PDFs and `mammoth` for DOCX; client doesn't
+      // need to know about formats.
       if (briefFile) {
         try {
-          const text = await readFileAsText(briefFile);
+          const formData = new FormData();
+          formData.append("file", briefFile);
           const res = await fetch("/api/parse-brief", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text }),
+            body: formData,
           });
           if (res.ok) {
             const parsed = await res.json();
@@ -608,7 +603,7 @@ export default function DashboardPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.md,.txt,.docx,.doc"
+                  accept={ACCEPTED_DOC_ACCEPT}
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -630,7 +625,7 @@ export default function DashboardPage() {
                     className="mt-1 w-full flex items-center justify-center gap-2 px-3 py-3 border-2 border-dashed border-divider-dashed rounded-[8px] text-content-secondary hover:border-divider-card-hover hover:text-content-heading transition-colors"
                   >
                     <Upload className="w-4 h-4" strokeWidth={1.5} />
-                    <span className="text-body-sm">Choose file (PDF, MD, DOCX)</span>
+                    <span className="text-body-sm">Choose file ({ACCEPTED_DOC_LABEL})</span>
                   </button>
                 )}
                 <p className="text-overline text-content-muted mt-1">
