@@ -76,15 +76,38 @@ export default function DashboardPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Existing-project autocomplete on the name input (replaces the browser's
-  // tooltip-shaped autofill). Up to 8 case-insensitive name matches; exact
-  // match short-circuits Create and routes to the project's latest step.
+  // tooltip-shaped autofill). Matches case-insensitive substring against
+  // BOTH product name AND company — typing "Noth" should surface
+  // "Phone 4(a)" via its company "Nothing". Exact match (on product name
+  // only) short-circuits Create and routes to the project's latest step.
   const trimmedName = newProductName.trim().toLowerCase();
   const nameMatches = trimmedName.length > 0
-    ? products.filter((p) => p.name.toLowerCase().includes(trimmedName)).slice(0, 8)
+    ? products.filter((p) =>
+        p.name.toLowerCase().includes(trimmedName) ||
+        (p.company?.toLowerCase().includes(trimmedName) ?? false),
+      ).slice(0, 8)
     : [];
   const exactMatch = trimmedName.length > 0
     ? products.find((p) => p.name.toLowerCase() === trimmedName) ?? null
     : null;
+
+  // Company autocomplete on the company input — same dropdown shape as the
+  // product-name one but only company strings, deduplicated, suppresses
+  // browser autofill so the in-app dropdown is the only thing rendered.
+  const trimmedCompany = newProductCompany.trim().toLowerCase();
+  const allCompanies = Array.from(new Set(
+    products
+      .map((p) => p.company)
+      .filter((c): c is string => typeof c === "string" && c.trim().length > 0),
+  ));
+  // Hide the dropdown once the typed value already exactly matches an
+  // existing company — clicking a row populates the field with that value
+  // and the user shouldn't have to dismiss the dropdown manually.
+  const companyExactMatch = trimmedCompany.length > 0
+    && allCompanies.some((c) => c.toLowerCase() === trimmedCompany);
+  const companyMatches = trimmedCompany.length > 0 && !companyExactMatch
+    ? allCompanies.filter((c) => c.toLowerCase().includes(trimmedCompany)).slice(0, 8)
+    : [];
 
   // Where to land an existing project picked from the autocomplete:
   // - if a discovery deck has already been generated → /discovery
@@ -533,15 +556,43 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <div>
+              <div className="relative">
                 <Label className="text-body-sm text-content-secondary">Company *</Label>
                 <Input
                   value={newProductCompany}
                   onChange={(e) => setNewProductCompany(e.target.value)}
                   placeholder="e.g. Perfora"
                   className="mt-1"
-                  onKeyDown={(e) => e.key === "Enter" && !creatingProduct && handleCreateProduct()}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !creatingProduct) {
+                      e.preventDefault();
+                      handleCreateProduct();
+                    }
+                  }}
                 />
+                {companyMatches.length > 0 && (
+                  <div
+                    className="absolute left-0 right-0 mt-1 bg-surface-card border border-divider rounded-[8px] shadow-lg overflow-hidden z-10"
+                    role="listbox"
+                  >
+                    <div className="px-3 py-1.5 text-overline text-content-muted bg-surface-subtle border-b border-divider">
+                      Existing companies
+                    </div>
+                    {companyMatches.map((company) => (
+                      <button
+                        type="button"
+                        key={company}
+                        role="option"
+                        onClick={() => setNewProductCompany(company)}
+                        className="w-full px-3 py-2 text-left text-sm font-medium text-content-heading hover:bg-surface-subtle transition-colors"
+                      >
+                        {company}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Upload Brief */}
