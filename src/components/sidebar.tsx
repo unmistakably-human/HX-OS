@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Check, ArrowLeft, Plus, Loader2 } from "lucide-react";
+import { Check, ArrowLeft, Plus, Loader2, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createFeature } from "@/lib/projects";
+import { ShareProjectDialog } from "@/components/share-project-dialog";
+import { UserMenu } from "@/components/user-menu";
 import type { Product } from "@/lib/types";
 
 interface SidebarProps {
@@ -74,6 +76,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
   const [showNewFeature, setShowNewFeature] = useState(false);
   const [newFeatureName, setNewFeatureName] = useState("");
   const [creatingFeature, setCreatingFeature] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   async function handleCreateFeature() {
     if (!newFeatureName.trim() || creatingFeature) return;
@@ -108,6 +111,21 @@ export function Sidebar({ product, productId }: SidebarProps) {
           <div className="text-overline text-content-section-label truncate">{product.name}</div>
         </div>
       </Link>
+      <div className="px-3 pb-2">
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md border border-divider bg-surface-card px-2 py-1.5 text-xs font-medium text-content-heading transition-colors hover:bg-surface-subtle"
+        >
+          <UserPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Share project
+        </button>
+      </div>
+      <ShareProjectDialog
+        projectId={productId}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
 
       <nav className="flex-1 py-2 overflow-y-auto">
         {isFeatureRoute ? (
@@ -296,7 +314,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
         )}
       </nav>
 
-      <div className="px-4 py-3 border-t border-divider">
+      <div className="px-4 py-3 border-t border-divider flex items-center justify-between gap-2">
         <Link
           href="/"
           className="flex items-center gap-1.5 text-overline text-content-tertiary hover:text-content-secondary transition-colors duration-fast"
@@ -304,6 +322,7 @@ export function Sidebar({ product, productId }: SidebarProps) {
           <ArrowLeft className="w-3 h-3" strokeWidth={1.5} />
           Back to Dashboard
         </Link>
+        <UserMenu side="top" align="end" />
       </div>
     </aside>
   );
