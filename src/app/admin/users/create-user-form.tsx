@@ -66,7 +66,7 @@ export function CreateUserForm() {
           Role
         </Label>
         <input type="hidden" name="role" value={role} />
-        <Select value={role} onValueChange={setRole} disabled={pending}>
+        <Select value={role} onValueChange={(v) => v && setRole(v)} disabled={pending}>
           <SelectTrigger id="role" className="h-10">
             <SelectValue />
           </SelectTrigger>
