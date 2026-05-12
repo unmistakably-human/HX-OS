@@ -8,16 +8,18 @@
 --     trigger and the first-owner policy that worked around it
 -- Idempotent.
 
--- ─── 1. Migrate project_manager rows (none expected, safe to run) ──────
-UPDATE public.profiles  SET role         = 'design_lead' WHERE role         = 'project_manager';
-UPDATE public.allowlist SET default_role = 'design_lead' WHERE default_role = 'project_manager';
-
--- ─── 2. Rename design_lead → product_lead in the enum ──────────────────
--- (Skips if rename already happened. project_manager is left in the enum
--- but unused; PG doesn't allow dropping enum values cleanly.)
+-- ─── 1. Rename design_lead → product_lead in the enum ─────────────────
+-- Must come before any UPDATE that references either value, so the
+-- migration is re-runnable from any partial state. project_manager is
+-- left in the enum but unused; PG doesn't allow dropping enum values
+-- cleanly.
 DO $$ BEGIN
   ALTER TYPE app_role RENAME VALUE 'design_lead' TO 'product_lead';
 EXCEPTION WHEN invalid_parameter_value THEN NULL; END $$;
+
+-- ─── 2. Migrate any project_manager rows directly to product_lead ─────
+UPDATE public.profiles  SET role         = 'product_lead' WHERE role         = 'project_manager';
+UPDATE public.allowlist SET default_role = 'product_lead' WHERE default_role = 'project_manager';
 
 -- ─── 3. Drop phase_access column ───────────────────────────────────────
 ALTER TABLE public.project_members DROP COLUMN IF EXISTS phase_access;
