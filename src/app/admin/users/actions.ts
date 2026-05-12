@@ -21,6 +21,7 @@ async function requireAdmin() {
   if (!profile || profile.role !== "admin" || profile.deactivated) {
     throw new Error("Forbidden — admin only");
   }
+  return user;
 }
 
 function adminClient() {
@@ -31,75 +32,26 @@ function adminClient() {
   );
 }
 
-function isHumanxEmail(email: string): boolean {
-  return email.endsWith("@humanx.io");
-}
-
-export async function createUser(formData: FormData) {
-  const fullName = String(formData.get("full_name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const role = String(formData.get("role") ?? "designer") as AppRole;
-
-  if (!email) {
-    redirect("/admin/users?error=" + encodeURIComponent("Email required"));
-  }
+export async function changeRole(formData: FormData) {
+  const userId = String(formData.get("user_id") ?? "");
+  const role = String(formData.get("role") ?? "") as AppRole;
+  if (!userId) return;
   if (!ALLOWED_ROLES.includes(role)) {
     redirect("/admin/users?error=" + encodeURIComponent("Invalid role"));
   }
-
-  await requireAdmin();
+  const me = await requireAdmin();
+  if (userId === me.id && role !== "admin") {
+    redirect(
+      "/admin/users?error=" +
+        encodeURIComponent("You can't demote yourself out of admin — ask another admin to do it.")
+    );
+  }
   const sb = await createSSRClient();
-
-  // Domain check — humanx.io only, unless admin has pre-added an allowlist exception.
-  if (!isHumanxEmail(email)) {
-    const { data: exception } = await sb
-      .from("allowlist")
-      .select("email")
-      .eq("email", email)
-      .maybeSingle();
-    if (!exception) {
-      redirect(
-        "/admin/users?error=" +
-          encodeURIComponent(
-            "Email must be @humanx.io. For external collaborators, add to allowlist first via SQL."
-          )
-      );
-    }
-  }
-
-  const admin = adminClient();
-
-  // 1. Allowlist (must exist before user-create so trigger uses correct role).
-  const { error: allowErr } = await sb
-    .from("allowlist")
-    .upsert({ email, default_role: role });
-  if (allowErr) {
-    redirect("/admin/users?error=" + encodeURIComponent(allowErr.message));
-  }
-
-  // 2. Auth user — uses Admin API, default password, email pre-confirmed.
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password: DEFAULT_PASSWORD,
-    email_confirm: true,
-    user_metadata: fullName ? { full_name: fullName } : undefined,
-  });
+  const { error } = await sb.from("profiles").update({ role }).eq("id", userId);
   if (error) {
     redirect("/admin/users?error=" + encodeURIComponent(error.message));
   }
-
-  // 3. Trigger created the profile; backfill full_name if provided.
-  if (fullName && data.user) {
-    await admin.from("profiles").update({ full_name: fullName }).eq("id", data.user.id);
-  }
-
   revalidatePath("/admin/users");
-  redirect(
-    "/admin/users?success=" +
-      encodeURIComponent(
-        `Created ${email}. Default password: ${DEFAULT_PASSWORD} (must change on first login).`
-      )
-  );
 }
 
 export async function setDeactivated(formData: FormData) {
@@ -108,10 +60,7 @@ export async function setDeactivated(formData: FormData) {
   if (!userId) return;
   await requireAdmin();
   const sb = await createSSRClient();
-  const { error } = await sb
-    .from("profiles")
-    .update({ deactivated })
-    .eq("id", userId);
+  const { error } = await sb.from("profiles").update({ deactivated }).eq("id", userId);
   if (error) {
     redirect("/admin/users?error=" + encodeURIComponent(error.message));
   }
@@ -129,10 +78,7 @@ export async function resetPassword(formData: FormData) {
   if (error) {
     redirect("/admin/users?error=" + encodeURIComponent(error.message));
   }
-  await admin
-    .from("profiles")
-    .update({ must_change_password: true })
-    .eq("id", userId);
+  await admin.from("profiles").update({ must_change_password: true }).eq("id", userId);
   revalidatePath("/admin/users");
   redirect(
     "/admin/users?success=" +

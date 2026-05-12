@@ -1,29 +1,30 @@
 import Link from "next/link";
-import { login } from "./actions";
+import { ArrowLeft } from "lucide-react";
+import { signup } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/password-input";
 
-export default async function LoginPage({
+export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface-page px-4">
       <form
-        action={login}
+        action={signup}
         className="w-full max-w-sm rounded-xl border border-border bg-surface-card p-8 shadow-sm"
       >
         <div className="mb-6 flex flex-col items-center gap-3">
           <img src="/humanx-logo.svg" alt="HumanX Labs" className="h-9 w-auto" />
           <div className="text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              HumanX Labs — internal access only
+              For @humanx.io and @juicelabs.ai emails only.
             </p>
           </div>
         </div>
@@ -46,18 +47,23 @@ export default async function LoginPage({
             <PasswordInput
               id="password"
               name="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
+              minLength={10}
+              placeholder="At least 10 characters"
             />
-            <p className="text-xs text-muted-foreground">
-              First-time admins, default password:{" "}
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
-                HumanX@Welcome2026
-              </code>
-            </p>
           </div>
 
-          {next && <input type="hidden" name="next" value={next} />}
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm">Confirm password</Label>
+            <PasswordInput
+              id="confirm"
+              name="confirm"
+              autoComplete="new-password"
+              required
+              minLength={10}
+            />
+          </div>
 
           {error && (
             <p className="rounded-md bg-red-50 p-2 text-sm text-red-700" role="alert">
@@ -66,15 +72,16 @@ export default async function LoginPage({
           )}
 
           <Button type="submit" className="w-full">
-            Sign in
+            Create account
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-medium text-foreground hover:underline">
-              Sign up
-            </Link>
-          </p>
+          <Link
+            href="/login"
+            className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to login
+          </Link>
         </div>
       </form>
     </main>

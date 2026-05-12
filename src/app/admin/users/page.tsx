@@ -2,28 +2,32 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, KeyRound, UserX, UserCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase-server";
-import { CreateUserForm } from "./create-user-form";
-import { setDeactivated, resetPassword } from "./actions";
+import { setDeactivated, resetPassword, changeRole } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Admin",
   product_lead: "Product Lead",
-  // Legacy values from before the simplification — kept for any rows that
-  // didn't get migrated. Should never appear once the migration runs.
+  designer: "Designer",
+  // Legacy fallback if any row didn't get migrated.
   project_manager: "Project Manager",
   design_lead: "Design Lead",
-  designer: "Designer",
 };
 
 const ROLE_BADGE: Record<string, string> = {
   admin: "bg-violet-100 text-violet-900",
   product_lead: "bg-emerald-100 text-emerald-900",
+  designer: "bg-slate-100 text-slate-900",
   project_manager: "bg-blue-100 text-blue-900",
   design_lead: "bg-emerald-100 text-emerald-900",
-  designer: "bg-slate-100 text-slate-900",
 };
+
+const NEXT_ROLE_OPTIONS: { value: "admin" | "product_lead" | "designer"; label: string }[] = [
+  { value: "designer", label: "Set as Designer" },
+  { value: "product_lead", label: "Set as Product Lead" },
+  { value: "admin", label: "Set as Admin" },
+];
 
 export default async function AdminUsersPage({
   searchParams,
@@ -46,9 +50,7 @@ export default async function AdminUsersPage({
       <main className="flex min-h-screen items-center justify-center bg-surface-page px-4">
         <div className="max-w-md rounded-xl border border-border bg-surface-card p-8 text-center">
           <h1 className="text-xl font-semibold">Forbidden</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Only admins can manage users.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Only admins can manage users.</p>
           <Link
             href="/"
             className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
@@ -68,127 +70,142 @@ export default async function AdminUsersPage({
   return (
     <main className="min-h-screen bg-surface-page">
       <div className="mx-auto max-w-5xl px-6 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <Link
-              href="/"
-              className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
-            </Link>
-            <h1 className="text-2xl font-semibold tracking-tight">User access</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create accounts for leads, managers, and designers. New users sign in with the
-              default password and must change it on first login.
-            </p>
-          </div>
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight">User access</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Accounts are self-created — anyone with a <strong>@humanx.io</strong> or{" "}
+            <strong>@juicelabs.ai</strong> email can sign up and gets the Designer role by default.
+            Use this page to promote, demote, deactivate, or reset passwords.
+          </p>
         </div>
 
-        {/* Create form */}
-        <section className="mb-8 rounded-xl border border-border bg-surface-card p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Create new user
-          </h2>
-          <CreateUserForm />
-          {error && (
-            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700" role="status">
-              {success}
-            </p>
-          )}
-        </section>
+        {error && (
+          <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        )}
+        {success && (
+          <p className="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700" role="status">
+            {success}
+          </p>
+        )}
 
-        {/* User list */}
         <section className="rounded-xl border border-border bg-surface-card">
           <h2 className="border-b border-border px-6 py-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Existing users ({profiles?.length ?? 0})
+            Users ({profiles?.length ?? 0})
           </h2>
           {!profiles || profiles.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground">No users yet.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {profiles.map((p) => (
-                <li
-                  key={p.id}
-                  className={`flex items-center gap-4 px-6 py-4 ${p.deactivated ? "opacity-50" : ""}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium">
-                        {p.full_name || p.email.split("@")[0]}
-                      </span>
-                      <span
-                        className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                          ROLE_BADGE[p.role] ?? "bg-slate-100 text-slate-900"
-                        }`}
-                      >
-                        {ROLE_LABEL[p.role] ?? p.role}
-                      </span>
-                      {p.must_change_password && !p.deactivated && (
-                        <span className="inline-flex shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
-                          Pending first login
+              {profiles.map((p) => {
+                const isSelf = p.id === user.id;
+                return (
+                  <li
+                    key={p.id}
+                    className={`flex flex-wrap items-center gap-3 px-6 py-4 ${
+                      p.deactivated ? "opacity-60" : ""
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-sm font-medium">
+                          {p.full_name || p.email.split("@")[0]}
                         </span>
-                      )}
-                      {p.deactivated && (
-                        <span className="inline-flex shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-900">
-                          Deactivated
+                        <span
+                          className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            ROLE_BADGE[p.role] ?? "bg-slate-100 text-slate-900"
+                          }`}
+                        >
+                          {ROLE_LABEL[p.role] ?? p.role}
                         </span>
-                      )}
+                        {isSelf && (
+                          <span className="inline-flex shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-900">
+                            You
+                          </span>
+                        )}
+                        {p.must_change_password && !p.deactivated && (
+                          <span className="inline-flex shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                            Password not set
+                          </span>
+                        )}
+                        {p.deactivated && (
+                          <span className="inline-flex shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-900">
+                            Deactivated
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">{p.email}</div>
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">{p.email}</div>
-                  </div>
 
-                  <form action={resetPassword}>
-                    <input type="hidden" name="user_id" value={p.id} />
-                    <button
-                      type="submit"
-                      title="Reset to default password"
-                      className="flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <KeyRound className="h-3.5 w-3.5" />
-                      Reset password
-                    </button>
-                  </form>
+                    {/* Role change buttons — visible for every role except the current one */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {NEXT_ROLE_OPTIONS.filter((o) => o.value !== p.role).map((o) => (
+                        <form key={o.value} action={changeRole}>
+                          <input type="hidden" name="user_id" value={p.id} />
+                          <input type="hidden" name="role" value={o.value} />
+                          <button
+                            type="submit"
+                            className="flex h-8 items-center gap-1 rounded-lg border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          >
+                            {o.label}
+                          </button>
+                        </form>
+                      ))}
+                    </div>
 
-                  <form action={setDeactivated}>
-                    <input type="hidden" name="user_id" value={p.id} />
-                    <input
-                      type="hidden"
-                      name="deactivated"
-                      value={p.deactivated ? "false" : "true"}
-                    />
-                    <button
-                      type="submit"
-                      title={p.deactivated ? "Reactivate" : "Deactivate"}
-                      disabled={p.id === user.id}
-                      className="flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {p.deactivated ? (
-                        <>
-                          <UserCheck className="h-3.5 w-3.5" />
-                          Reactivate
-                        </>
-                      ) : (
-                        <>
-                          <UserX className="h-3.5 w-3.5" />
-                          Deactivate
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </li>
-              ))}
+                    <form action={resetPassword}>
+                      <input type="hidden" name="user_id" value={p.id} />
+                      <button
+                        type="submit"
+                        title="Reset to default password"
+                        className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" /> Reset password
+                      </button>
+                    </form>
+
+                    <form action={setDeactivated}>
+                      <input type="hidden" name="user_id" value={p.id} />
+                      <input
+                        type="hidden"
+                        name="deactivated"
+                        value={p.deactivated ? "false" : "true"}
+                      />
+                      <button
+                        type="submit"
+                        title={p.deactivated ? "Reactivate" : "Deactivate"}
+                        disabled={isSelf}
+                        className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {p.deactivated ? (
+                          <>
+                            <UserCheck className="h-3.5 w-3.5" /> Reactivate
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="h-3.5 w-3.5" /> Deactivate
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
 
         <p className="mt-6 text-xs text-muted-foreground">
-          Default password for new accounts and resets:{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono">HumanX@Welcome2026</code>
+          Reset password sets the user back to{" "}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono">HumanX@Welcome2026</code>{" "}
+          and forces a change on next login.
         </p>
       </div>
     </main>
