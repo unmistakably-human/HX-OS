@@ -7,11 +7,16 @@ import { createClient as createServiceRole } from "@supabase/supabase-js";
 const ALLOWED_DOMAINS = ["humanx.io", "juicelabs.ai"];
 
 function adminClient() {
-  return createServiceRole(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "Server misconfigured: missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env var"
+    );
+  }
+  return createServiceRole(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
 export async function signup(formData: FormData) {
