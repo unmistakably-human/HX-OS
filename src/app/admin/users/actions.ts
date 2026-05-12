@@ -6,7 +6,7 @@ import { createClient as createSSRClient } from "@/lib/supabase-server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 const DEFAULT_PASSWORD = "HumanX@Welcome2026";
-const ALLOWED_ROLES = ["admin", "project_manager", "design_lead", "designer"] as const;
+const ALLOWED_ROLES = ["admin", "product_lead", "designer"] as const;
 type AppRole = (typeof ALLOWED_ROLES)[number];
 
 async function requireAdmin() {

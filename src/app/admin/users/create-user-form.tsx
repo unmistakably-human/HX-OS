@@ -16,8 +16,7 @@ import { createUser } from "./actions";
 
 const ROLE_OPTIONS = [
   { value: "designer", label: "Designer" },
-  { value: "design_lead", label: "Design Lead" },
-  { value: "project_manager", label: "Project Manager" },
+  { value: "product_lead", label: "Product Lead" },
   { value: "admin", label: "Admin" },
 ];
 

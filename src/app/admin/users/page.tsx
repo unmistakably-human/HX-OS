@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Admin",
+  product_lead: "Product Lead",
+  // Legacy values from before the simplification — kept for any rows that
+  // didn't get migrated. Should never appear once the migration runs.
   project_manager: "Project Manager",
   design_lead: "Design Lead",
   designer: "Designer",
@@ -16,6 +19,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 const ROLE_BADGE: Record<string, string> = {
   admin: "bg-violet-100 text-violet-900",
+  product_lead: "bg-emerald-100 text-emerald-900",
   project_manager: "bg-blue-100 text-blue-900",
   design_lead: "bg-emerald-100 text-emerald-900",
   designer: "bg-slate-100 text-slate-900",
