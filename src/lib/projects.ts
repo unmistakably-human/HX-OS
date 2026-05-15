@@ -25,14 +25,11 @@ export async function getProduct(id: string): Promise<Product> {
 }
 
 export async function createProduct(name: string, company?: string): Promise<Product> {
-  const { data, error } = await supabase
-    .from("products")
-    .insert({ name, company: company || null })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  // Delegates to a server action that creates the product + the creator's
+  // project_members row atomically with service-role. Bypasses the
+  // RLS/trigger problem we were hitting with direct client inserts.
+  const { createProjectAction } = await import("@/app/actions/projects");
+  return await createProjectAction(name, company || null);
 }
 
 export async function updateProduct(id: string, updates: Record<string, unknown>): Promise<Product> {

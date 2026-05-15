@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck, Radio } from "lucide-react";
+import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck, Radio, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SignalFeed } from "@/components/signal-feed";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ import {
   createFeature,
   saveProductContext,
 } from "@/lib/projects";
+import { supabase } from "@/lib/supabase";
+import { UserMenu } from "@/components/user-menu";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -66,6 +68,7 @@ export default function DashboardPage() {
   const [view, setView] = useState<"signals" | "projects">("signals");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // New product modal
   const [showNewProduct, setShowNewProduct] = useState(false);
@@ -145,7 +148,19 @@ export default function DashboardPage() {
     let cancelled = false;
     (async () => {
       try {
-        const data = await listProducts();
+        const [{ data: userResp }, data] = await Promise.all([
+          supabase.auth.getUser(),
+          listProducts(),
+        ]);
+        if (cancelled) return;
+        if (userResp.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", userResp.user.id)
+            .single();
+          if (!cancelled) setIsAdmin(profile?.role === "admin");
+        }
         if (!cancelled) {
           setProducts(data);
           setLoading(false);
@@ -326,6 +341,12 @@ export default function DashboardPage() {
 
           {/* Right — Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => router.push("/admin/users")} className="text-xs h-8">
+                <Shield className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+                Admin
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => router.push("/review")} className="text-xs h-8">
               <ClipboardCheck className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
               Review
@@ -334,6 +355,7 @@ export default function DashboardPage() {
               <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
               New Product
             </Button>
+            <UserMenu />
           </div>
         </div>
       </div>
