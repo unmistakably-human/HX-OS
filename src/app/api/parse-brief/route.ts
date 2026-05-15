@@ -1,4 +1,5 @@
 import { callClaude } from "@/lib/claude";
+import { extractDocPart, userMessageWithDoc, UnsupportedDocError } from "@/lib/extract-doc";
 
 const PARSE_BRIEF_SYSTEM = `You are an expert at extracting structured product information from client briefs, pitch decks, PRDs, and similar documents.
 
@@ -38,25 +39,54 @@ Rules:
 - Keep extracted text concise — summarize long passages.
 - The clientBrief field should contain a summary of the entire uploaded document.`;
 
+const USER_PROMPT = "Extract structured product context from this brief.";
+
 export async function POST(req: Request) {
   try {
-    const { text } = await req.json();
+    const contentType = req.headers.get("content-type") ?? "";
 
-    if (!text || typeof text !== "string" || text.trim().length < 20) {
-      return Response.json(
-        { error: "Brief text is too short. Please paste more content." },
-        { status: 400 }
-      );
+    // Build the user message either from a multipart file upload (PDF/DOCX/TXT/MD)
+    // or from the legacy `{ text }` JSON body.
+    let userMessage: Parameters<typeof callClaude>[0]["messages"][number];
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData();
+      const file = form.get("file");
+      if (!(file instanceof File)) {
+        return Response.json({ error: "No file uploaded under field 'file'." }, { status: 400 });
+      }
+      let part;
+      try {
+        part = await extractDocPart(file);
+      } catch (e) {
+        if (e instanceof UnsupportedDocError) {
+          return Response.json({ error: e.message }, { status: 400 });
+        }
+        throw e;
+      }
+      if (part.kind === "text" && part.text.length < 20) {
+        return Response.json(
+          { error: "Couldn't extract enough text from the document. Try a clearer file." },
+          { status: 400 },
+        );
+      }
+      userMessage = userMessageWithDoc(part, USER_PROMPT);
+    } else {
+      const { text } = await req.json();
+      if (!text || typeof text !== "string" || text.trim().length < 20) {
+        return Response.json(
+          { error: "Brief text is too short. Please paste more content." },
+          { status: 400 },
+        );
+      }
+      userMessage = {
+        role: "user",
+        content: `${USER_PROMPT}\n\n${text.slice(0, 15000)}`,
+      };
     }
 
     const response = await callClaude({
       system: PARSE_BRIEF_SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content: `Extract structured product context from this brief:\n\n${text.slice(0, 15000)}`,
-        },
-      ],
+      messages: [userMessage],
       maxTokens: 4000,
     });
 
@@ -71,7 +101,7 @@ export async function POST(req: Request) {
     } catch {
       return Response.json(
         { error: "Failed to parse brief. Try pasting a clearer document." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -80,7 +110,7 @@ export async function POST(req: Request) {
     console.error("Parse brief error:", err);
     return Response.json(
       { error: err instanceof Error ? err.message : "Failed to parse brief" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
