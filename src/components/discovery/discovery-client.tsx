@@ -8,9 +8,13 @@ import { PhaseHeader } from "@/components/phase-header";
 import { DeckNavigator } from "@/components/discovery/deck/deck-navigator";
 import { DeckV4 } from "@/components/discovery/deck/deck-v4";
 import { DiscoveryLoading } from "@/components/discovery/discovery-loading";
-import type { AnyDiscoveryDeck } from "@/lib/discovery-types";
+import type { AnyDiscoveryDeck, DiscoveryDeckV4 } from "@/lib/discovery-types";
 import { isDeckV4 } from "@/lib/discovery-types";
+import { ACT_CONFIGS } from "@/lib/discovery-acts";
+import type { ActNumber } from "@/lib/discovery-acts";
 import type { Product } from "@/lib/types";
+
+const TOTAL_ACTS: ActNumber[] = [1, 2, 3, 4];
 
 export function DiscoveryClient({ project: initial }: { project: Product }) {
   const router = useRouter();
@@ -19,6 +23,7 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [snippets, setSnippets] = useState<string[]>([]);
+  const [currentAct, setCurrentAct] = useState<ActNumber | null>(null);
 
   // Resolve existing deck — handle both string and object format, and both
   // v3 and v4 shapes (v4 is detected via the explicit "version" field on the
@@ -40,59 +45,101 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
   const [deck, setDeck] = useState<AnyDiscoveryDeck | null>(existingDeck);
   const autoStarted = useRef(false);
 
-  async function handleGenerate(brief: string) {
-    setLoading(true);
-    setError(null);
+  async function runAct(
+    actNumber: ActNumber,
+    prev: Partial<DiscoveryDeckV4>,
+    brief: string,
+  ): Promise<Partial<DiscoveryDeckV4>> {
+    setCurrentAct(actNumber);
     setProgress(0);
     setSnippets([]);
-    try {
-      const res = await fetch(`/api/products/${product.id}/discover`, {
+
+    const res = await fetch(
+      `/api/products/${product.id}/discover/act/${actNumber}`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brief }),
-      });
+        body: JSON.stringify({ prev, brief }),
+      },
+    );
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: `API error ${res.status}` }));
-        throw new Error(errData.error || `API error ${res.status}`);
-      }
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ error: `API error ${res.status}` }));
+      throw new Error(errData.error || `API error ${res.status}`);
+    }
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let actPartial: Partial<DiscoveryDeckV4> | null = null;
 
-      while (true) {
-        const { done: streamDone, value } = await reader.read();
-        if (streamDone) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.progress) setProgress(data.progress);
-            if (data.snippets) setSnippets(data.snippets);
-            if (data.error) throw new Error(data.error);
-            if (data.deck) {
-              setDeck(data.deck);
-              setProduct((prev) => ({
-                ...prev,
-                discovery_insights: JSON.stringify(data.deck),
-                phase_discovery: "complete" as const,
-              }));
-            }
-          } catch (parseErr) {
-            if (parseErr instanceof Error && parseErr.message !== "Unexpected end of JSON input") {
-              throw parseErr;
-            }
+    while (true) {
+      const { done: streamDone, value } = await reader.read();
+      if (streamDone) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.progress) setProgress(data.progress);
+          if (data.snippets) setSnippets(data.snippets);
+          if (data.error) throw new Error(data.error);
+          if (data.partial && data.done) {
+            actPartial = data.partial as Partial<DiscoveryDeckV4>;
+          }
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message !== "Unexpected end of JSON input") {
+            throw parseErr;
           }
         }
       }
+    }
+
+    if (!actPartial) {
+      throw new Error(`Act ${actNumber} ended without returning a partial.`);
+    }
+    return actPartial;
+  }
+
+  async function handleGenerate(brief: string) {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let accumulator: Partial<DiscoveryDeckV4> = {};
+      for (const actNumber of TOTAL_ACTS) {
+        const actPartial = await runAct(actNumber, accumulator, brief);
+        accumulator = { ...accumulator, ...actPartial };
+      }
+
+      // Final save — server stamps version, saves to DB, fans out knowledge
+      // extraction.
+      const saveRes = await fetch(`/api/products/${product.id}/discover/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deck: accumulator }),
+      });
+      if (!saveRes.ok) {
+        const errData = await saveRes.json().catch(() => ({ error: `Save failed ${saveRes.status}` }));
+        throw new Error(errData.error || `Save failed ${saveRes.status}`);
+      }
+      const saved = await saveRes.json();
+      const fullDeck = (saved.deck ?? accumulator) as DiscoveryDeckV4;
+
+      setDeck(fullDeck);
+      setProduct((prev) => ({
+        ...prev,
+        discovery_insights: JSON.stringify(fullDeck),
+        phase_discovery: "complete" as const,
+      }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+      setCurrentAct(null);
     }
-    setLoading(false);
   }
 
   // Auto-trigger discovery when enriched PCD exists but no deck
@@ -135,10 +182,26 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
 
   // STATE 2: Loading
   if (loading) {
+    const actConfig = currentAct ? ACT_CONFIGS[currentAct] : null;
     return (
       <>
-        <PhaseHeader title="Discovery" subtitle="Running analysis..." />
-        <DiscoveryLoading progress={progress} snippets={snippets} />
+        <PhaseHeader
+          title="Discovery"
+          subtitle={
+            currentAct
+              ? `Act ${currentAct} of 4 · ${actConfig?.shortLabel ?? ""}`
+              : "Running analysis..."
+          }
+        />
+        <DiscoveryLoading
+          key={currentAct ?? "init"}
+          progress={progress}
+          snippets={snippets}
+          actLabel={actConfig?.label}
+          actNumber={currentAct ?? undefined}
+          actTotal={TOTAL_ACTS.length}
+          actMaxChars={actConfig ? actConfig.maxTokens * 4 : undefined}
+        />
       </>
     );
   }

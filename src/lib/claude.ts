@@ -10,12 +10,14 @@ export async function streamClaude({
   system,
   userMessage,
   useSearch = false,
+  searchMaxUses,
   maxTokens = 8000,
   cachedContext,
 }: {
   system: string;
   userMessage: string;
   useSearch?: boolean;
+  searchMaxUses?: number;
   maxTokens?: number;
   cachedContext?: string;
 }) {
@@ -40,9 +42,12 @@ export async function streamClaude({
 
   if (useSearch) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (params as any).tools = [
-      { type: "web_search_20250305", name: "web_search" },
-    ];
+    const searchTool: any = { type: "web_search_20250305", name: "web_search" };
+    if (typeof searchMaxUses === "number") {
+      searchTool.max_uses = searchMaxUses;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (params as any).tools = [searchTool];
   }
 
   return getClient().messages.stream(params);
