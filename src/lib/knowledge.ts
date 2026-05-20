@@ -355,6 +355,212 @@ export async function extractFromDiscovery(productId: string, deck: Record<strin
   }
 }
 
+// ═══ EXTRACTION: Discovery Deck v4 ═══
+
+export async function extractFromDiscoveryV4(productId: string, deck: Record<string, unknown>): Promise<void> {
+  try {
+    // Clear old discovery entries
+    await supabase
+      .from("knowledge")
+      .delete()
+      .eq("product_id", productId)
+      .eq("source", "discovery");
+
+    const entries: Parameters<typeof saveKnowledgeEntries>[0] = [];
+    const base = { product_id: productId, feature_id: null, source: "discovery" as const, relevance_score: 1.0 };
+
+    // Category insights → domain. Carry the I-x ID as a tag so downstream
+    // retrieval can trace back to the originating section.
+    const cat = deck.category_insights as { id?: string; statement?: string; evidence?: string; could_mean?: string[]; contradicts_convention?: boolean }[] | undefined;
+    if (Array.isArray(cat)) {
+      for (const ci of cat) {
+        if (ci.statement) {
+          const tags = [ci.id, "category_insight"].filter(Boolean) as string[];
+          if (ci.contradicts_convention) tags.push("contradicts_convention");
+          entries.push({
+            ...base,
+            category: "domain",
+            title: ci.statement.slice(0, 90),
+            content: [ci.evidence, ...(ci.could_mean || [])].filter(Boolean).join(" — "),
+            tags,
+          });
+        }
+      }
+    }
+
+    // Behaviour insights → user_behaviour
+    const bh = deck.behaviour_insights as { id?: string; persona?: string; frictions?: string; benchmark?: string }[] | undefined;
+    if (Array.isArray(bh)) {
+      for (const b of bh) {
+        if (b.persona || b.frictions) {
+          entries.push({
+            ...base,
+            category: "user_behaviour",
+            title: b.persona || "Behaviour insight",
+            content: [b.frictions, b.benchmark].filter(Boolean).join(" — "),
+            tags: [b.id, "behaviour_insight"].filter(Boolean) as string[],
+          });
+        }
+      }
+    }
+
+    // Voice-of-customer → user_behaviour (the underlying user complaint)
+    const voc = deck.voice_of_customer as
+      | { category_complaints?: Record<string, unknown>[]; competitor_complaints?: Record<string, unknown>[]; client_complaints?: Record<string, unknown>[] }
+      | undefined;
+    if (voc) {
+      const allVoc = [
+        ...(voc.category_complaints || []),
+        ...(voc.competitor_complaints || []),
+        ...(voc.client_complaints || []),
+      ] as { id?: string; source?: string; category?: string; target?: string; quote?: string; summary?: string }[];
+      for (const v of allVoc) {
+        if (v.summary || v.quote) {
+          entries.push({
+            ...base,
+            category: "user_behaviour",
+            title: v.quote ? `"${v.quote}"` : `VoC: ${v.target || "category"}`,
+            content: [v.summary, v.source].filter(Boolean).join(" — "),
+            tags: [v.id, "voc", v.category, v.target].filter(Boolean) as string[],
+          });
+        }
+      }
+    }
+
+    // Competitor set → competitor (best-at + weakest-at + steal)
+    const cs = deck.competitor_set as { cards?: { name?: string; country?: string; best_at?: string; weakest_at?: string; what_to_steal?: string; client_benchmark?: boolean }[] } | undefined;
+    if (cs?.cards) {
+      for (const c of cs.cards) {
+        if (c.name) {
+          const tags = ["competitor"];
+          if (c.client_benchmark) tags.push("client_benchmark");
+          entries.push({
+            ...base,
+            category: "competitor",
+            title: c.name,
+            content: [
+              c.best_at ? `Best at: ${c.best_at}` : null,
+              c.weakest_at ? `Weakest at: ${c.weakest_at}` : null,
+              c.what_to_steal ? `Steal: ${c.what_to_steal}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+            tags,
+          });
+        }
+      }
+    }
+
+    // Competitive dimensions → competitor (the lever)
+    const cd = deck.competitive_dimensions as { id?: string; gap_statement?: string; audience_impact?: string }[] | undefined;
+    if (Array.isArray(cd)) {
+      for (const d of cd) {
+        if (d.gap_statement) {
+          entries.push({
+            ...base,
+            category: "competitor",
+            title: d.gap_statement.slice(0, 90),
+            content: d.audience_impact || "",
+            tags: [d.id, "competitive_dimension"].filter(Boolean) as string[],
+          });
+        }
+      }
+    }
+
+    // Ideas → opportunity (the cheap one — research-supported)
+    const ideas = deck.ideas as { serial?: string; statement?: string; whats_behind_it?: string; kpi_tags?: { label?: string }[]; falsified_by?: string }[] | undefined;
+    if (Array.isArray(ideas)) {
+      for (const id of ideas) {
+        if (id.statement) {
+          const tags = [id.serial ? `idea_${id.serial}` : "idea", ...(id.kpi_tags || []).map((k) => k.label).filter(Boolean) as string[]];
+          entries.push({
+            ...base,
+            category: "opportunity",
+            title: id.statement.slice(0, 90),
+            content: [id.whats_behind_it, id.falsified_by ? `Falsified by: ${id.falsified_by}` : null].filter(Boolean).join(" — "),
+            tags,
+          });
+        }
+      }
+    }
+
+    // Tensions → principle (the open trade-off the team has to make)
+    const ten = deck.tensions as { headline?: string; tag?: string; research_suggests?: string; pulls_other_way?: string }[] | undefined;
+    if (Array.isArray(ten)) {
+      for (const t of ten) {
+        if (t.headline) {
+          entries.push({
+            ...base,
+            category: "principle",
+            title: t.headline.slice(0, 90),
+            content: [t.research_suggests, t.pulls_other_way].filter(Boolean).join(" — "),
+            tags: ["tension", t.tag].filter(Boolean) as string[],
+          });
+        }
+      }
+    }
+
+    // Module ideas → pattern (the actual designable surfaces)
+    const mods = deck.module_ideas as { name?: string; descriptor?: string; what_it_is?: string; on_in_scope?: boolean }[] | undefined;
+    if (Array.isArray(mods)) {
+      for (const m of mods) {
+        if (m.name) {
+          const tags = ["module"];
+          if (m.on_in_scope) tags.push("in_scope");
+          entries.push({
+            ...base,
+            category: "pattern",
+            title: m.name,
+            content: [m.descriptor, m.what_it_is].filter(Boolean).join(" — "),
+            tags,
+          });
+        }
+      }
+    }
+
+    // KPI focus → opportunity (the design moves attached to a KPI)
+    const kpi = deck.kpi_focus as { id?: string; kpi?: { label?: string; direction?: string }; target?: string; what_moves_this?: { text?: string }[] }[] | undefined;
+    if (Array.isArray(kpi)) {
+      for (const k of kpi) {
+        if (k.kpi?.label) {
+          entries.push({
+            ...base,
+            category: "opportunity",
+            title: `KPI: ${k.kpi.label}`,
+            content: [
+              k.target ? `Target: ${k.target}.` : null,
+              (k.what_moves_this || []).map((x) => x.text).filter(Boolean).join(" — "),
+            ]
+              .filter(Boolean)
+              .join(" "),
+            tags: [k.id, "kpi", k.kpi.direction].filter(Boolean) as string[],
+          });
+        }
+      }
+    }
+
+    // Beyond-the-brief delighters → opportunity (the lateral provocations)
+    const beyond = deck.beyond_the_brief as { id?: string; register?: string; name?: string; hook?: string; what_it_is?: string; borrowed_from?: string }[] | undefined;
+    if (Array.isArray(beyond)) {
+      for (const b of beyond) {
+        if (b.name) {
+          entries.push({
+            ...base,
+            category: "opportunity",
+            title: `${b.name}${b.hook ? ` — ${b.hook}` : ""}`,
+            content: [b.what_it_is, b.borrowed_from ? `Borrowed from: ${b.borrowed_from}` : null].filter(Boolean).join(" — "),
+            tags: [b.id, "delighter", b.register].filter(Boolean) as string[],
+          });
+        }
+      }
+    }
+
+    await saveKnowledgeEntries(entries);
+  } catch (err) {
+    console.error("Discovery v4 knowledge extraction failed:", err);
+  }
+}
+
 // ═══ EXTRACTION: Feature Insights ═══
 
 export async function extractFromInsights(

@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowRight, Download, Plus, Loader2, BookOpen } from "lucide-react";
+import { Search, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { createFeature } from "@/lib/projects";
 import { PhaseHeader } from "@/components/phase-header";
 import { DeckNavigator } from "@/components/discovery/deck/deck-navigator";
+import { DeckV4 } from "@/components/discovery/deck/deck-v4";
 import { DiscoveryLoading } from "@/components/discovery/discovery-loading";
-import { downloadDeckHtml } from "@/lib/discovery-export";
-import type { DiscoveryDeck } from "@/lib/discovery-types";
+import type { AnyDiscoveryDeck } from "@/lib/discovery-types";
+import { isDeckV4 } from "@/lib/discovery-types";
 import type { Product } from "@/lib/types";
 
 export function DiscoveryClient({ project: initial }: { project: Product }) {
@@ -20,27 +19,15 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [snippets, setSnippets] = useState<string[]>([]);
-  const [newFeatureName, setNewFeatureName] = useState("");
-  const [creatingFeature, setCreatingFeature] = useState(false);
 
-  const handleCreateFeature = useCallback(async () => {
-    if (!newFeatureName.trim()) return;
-    setCreatingFeature(true);
-    try {
-      const feature = await createFeature(product.id, newFeatureName.trim(), "screen");
-      router.push(`/products/${product.id}/features/${feature.id}`);
-    } catch (err) {
-      console.error("Failed to create feature:", err);
-      setCreatingFeature(false);
-    }
-  }, [product.id, newFeatureName, router]);
-
-  // Resolve existing deck — handle both string and object format
+  // Resolve existing deck — handle both string and object format, and both
+  // v3 and v4 shapes (v4 is detected via the explicit "version" field on the
+  // parsed JSON).
   const existingInsights = product.discovery_insights;
-  let existingDeck: DiscoveryDeck | null = null;
+  let existingDeck: AnyDiscoveryDeck | null = null;
   if (existingInsights) {
     if (typeof existingInsights === "object") {
-      existingDeck = existingInsights as unknown as DiscoveryDeck;
+      existingDeck = existingInsights as unknown as AnyDiscoveryDeck;
     } else if (typeof existingInsights === "string") {
       try {
         existingDeck = JSON.parse(existingInsights);
@@ -50,7 +37,7 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
     }
   }
 
-  const [deck, setDeck] = useState<DiscoveryDeck | null>(existingDeck);
+  const [deck, setDeck] = useState<AnyDiscoveryDeck | null>(existingDeck);
   const autoStarted = useRef(false);
 
   async function handleGenerate(brief: string) {
@@ -182,10 +169,8 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           subtitle="Insights deck complete"
           actions={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => downloadDeckHtml(deck)} className="text-xs h-8 rounded-md">
-                <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
-                Download
-              </Button>
+              {/* Download button is hidden in the v4 cut. Will return once
+                  the v4 export + Decisions Worksheet are wired up. */}
               <Button variant="outline" size="sm" onClick={() => router.push(`/products/${product.id}/knowledge`)} className="text-xs h-8 rounded-md">
                 <BookOpen className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 Knowledge Base
@@ -194,8 +179,8 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
           }
         />
         <div className="flex-1 overflow-y-auto px-8 py-8">
-          <div className="max-w-[960px] mx-auto">
-            <DeckNavigator data={deck} />
+          <div className="max-w-[1120px] mx-auto">
+            {isDeckV4(deck) ? <DeckV4 deck={deck} /> : <DeckNavigator data={deck} />}
           </div>
         </div>
       </>
