@@ -10,8 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useStream } from "@/hooks/use-stream";
-import type { ProductContext, UserSegment, DesignTokens, AudienceEntry } from "@/lib/types";
-import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon, X, Sparkles } from "lucide-react";
+import type { ProductContext, UserSegment, DesignTokens, AudienceEntry, ClientKpi, ClientBenchmark } from "@/lib/types";
+import { ArrowLeft, ArrowRight, Check, Loader2, Upload, Wand2, ExternalLink, ImageIcon, X, Sparkles, Plus } from "lucide-react";
 
 const STEP_LABELS = ["Overview", "Product", "User Segments", "Structure", "Visual"] as const;
 
@@ -135,6 +135,7 @@ function emptyContext(): ProductContext {
     behInsights: "", competitors: "", flows: "", ia: "", figmaLink: "",
     upcoming: "", dsChoice: "", vibe: "", colors: "", fonts: "",
     designTokens: null,
+    inScopeSurface: "", clientKpis: [], clientBenchmarks: [],
   };
 }
 
@@ -441,6 +442,159 @@ function MarketsMultiSelect({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function KpiEditor({
+  value,
+  onChange,
+}: {
+  value: ClientKpi[];
+  onChange: (next: ClientKpi[]) => void;
+}) {
+  const [direction, setDirection] = useState<ClientKpi["direction"]>("up");
+  const [label, setLabel] = useState("");
+
+  function add() {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    onChange([...value, { direction, label: trimmed }]);
+    setLabel("");
+    setDirection("up");
+  }
+
+  function remove(idx: number) {
+    onChange(value.filter((_, i) => i !== idx));
+  }
+
+  const arrow = (d: ClientKpi["direction"]) => (d === "up" ? "↑" : d === "down" ? "↓" : "→");
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {value.map((k, i) => (
+          <span
+            key={`${k.label}-${i}`}
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-divider bg-surface-subtle text-content-heading"
+          >
+            <span className="text-action-primary-bg font-medium">{arrow(k.direction)}</span>
+            {k.label}
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="ml-0.5 text-content-muted hover:text-content-heading"
+              aria-label={`Remove ${k.label}`}
+            >
+              <X className="w-3 h-3" strokeWidth={2} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <select
+          value={direction}
+          onChange={(e) => setDirection(e.target.value as ClientKpi["direction"])}
+          className="h-9 px-2 border border-divider rounded-md bg-surface-card text-sm focus:outline-none focus:ring-2 focus:ring-action-primary-bg/30"
+        >
+          <option value="up">↑ Up</option>
+          <option value="down">↓ Down</option>
+          <option value="neutral">→ Neutral</option>
+        </select>
+        <Input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="e.g., AOV +15% by Y1"
+          className="flex-1"
+        />
+        <Button type="button" variant="outline" size="sm" onClick={add} disabled={!label.trim()} className="text-xs h-9 px-3 shrink-0">
+          <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+          Add
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function BenchmarkEditor({
+  value,
+  onChange,
+}: {
+  value: ClientBenchmark[];
+  onChange: (next: ClientBenchmark[]) => void;
+}) {
+  const [name, setName] = useState("");
+  const [country, setCountry] = useState("");
+
+  function add() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onChange([...value, { name: trimmed, country: country.trim() }]);
+    setName("");
+    setCountry("");
+  }
+
+  function remove(idx: number) {
+    onChange(value.filter((_, i) => i !== idx));
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {value.map((b, i) => (
+          <span
+            key={`${b.name}-${i}`}
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-divider bg-surface-subtle text-content-heading"
+          >
+            {b.name}
+            {b.country && <span className="text-content-muted">· {b.country}</span>}
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="ml-0.5 text-content-muted hover:text-content-heading"
+              aria-label={`Remove ${b.name}`}
+            >
+              <X className="w-3 h-3" strokeWidth={2} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Product or brand name"
+          className="flex-1"
+        />
+        <Input
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="Country (optional)"
+          className="w-44 shrink-0"
+        />
+        <Button type="button" variant="outline" size="sm" onClick={add} disabled={!name.trim()} className="text-xs h-9 px-3 shrink-0">
+          <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
+          Add
+        </Button>
+      </div>
     </div>
   );
 }
@@ -850,6 +1004,43 @@ export default function ContextPage() {
             <div>
               <FieldLabel required>Key modules</FieldLabel>
               <Textarea value={ctx.flows} onChange={(e) => set("flows", e.target.value)} rows={4} placeholder="Describe 3-5 most important flows. Start with verb." />
+            </div>
+            <Separator />
+            <SectionHeader title="Discovery scope" optional />
+            <p className="text-xs text-content-tertiary -mt-1 leading-relaxed">
+              Three optional inputs that sharpen the Insights Deck. They&apos;re used to mark the surface in scope, attach KPI tags to ideas, and call out client benchmarks inline.
+            </p>
+            <div>
+              <FieldLabel>In-scope surface</FieldLabel>
+              <p className="text-xs text-content-tertiary -mt-0.5 mb-2 leading-relaxed">
+                The specific surface this design engagement will produce. e.g., <em>&ldquo;E-commerce app + web — home, search, PDP, cart, checkout, registry.&rdquo;</em>
+              </p>
+              <Textarea
+                value={ctx.inScopeSurface || ""}
+                onChange={(e) => set("inScopeSurface", e.target.value)}
+                rows={2}
+                placeholder="Name the surface and the screens inside it."
+              />
+            </div>
+            <div>
+              <FieldLabel>Client KPIs</FieldLabel>
+              <p className="text-xs text-content-tertiary -mt-0.5 mb-2 leading-relaxed">
+                Metrics the client wants moved. The deck attaches these as tags on the ideas the research argues for.
+              </p>
+              <KpiEditor
+                value={ctx.clientKpis || []}
+                onChange={(next) => set("clientKpis", next)}
+              />
+            </div>
+            <div>
+              <FieldLabel>Client benchmarks</FieldLabel>
+              <p className="text-xs text-content-tertiary -mt-0.5 mb-2 leading-relaxed">
+                Products or apps the client has named as inspiration. They&apos;re tagged inline in the competitor set.
+              </p>
+              <BenchmarkEditor
+                value={ctx.clientBenchmarks || []}
+                onChange={(next) => set("clientBenchmarks", next)}
+              />
             </div>
             <Separator />
             <div>

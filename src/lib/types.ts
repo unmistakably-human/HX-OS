@@ -20,6 +20,21 @@ export interface AudienceEntry {
   tiers: string[];
 }
 
+export interface ClientKpi {
+  // "↑ AOV +15% by Y1", "↓ Checkout drop-off below 30%". One line, with an
+  // explicit direction marker so the deck's KPI strip and tags render cleanly
+  // without re-parsing.
+  direction: "up" | "down" | "neutral";
+  label: string;
+}
+
+export interface ClientBenchmark {
+  // Brand / product the client has named as inspiration or reference. Country
+  // is optional — useful for the competitor-set chip, blank is fine.
+  name: string;
+  country: string;
+}
+
 export interface ProductContext {
   productName: string;
   company: string;
@@ -49,6 +64,12 @@ export interface ProductContext {
   colors: string;
   fonts: string;
   designTokens?: DesignTokens | null;
+  // Discovery v4 inputs — captured here so we don't ask for them again at
+  // discovery time. Optional on the type so legacy products without these
+  // fields still load.
+  inScopeSurface?: string;
+  clientKpis?: ClientKpi[];
+  clientBenchmarks?: ClientBenchmark[];
 }
 
 export interface Product {
