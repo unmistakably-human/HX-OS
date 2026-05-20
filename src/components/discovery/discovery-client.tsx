@@ -185,21 +185,13 @@ export function DiscoveryClient({ project: initial }: { project: Product }) {
     const actConfig = currentAct ? ACT_CONFIGS[currentAct] : null;
     return (
       <>
-        <PhaseHeader
-          title="Discovery"
-          subtitle={
-            currentAct
-              ? `Act ${currentAct} of 4 · ${actConfig?.shortLabel ?? ""}`
-              : "Running analysis..."
-          }
-        />
+        <PhaseHeader title="Discovery" subtitle="Running analysis..." />
         <DiscoveryLoading
           key={currentAct ?? "init"}
           progress={progress}
           snippets={snippets}
           actLabel={actConfig?.label}
           actNumber={currentAct ?? undefined}
-          actTotal={TOTAL_ACTS.length}
           actMaxChars={actConfig ? actConfig.maxTokens * 4 : undefined}
         />
       </>

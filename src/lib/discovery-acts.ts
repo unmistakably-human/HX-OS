@@ -221,8 +221,8 @@ Pick three from DIFFERENT registers (ritual / memory / social / earned_progress 
 export const ACT_CONFIGS: Record<ActNumber, ActConfig> = {
   1: {
     number: 1,
-    label: "Building Act I — the landscape",
-    shortLabel: "Landscape",
+    label: "Act I of IV — The landscape",
+    shortLabel: "The landscape",
     maxTokens: 8000,
     searchMaxUses: 5,
     keys: ["title", "subtitle", "hero", "know_your_client", "product_context", "category_insights"],
@@ -230,8 +230,8 @@ export const ACT_CONFIGS: Record<ActNumber, ActConfig> = {
   },
   2: {
     number: 2,
-    label: "Building Act II — the people",
-    shortLabel: "People",
+    label: "Act II of IV — The people",
+    shortLabel: "The people",
     maxTokens: 11000,
     searchMaxUses: 8,
     keys: ["audience_set", "journey_grid", "behaviour_insights", "voice_of_customer"],
@@ -239,8 +239,8 @@ export const ACT_CONFIGS: Record<ActNumber, ActConfig> = {
   },
   3: {
     number: 3,
-    label: "Building Act III — the competitive landscape",
-    shortLabel: "Competition",
+    label: "Act III of IV — The competitive landscape",
+    shortLabel: "The competitive landscape",
     maxTokens: 9000,
     searchMaxUses: 6,
     keys: ["competitor_set", "competitive_dimensions", "feature_heatmap", "positioning_map"],
@@ -248,8 +248,8 @@ export const ACT_CONFIGS: Record<ActNumber, ActConfig> = {
   },
   4: {
     number: 4,
-    label: "Building Act IV — your turn",
-    shortLabel: "Synthesis",
+    label: "Act IV of IV — Your turn",
+    shortLabel: "Your turn",
     maxTokens: 16000,
     searchMaxUses: 3,
     keys: ["ideas", "tensions", "module_ideas", "kpi_focus", "beyond_the_brief", "kickoff", "closing_thesis", "glossary"],
