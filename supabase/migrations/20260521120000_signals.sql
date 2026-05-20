@@ -12,7 +12,9 @@
 -- The original build.js maintained data/.history/ with at most 5 prior builds;
 -- we mirror that in Supabase so admins can revert without redeploying.
 
-create extension if not exists "uuid-ossp";
+-- pgcrypto's gen_random_uuid() is bundled with Supabase under the `extensions`
+-- schema. We avoid uuid-ossp here because its functions live outside the
+-- default search_path in Supabase projects.
 
 -- ---------------------------------------------------------------------------
 -- signals_meta — singleton config row. RLS lets anyone authenticated read it
@@ -208,7 +210,7 @@ create policy "signals_bookmarks delete self"
 -- a trigger that deletes older rows on insert. Mirrors build.js's data/.history.
 -- ---------------------------------------------------------------------------
 create table if not exists public.signals_history (
-  id           uuid primary key default uuid_generate_v4(),
+  id           uuid primary key default gen_random_uuid(),
   built_at     timestamptz not null default now(),
   items_shipped int not null default 0,
   snapshot     jsonb not null
