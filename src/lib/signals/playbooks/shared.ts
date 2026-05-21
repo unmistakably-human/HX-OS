@@ -49,21 +49,30 @@ RUN LOG — required at the top of the section payload. Object shape:
 The dashboard renders this in a "How this was picked" drawer. Don't pad —
 honest rejection reasons are more useful than inflated counts.
 
-OUTPUT FORMAT (strict)
-Your final response must contain exactly one fenced JSON block tagged "json"
-that follows the schema below. Do NOT include any other JSON in the message —
-search-tool reasoning is fine, but your final answer is a single fenced block.
-Example shape:
+OUTPUT FORMAT — MANDATORY
+After all research is complete, your VERY LAST message MUST contain exactly
+ONE fenced JSON block tagged \`json\` that matches the schema below. The
+LAST printable character before the closing fence must be a closing brace.
+Do NOT add a closing summary or commentary AFTER the fence. Do NOT split the
+payload across multiple fences. Do NOT include trailing text after the JSON.
+
+If you cannot produce items (slow news week, source unreachable, etc.), ship
+an empty items array — but still produce the full JSON envelope with a
+populated run_log so the dashboard can render the rejection reasons:
 
 \`\`\`json
 {
   "section": "<section-id>",
   "schema_version": ${SCHEMA_VERSION},
   "generated_at": "<ISO 8601 with timezone>",
-  "run_log": { "items_shipped": N, "candidates_rejected": M, "rejection_reasons": [...], "queries_run": [...] },
-  "items": [ ... ]
+  "run_log": { "items_shipped": 0, "candidates_rejected": N, "rejection_reasons": [{"reason":"...","count":N}], "queries_run": ["..."], "notes": "why nothing shipped" },
+  "items": []
 }
 \`\`\`
+
+The parsing layer searches for \`\`\`json...\`\`\` first, then for the first
+balanced \`{...}\` block. Either is acceptable. Returning prose without an
+embedded JSON block fails the section and the dashboard shows it degraded.
 
 QUALITY BAR (the meta-rule)
 For every card: would a designer learn something from this in 5 seconds of
@@ -113,38 +122,66 @@ function formatClient(c: ClientConfig): string {
 }
 
 // ---------------------------------------------------------------------------
-// JSON extraction — pulls the fenced ```json block from Claude's output.
-// Resilient to extra prose, search-tool reasoning, and pre/post commentary.
+// JSON extraction — pulls Claude's output into a parsed object. Resilient
+// to: extra prose, multiple code fences, fences without a language tag,
+// braces/brackets inside JSON strings, and trailing commentary after the
+// closing brace. Returns null if nothing parses cleanly.
 // ---------------------------------------------------------------------------
 export function extractJsonBlock(text: string): unknown | null {
   if (!text) return null;
-  // Prefer fenced ```json blocks.
-  const fenced = text.match(/```json\s*([\s\S]*?)```/i);
-  if (fenced) {
+  const candidates: string[] = [];
+
+  // 1. ```json ... ``` fenced blocks (allow multiple — try each)
+  const fencedJson = text.matchAll(/```json\s*([\s\S]*?)```/gi);
+  for (const m of fencedJson) candidates.push(m[1]);
+
+  // 2. Bare ``` ... ``` fenced blocks (no language tag)
+  const fencedBare = text.matchAll(/```\s*\n([\s\S]*?)```/g);
+  for (const m of fencedBare) candidates.push(m[1]);
+
+  // 3. First balanced {...} block (skip braces inside strings)
+  const obj = findBalanced(text, "{", "}");
+  if (obj) candidates.push(obj);
+
+  // 4. First balanced [...] block (in case the model produced a raw array)
+  const arr = findBalanced(text, "[", "]");
+  if (arr) candidates.push(arr);
+
+  for (const c of candidates) {
     try {
-      return JSON.parse(fenced[1]);
-    } catch (e) {
-      // Fall through to lenient parse
-      console.warn("[signals] fenced json parse failed", e);
+      return JSON.parse(c.trim());
+    } catch {
+      // Try the next candidate
     }
   }
-  // Fallback: first {…} or […] block. Use a simple brace-matching scan.
-  const first = text.indexOf("{");
-  if (first >= 0) {
-    let depth = 0;
-    for (let i = first; i < text.length; i++) {
-      const c = text[i];
-      if (c === "{") depth++;
-      else if (c === "}") {
-        depth--;
-        if (depth === 0) {
-          try {
-            return JSON.parse(text.slice(first, i + 1));
-          } catch {
-            return null;
-          }
-        }
-      }
+  return null;
+}
+
+function findBalanced(text: string, open: string, close: string): string | null {
+  const startIdx = text.indexOf(open);
+  if (startIdx < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = startIdx; i < text.length; i++) {
+    const c = text[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (c === "\\") {
+      escape = true;
+      continue;
+    }
+    if (c === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (c === open) depth++;
+    else if (c === close) {
+      depth--;
+      if (depth === 0) return text.slice(startIdx, i + 1);
     }
   }
   return null;

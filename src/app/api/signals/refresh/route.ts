@@ -4,10 +4,15 @@
 // and persists every section + threads; not something we want anyone to
 // trigger.
 //
-// Long-running. Vercel functions allow up to 300s by default on Fluid Compute,
-// which fits the 7 sequential web-search calls.
+// Long-running. Response is returned IMMEDIATELY (HTTP 202); the actual work
+// runs inside `after()` so the route survives client disconnects (ERR_NETWORK_CHANGED,
+// closed tabs, mobile network handoffs etc.). Vercel keeps the function alive
+// up to `maxDuration` while the `after` callback is pending.
+//
+// Clients can poll GET /api/signals to watch `meta.section_freshness` update
+// as each section completes (every 30-60s is plenty).
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { refreshAll } from "@/lib/signals/playbooks/sections";
 import type { SectionId } from "@/lib/signals/types";
@@ -43,11 +48,24 @@ export async function POST(req: NextRequest) {
     // No body / invalid JSON → full refresh.
   }
 
-  try {
-    await refreshAll({ sections: scope });
-    return NextResponse.json({ ok: true, refreshed: scope || SECTION_IDS });
-  } catch (e: unknown) {
-    console.error("[api/signals/refresh] failed", e);
-    return NextResponse.json({ error: (e instanceof Error ? e.message : String(e)) }, { status: 500 });
-  }
+  const startedAt = new Date().toISOString();
+  after(async () => {
+    try {
+      await refreshAll({ sections: scope });
+      console.log(`[api/signals/refresh] background completed (started ${startedAt})`);
+    } catch (e) {
+      console.error("[api/signals/refresh] background failed", e);
+    }
+  });
+
+  return NextResponse.json(
+    {
+      ok: true,
+      started: true,
+      startedAt,
+      scope: scope || SECTION_IDS,
+      note: "Refresh running in background (~3-5 min). Poll GET /api/signals to watch meta.section_freshness as each section completes.",
+    },
+    { status: 202 },
+  );
 }

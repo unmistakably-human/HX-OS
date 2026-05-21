@@ -532,6 +532,20 @@ export async function runSection<S extends SectionId>(
     const domain = await readSection("domain-signals");
     userMessage = buildVisualInspirationPrompt(domain);
   }
+  // Belt-and-braces: the last thing the model sees is a hard reminder that the
+  // final message must end with a JSON fence. Without this, models with web
+  // search tend to drift into prose answers after long search tool chains.
+  userMessage += `
+
+---
+FINAL OUTPUT — DO THIS NOW
+Once you have done the research above, your very next message must be exactly:
+\`\`\`json
+{ ... matching the schema in the system prompt ... }
+\`\`\`
+Nothing before the opening fence, nothing after the closing fence. If you
+have nothing to ship, return an envelope with an empty items array and a
+populated run_log explaining why.`;
   opts?.onProgress?.({ stage: "research", section, detail: "calling Claude with web search" });
 
   const freshness: SectionFreshness = {
@@ -559,8 +573,13 @@ export async function runSection<S extends SectionId>(
 
   const json = extractJsonBlock(response);
   if (!json) {
-    console.error(`[signals] runSection(${section}) no JSON block in response`);
-    await updateSectionFreshness(section, { ...freshness, degraded: true, error: "no JSON block in response" });
+    // Capture the head of the raw response so the run-log popover can show
+    // exactly what came back. Truncate to keep meta.section_freshness rows
+    // small (this column is read on every dashboard load).
+    const head = response.slice(0, 600).replace(/\s+/g, " ").trim();
+    const reason = `no JSON block in response. head: ${head}${response.length > 600 ? "…" : ""}`;
+    console.error(`[signals] runSection(${section}) ${reason}`);
+    await updateSectionFreshness(section, { ...freshness, degraded: true, error: reason });
     return readSection(section);
   }
 

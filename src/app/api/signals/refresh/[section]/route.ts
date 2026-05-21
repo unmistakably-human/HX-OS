@@ -2,8 +2,11 @@
 //
 // Threads always re-run after a section refresh because threads is derived
 // state and a partial refresh would leave stale signal_refs.
+//
+// Same fire-and-forget pattern as the full refresh route: returns 202
+// immediately, work continues in `after()`.
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { runSection, runThreads } from "@/lib/signals/playbooks/sections";
 import { SECTION_IDS, type SectionId } from "@/lib/signals/types";
@@ -27,13 +30,27 @@ export async function POST(
   const role = profile && typeof profile === "object" && "role" in profile ? (profile as { role: string }).role : null;
   if (role !== "admin") return NextResponse.json({ error: "admin role required" }, { status: 403 });
 
-  try {
-    const data = await runSection(section as SectionId);
-    // Threads are derived — re-run after any section refresh.
-    await runThreads();
-    return NextResponse.json({ ok: true, section, items_shipped: data.items.length });
-  } catch (e: unknown) {
-    console.error(`[api/signals/refresh/${section}] failed`, e);
-    return NextResponse.json({ error: (e instanceof Error ? e.message : String(e)) }, { status: 500 });
-  }
+  const startedAt = new Date().toISOString();
+  const sectionId = section as SectionId;
+  after(async () => {
+    try {
+      await runSection(sectionId);
+      // Threads are derived — re-run after any section refresh.
+      await runThreads();
+      console.log(`[api/signals/refresh/${section}] background completed`);
+    } catch (e) {
+      console.error(`[api/signals/refresh/${section}] background failed`, e);
+    }
+  });
+
+  return NextResponse.json(
+    {
+      ok: true,
+      started: true,
+      startedAt,
+      section: sectionId,
+      note: "Refresh running in background. Poll GET /api/signals to watch meta.section_freshness.",
+    },
+    { status: 202 },
+  );
 }
