@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, MoreHorizontal, Check, Trash2, Loader2, Upload, FileText, X, ClipboardCheck, Radio, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignalFeed } from "@/components/signal-feed";
+import { SignalsDashboard } from "@/components/signals/signals-dashboard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -361,7 +361,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Signals view */}
-      {view === "signals" && <SignalFeed />}
+      {view === "signals" && <SignalsDashboard />}
 
       {/* Projects view */}
       {view === "projects" && (<div className="max-w-[1100px] mx-auto px-6 py-6 space-y-4">
